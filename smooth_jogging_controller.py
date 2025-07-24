@@ -805,6 +805,31 @@ G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}"""
             if not hasattr(self, 'last_fine_toggle') or current_time - self.last_fine_toggle > 0.5:
                 self.fine_mode = not self.fine_mode
                 mode_text = "Fine Mode: ON" if self.fine_mode else "Fine Mode: OFF"
+                
+                # Automatically adjust speed scaling based on fine mode
+                if self.fine_mode:
+                    # Switch to 1.0x speed for fine mode
+                    self.config.velocity_scale = 1.0
+                    self.config.movement_scale_xy = 1.0
+                    self.config.movement_scale_uv = 1.0
+                    self.overall_scale_var.set(1.0)
+                    self.xy_scale_var.set(1.0)
+                    self.uv_scale_var.set(1.0)
+                    self.root.after(0, lambda: self.overall_scale_label.config(text="1.00x"))
+                    self.root.after(0, lambda: self.xy_scale_label.config(text="1.00x"))
+                    self.root.after(0, lambda: self.uv_scale_label.config(text="1.00x"))
+                else:
+                    # Switch back to 0.5x speed for normal mode
+                    self.config.velocity_scale = 0.5
+                    self.config.movement_scale_xy = 0.5
+                    self.config.movement_scale_uv = 0.5
+                    self.overall_scale_var.set(0.5)
+                    self.xy_scale_var.set(0.5)
+                    self.uv_scale_var.set(0.5)
+                    self.root.after(0, lambda: self.overall_scale_label.config(text="0.50x"))
+                    self.root.after(0, lambda: self.xy_scale_label.config(text="0.50x"))
+                    self.root.after(0, lambda: self.uv_scale_label.config(text="0.50x"))
+                
                 self.root.after(0, lambda: self.mode_label.config(text=mode_text))
                 self.last_fine_toggle = current_time
 
