@@ -129,6 +129,7 @@ class SmoothJoystickController:
         # Performance tracking
         self.movement_history = deque(maxlen=100)
         self.command_queue = deque()
+        self.message_history = deque(maxlen=100)
         
         # Connection management
         self.ws = None
@@ -157,6 +158,7 @@ class SmoothJoystickController:
         """Handle incoming WebSocket messages"""
         try:
             data = json.loads(message)
+            self.message_history.append(data)
             # Could process printer responses here if needed
             # For now, just update last successful command time
             self.last_successful_command = time.time()
@@ -554,12 +556,12 @@ class SmoothJoystickController:
             SET_DUAL_CARRIAGE CARRIAGE=y
             M114"""
             self.send_gcode(gcode)
-            response = self.receive_response()  # OK
-            response = self.receive_response()  # Position
-            if response and 'params' in response:
-                response_parts = response['params'][0].split()
-                self.positions['x'] = float(response_parts[0].split(':')[1])
-                self.positions['y'] = float(response_parts[1].split(':')[1])
+            for msg in self.message_history:
+                self.message_history.popleft() # Clear old messages
+                if 'method' in msg and msg['method'] == 'notify_gcode_response':
+                    response_parts = msg['params'][0].split()
+                    self.positions['x'] = float(response_parts[0].split(':')[1])
+                    self.positions['y'] = float(response_parts[1].split(':')[1])
 
             # Get carriage 2 position
             gcode = """
@@ -567,12 +569,12 @@ class SmoothJoystickController:
             SET_DUAL_CARRIAGE CARRIAGE=y2
             M114"""
             self.send_gcode(gcode)
-            response = self.receive_response()  # OK
-            response = self.receive_response()  # Position
-            if response and 'params' in response:
-                response_parts = response['params'][0].split()
-                self.positions['u'] = float(response_parts[0].split(':')[1])
-                self.positions['v'] = float(response_parts[1].split(':')[1])
+            for msg in self.message_history:
+                self.message_history.popleft() # Clear old messages
+                if 'method' in msg and msg['method'] == 'notify_gcode_response':
+                    response_parts = msg['params'][0].split()
+                    self.positions['u'] = float(response_parts[0].split(':')[1])
+                    self.positions['v'] = float(response_parts[1].split(':')[1])
         except Exception as e:
             print(f"Error updating positions: {e}")
     
