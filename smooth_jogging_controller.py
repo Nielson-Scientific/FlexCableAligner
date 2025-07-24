@@ -741,7 +741,8 @@ class SmoothJoystickController:
             return
             
         # Calculate movements for XY carriage
-        if abs(self.current_velocities['x']) > self.config.velocity_stop_threshold or abs(self.current_velocities['y']) > self.config.velocity_stop_threshold:
+        xy_moving = abs(self.current_velocities['x']) > self.config.velocity_stop_threshold or abs(self.current_velocities['y']) > self.config.velocity_stop_threshold
+        if xy_moving:
             dx = (self.current_velocities['x'] / 60.0) * dt  # Convert mm/min to mm/s
             dy = (self.current_velocities['y'] / 60.0) * dt
             
@@ -764,8 +765,9 @@ G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"""
                 if self.send_gcode(gcode):
                     self.record_movement_performance(dx, dy, feedrate)
 
-        # Calculate movements for UV carriage  
-        elif abs(self.current_velocities['u']) > self.config.velocity_stop_threshold or abs(self.current_velocities['v']) > self.config.velocity_stop_threshold:
+        # Calculate movements for UV carriage (can happen simultaneously with XY)
+        uv_moving = abs(self.current_velocities['u']) > self.config.velocity_stop_threshold or abs(self.current_velocities['v']) > self.config.velocity_stop_threshold
+        if uv_moving:
             du = (self.current_velocities['u'] / 60.0) * dt
             dv = (self.current_velocities['v'] / 60.0) * dt
             
