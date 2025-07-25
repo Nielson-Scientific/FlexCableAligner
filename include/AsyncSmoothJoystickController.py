@@ -82,13 +82,13 @@ class AsyncSmoothJoystickController:
             if self.pending_position_request == 'xy' and x_pos is not None and y_pos is not None:
                 self.positions['x'] = x_pos
                 self.positions['y'] = y_pos
-                print(f"Updated XY carriage position: X={x_pos:.3f}, Y={y_pos:.3f}")
+                # print(f"Updated XY carriage position: X={x_pos:.3f}, Y={y_pos:.3f}")
             elif self.pending_position_request == 'uv' and x_pos is not None and y_pos is not None:
                 # For the UV carriage (x2/y2), the M114 response still shows as X/Y
                 # but we map them to our U/V coordinates
                 self.positions['u'] = x_pos
                 self.positions['v'] = y_pos
-                print(f"Updated UV carriage position: U={x_pos:.3f}, V={y_pos:.3f}")
+                # print(f"Updated UV carriage position: U={x_pos:.3f}, V={y_pos:.3f}")
             
             # Clear the pending request
             self.pending_position_request = None
@@ -579,6 +579,8 @@ G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"""
                 success = await self.websocket_client.send_gcode(gcode)
                 if success:
                     self.record_movement_performance(dx, dy, feedrate)
+                else:
+                    messagebox.showerror('G-Code Error', 'Could not send command. Have you homed? Press X to home')
 
         # Calculate movements for UV carriage (can happen simultaneously with XY)
         uv_moving = abs(self.current_velocities['u']) > self.config.velocity_stop_threshold or abs(self.current_velocities['v']) > self.config.velocity_stop_threshold
@@ -665,6 +667,23 @@ G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}"""
                         return self.goto_saved_position()
                     self.run_async_function(goto_callback())
                 self.last_goto = current_time
+
+        # Home XY axes (button 2)
+        if self.joystick.get_button(2):
+            if not hasattr(self, 'last_home_xy') or current_time - self.last_home_xy > 0.5:
+                def home_xy_callback():
+                    return self.home_xy_axes()
+                self.run_async_function(home_xy_callback())
+                self.last_home_xy = current_time
+
+    async def home_xy_axes(self):
+        gcode = """G28 X Y\n"""
+        try:
+            success = await self.websocket_client.send_gcode(gcode)
+            if success:
+                print("Successfully homed XY axes")
+        except Exception as e:
+            print(f"Error homing XY axes: {e}")
 
     async def goto_saved_position(self):
         """Move to saved position smoothly"""
