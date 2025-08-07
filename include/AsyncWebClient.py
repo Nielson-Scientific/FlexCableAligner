@@ -137,7 +137,13 @@ class AsyncWebSocketClient:
                 {"script": gcode},
                 timeout=2.0
             )
-            return response.get('result') == 'ok'
+            # DEBUG
+            if response.get('result') != 'ok':
+                if response.get('error').get('code') == 400:
+                    # The silly thing needs to he homed. But it doesn't, we just G92 it to make it happy
+                    return 400
+            else:
+                return True
         except Exception as e:
             print(f"Error sending gcode: {e}")
             return False

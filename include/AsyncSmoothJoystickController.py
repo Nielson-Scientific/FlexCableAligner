@@ -577,10 +577,7 @@ SET_DUAL_CARRIAGE CARRIAGE=y
 G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"""
                 
                 success = await self.websocket_client.send_gcode(gcode)
-                if success:
-                    self.record_movement_performance(dx, dy, feedrate)
-                else:
-                    messagebox.showerror('G-Code Error', 'Could not send command. Have you homed? Press X to home')
+                await self.handle_success_message(success, dx, dy, feedrate)
 
         # Calculate movements for UV carriage (can happen simultaneously with XY)
         uv_moving = abs(self.current_velocities['u']) > self.config.velocity_stop_threshold or abs(self.current_velocities['v']) > self.config.velocity_stop_threshold
@@ -605,8 +602,25 @@ SET_DUAL_CARRIAGE CARRIAGE=y2
 G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}"""
                 
                 success = await self.websocket_client.send_gcode(gcode)
-                if success:
-                    self.record_movement_performance(du, dv, feedrate)
+                await self.handle_success_message(success, du, dv, feedrate)
+
+    async def handle_success_message(self, success, dx, dy, feedrate):
+        if success == 400:
+            # If we get a 400, it means the printer needs to be homed
+            gcode = f"""SET_DUAL_CARRIAGE CARRIAGE=x
+SET_DUAL_CARRIAGE CARRIAGE=y
+SET_KINEMATIC_POSITION X={self.positions['x']:.4f} Y={self.positions['y']:.4f}
+SET_DUAL_CARRIAGE CARRIAGE=x2
+SET_DUAL_CARRIAGE CARRIAGE=y2
+SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}"""
+            success = await self.websocket_client.send_gcode(gcode)
+            if success is not True:
+                messagebox.showerror('Homing Error', 'Printer needs to be homed before jogging.')
+                return
+        if success:
+            self.record_movement_performance(dx, dy, feedrate)
+        else:
+            messagebox.showerror('Unknown error', 'Could not send command. Are you going out of bounds?')
 
     def record_movement_performance(self, dx, dy, feedrate):
         """Record movement for performance analysis"""
