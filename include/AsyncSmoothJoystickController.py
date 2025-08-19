@@ -328,7 +328,7 @@ class AsyncSmoothJoystickController:
             return
 
         # Pop the row from both the position list and the table
-        self.position_list.pop(self.selected_row_index)
+        self.positions_list.pop(self.selected_row_index)
 
         # Clear display List
         self._clear_display_list()
@@ -341,7 +341,7 @@ class AsyncSmoothJoystickController:
         self._clear_display_list()
     
     def _rewrite_display_list(self):
-        for index, row in enumerate(self.position_list):
+        for index, row in enumerate(self.positions_list):
             self._add_row()
             x, y, u, v = row
             # Index Col
@@ -361,9 +361,7 @@ class AsyncSmoothJoystickController:
                 entry.destroy()
         # clear every item in the list except the first
         self.row_list = []
-        for saved_position in self.positions_list:
-            saved_position.destroy()
-        self.positions_list = []
+        # self.positions_list = []
         # reset the index
         self.selected_row_index = None
         self.current_row_index = 0
@@ -817,11 +815,11 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
                 self._add_row()
                 self.table.grid_slaves(row=self.current_row_index + 1, column=0)[0].insert(0, self.current_row_index + 1)
                 self.table.grid_slaves(row=self.current_row_index + 1, column=1)[0].insert(0, f"X={self.positions_list[self.current_row_index][0]:.3f}, Y={self.positions_list[self.current_row_index][1]:.3f}, U={self.positions_list[self.current_row_index][2]:.3f}, V={self.positions_list[self.current_row_index][3]:.3f}")
-                if self.current_row_index == 0:
-                    self.selected_row_index = self.current_row_index
-                    self.row_list[self.selected_row_index].config(state= 'readonly')
-                else:
-                    pass
+                # if self.current_row_index == 0:
+                #     self.selected_row_index = self.current_row_index
+                #     self.row_list[self.selected_row_index].config(state= 'readonly')
+                # else:
+                #     pass
                 self.current_row_index += 1
 
         # Go to saved position
@@ -840,6 +838,38 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
                     return self.home_xy_axes()
                 self.run_async_function(home_xy_callback())
                 self.last_home_xy = current_time
+        
+        # Search feature spiral pattern
+        if self.joystick.get_button(4):
+            if not hasattr(self, 'last_search') or current_time - self.last_search > 0.5:
+                def spiral_search_callback():
+                    return self.spiral_search()
+                self.run_async_function(spiral_search_callback())
+                self.last_search = current_time
+
+    async def spiral_search(self):
+        """Perform search pattern smoothly"""
+
+        pos = self.positions_list[self.selected_row_index]
+        gcode = f"""G90
+SET_DUAL_CARRIAGE CARRIAGE=x
+SET_DUAL_CARRIAGE CARRIAGE=y
+G0 X{pos[0]:.3f} Y{pos[1]:.3f} F{self.config.base_speed}
+SET_DUAL_CARRIAGE CARRIAGE=x2
+SET_DUAL_CARRIAGE CARRIAGE=y2
+G0 X{pos[2]:.3f} Y{pos[3]:.3f} F{self.config.base_speed}
+G91"""
+        
+        try:
+            success = await self.websocket_client.send_gcode(gcode)
+            if success:
+                self.positions['x'] = pos[0]
+                self.positions['y'] = pos[1]
+                self.positions['u'] = pos[2]
+                self.positions['v'] = pos[3]
+        except Exception as e:
+            print(f"Error going to saved position: {e}")
+
     async def home_xy_axes(self):
         gcode = """G28 X Y\n"""
         try:
@@ -847,7 +877,7 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
             if success:
                 print("Successfully homed XY axes")
         except Exception as e:
-            print(f"Error homing XY axes: {e}")
+            print(f"Error homing XY axes: {e}")                
 
     async def goto_saved_position(self):
         """Move to saved position smoothly"""
