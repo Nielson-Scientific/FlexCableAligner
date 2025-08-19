@@ -13,7 +13,7 @@ from include.SmoothJoggingConfig import SmoothJoggingConfig
 # Table Dimension Constants
 TABLE_COL_CNT = 2
 TABLE_INDEX_COL_W = 5
-TABLE_POS_COL_W = 20
+TABLE_POS_COL_W = 40
 
 # Color Constants
 DEFAULT_ROW_COLOR = 'white'
@@ -28,7 +28,7 @@ class AsyncSmoothJoystickController:
     def __init__(self):
         self.config = SmoothJoggingConfig()
         self.fine_mode = False
-        self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0, 'saved': []}
+        self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
         self.positions_list = []
         self.row_list = []
         self.selected_row_index = None
@@ -148,18 +148,18 @@ class AsyncSmoothJoystickController:
         
         # Controller info section
         controller_frame = ttk.LabelFrame(main_frame, text="Controller Info", padding="10")
-        controller_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        controller_frame.grid(row=1, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=5)
         
         self.controller_label = ttk.Label(controller_frame, text="Controller: Not detected")
         self.controller_label.grid(row=0, column=0, sticky=tk.W)
 
         # Saved Positions section
         saved_positions_frame = ttk.LabelFrame(main_frame, text="Saved Positions", padding=10)
-        saved_positions_frame.grid(row=1, column=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5, padx=(10, 0))
+        saved_positions_frame.grid(row=1, column=2, columnspan=4, sticky='ew', pady=5, padx=(10, 0))
 
         # Make sure the frame expands properly
-        saved_positions_frame.rowconfigure(0, weight=1)
         saved_positions_frame.columnconfigure(0, weight=1)
+        saved_positions_frame.columnconfigure(1, weight=1)
 
         canvas = Canvas(saved_positions_frame, width=250, height=75)
         vscrollbar = ttk.Scrollbar(saved_positions_frame, orient="vertical", command=canvas.yview)
@@ -169,6 +169,9 @@ class AsyncSmoothJoystickController:
         vscrollbar.grid(row=0, column=1, sticky="ns")
 
         self.table = Frame(canvas)
+        self.table.grid(columnspan=4, sticky= 'ew')
+        self.table.columnconfigure(0, weight=1)
+        self.table.columnconfigure(1, weight=1)
         self.canvas = canvas
         canvas_window = canvas.create_window((0, 0), window=self.table, anchor="nw")
 
@@ -190,21 +193,15 @@ class AsyncSmoothJoystickController:
         pos_header.insert(0, "Position")
         pos_header.configure(readonlybackground=TITLE_ROW_COLOR, state='readonly')
 
-        # # Buttons
-        # button_frame = Frame(main_frame, highlightthickness=3)
-        # button_frame.rowconfigure(0, weight=1)
-        # button_frame.rowconfigure(5, weight=1)
-
-        # button_frame.pack(side="top", fill="both", expand=True)
-
-        # Button(button_frame, text="Remove Selected Pos",
-        #        command=self._remove_selected_pos).grid(row=1, column=1)
-        # Button(button_frame, text="Clear Pos List",
-        #        command=self._clear_pos_list).grid(row=3, column=0)
-
-        # button_frame.columnconfigure(0, minsize=100)
-        # button_frame.columnconfigure(1, minsize=100)
-        # button_frame.columnconfigure(2, minsize=100)
+        # Button sub frame in the saved position frame
+        button_frame = Frame(saved_positions_frame)
+        button_frame.grid(row=1, column=0, columnspan=4, sticky= 'ew', padx= 5, pady= 5)
+        button_frame.columnconfigure(0, weight= 1)
+        button_frame.columnconfigure(1, weight= 1)
+        Button(button_frame, text="Remove Selected Pos",
+               command=self._remove_selected_pos).grid(row=0, column=0, padx=5, pady=5, sticky='ew')
+        Button(button_frame, text="Clear Pos List",
+               command=self._clear_pos_list).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
         
         # Performance section
         perf_frame = ttk.LabelFrame(main_frame, text="Performance Metrics", padding="10")
@@ -340,23 +337,20 @@ class AsyncSmoothJoystickController:
         self._rewrite_display_list()
 
     def _clear_pos_list(self):
-        self.position_list = []
+        self.positions_list = []
         self._clear_display_list()
     
     def _rewrite_display_list(self):
         for index, row in enumerate(self.position_list):
             self._add_row()
-            x, y, z = row.position
+            x, y, u, v = row
             # Index Col
             self.table.grid_slaves(row=index + 1, column=0)[0].delete(0, 'end')
-            self.table.grid_slaves(row=index + 1, column=0)[0].insert(0, index)
+            self.table.grid_slaves(row=index + 1, column=0)[0].insert(0, index + 1)
             # Position Col
             self.table.grid_slaves(row=index + 1, column=1)[0].delete(0, 'end')
             self.table.grid_slaves(
-                row=index + 1, column=1)[0].insert(0, f"({round(x, DISPLAY_DECIMAL_TABLE)},{round(y, DISPLAY_DECIMAL_TABLE)})")
-            # Name Col
-            self.table.grid_slaves(row=index + 1, column=2)[0].delete(0, 'end')
-            self.table.grid_slaves(row=index + 1, column=2)[0].insert(0, row.name)
+                row=index + 1, column=1)[0].insert(0,f"X={self.positions_list[index][0]:.3f}, Y={self.positions_list[index][1]:.3f}, U={self.positions_list[index][2]:.3f}, V={self.positions_list[index][3]:.3f}")
             # Increment
             self.current_row_index += 1
     
@@ -367,6 +361,9 @@ class AsyncSmoothJoystickController:
                 entry.destroy()
         # clear every item in the list except the first
         self.row_list = []
+        for saved_position in self.positions_list:
+            saved_position.destroy()
+        self.positions_list = []
         # reset the index
         self.selected_row_index = None
         self.current_row_index = 0
@@ -818,17 +815,18 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
                                          self.positions['u'], self.positions['v']))
                 self.last_save = current_time
                 self._add_row()
-                self.table.grid_slaves(row=self.current_row_index + 1, column=0)[0].insert(0, self.current_row_index)
+                self.table.grid_slaves(row=self.current_row_index + 1, column=0)[0].insert(0, self.current_row_index + 1)
                 self.table.grid_slaves(row=self.current_row_index + 1, column=1)[0].insert(0, f"X={self.positions_list[self.current_row_index][0]:.3f}, Y={self.positions_list[self.current_row_index][1]:.3f}, U={self.positions_list[self.current_row_index][2]:.3f}, V={self.positions_list[self.current_row_index][3]:.3f}")
                 if self.current_row_index == 0:
                     self.selected_row_index = self.current_row_index
+                    self.row_list[self.selected_row_index].config(state= 'readonly')
                 else:
                     pass
                 self.current_row_index += 1
 
         # Go to saved position
         if self.joystick.get_button(3):
-            if not hasattr(self, 'last_goto') or current_time - self.last_goto > 0.5:
+            if not hasattr(self, 'last_p') or current_time - self.last_goto > 0.5:
                 if self.positions_list[self.selected_row_index]:
                     def goto_callback():
                         return self.goto_saved_position()
@@ -842,7 +840,6 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
                     return self.home_xy_axes()
                 self.run_async_function(home_xy_callback())
                 self.last_home_xy = current_time
-
     async def home_xy_axes(self):
         gcode = """G28 X Y\n"""
         try:
@@ -930,13 +927,6 @@ G91"""
         self.velocity_text.insert(tk.END, f"Y: {self.current_velocities['y']:.1f} mm/min\n")
         self.velocity_text.insert(tk.END, f"U: {self.current_velocities['u']:.1f} mm/min\n")
         self.velocity_text.insert(tk.END, f"V: {self.current_velocities['v']:.1f} mm/min")
-        
-        # # Update saved positions
-        # if self.positions['saved']:
-        #     self.saved_positions_text.delete(1.0, tk.END)
-        #     saved = self.positions['saved']
-        #     self.saved_positions_text.insert(tk.END, 
-        #         f"Saved: X={saved[0]:.3f}, Y={saved[1]:.3f}, U={saved[2]:.3f}, V={saved[3]:.3f}")
         
         # Update performance metrics
         self.update_performance_display()
