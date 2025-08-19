@@ -2,7 +2,7 @@ import pygame
 import time
 import asyncio
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Canvas, Frame, Entry, Button
 import math
 from collections import deque
 import numpy as np
@@ -10,11 +10,30 @@ import threading
 from include.AsyncWebClient import AsyncWebSocketClient
 from include.SmoothJoggingConfig import SmoothJoggingConfig
 
+# Table Dimension Constants
+TABLE_COL_CNT = 2
+TABLE_INDEX_COL_W = 5
+TABLE_POS_COL_W = 40
+
+# Color Constants
+DEFAULT_ROW_COLOR = 'white'
+TITLE_ROW_COLOR = 'lightgrey'
+SELECTED_ROW_COLOR = 'lightblue'
+
+# Display Decimal Constants
+DISPLAY_DECIMAL_TABLE = 2
+DISPLAY_DECIMAL_CALCULATION = 4
+
 class AsyncSmoothJoystickController:
     def __init__(self):
         self.config = SmoothJoggingConfig()
         self.fine_mode = False
-        self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0, 'saved': []}
+        self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
+        self.positions_list = []
+        self.row_list = []
+        self.selected_row_index = None
+        self.current_row_index = 0
+
         
         # Velocity tracking for smoothing
         self.target_velocities = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
@@ -129,16 +148,60 @@ class AsyncSmoothJoystickController:
         
         # Controller info section
         controller_frame = ttk.LabelFrame(main_frame, text="Controller Info", padding="10")
-        controller_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        controller_frame.grid(row=1, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=5)
         
         self.controller_label = ttk.Label(controller_frame, text="Controller: Not detected")
         self.controller_label.grid(row=0, column=0, sticky=tk.W)
 
         # Saved Positions section
-        saved_positions_frame = ttk.LabelFrame(main_frame, text="Saved Positions", padding="10")
-        saved_positions_frame.grid(row=1, column=2, sticky=(tk.W, tk.E, tk.N), pady=5, padx=(10, 0))
-        self.saved_positions_text = tk.Text(saved_positions_frame, height=3, width=30)
-        self.saved_positions_text.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        saved_positions_frame = ttk.LabelFrame(main_frame, text="Saved Positions", padding=10)
+        saved_positions_frame.grid(row=1, column=2, columnspan=4, sticky='ew', pady=5, padx=(10, 0))
+
+        # Make sure the frame expands properly
+        saved_positions_frame.columnconfigure(0, weight=1)
+        saved_positions_frame.columnconfigure(1, weight=1)
+
+        canvas = Canvas(saved_positions_frame, width=250, height=75)
+        vscrollbar = ttk.Scrollbar(saved_positions_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vscrollbar.set)
+
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vscrollbar.grid(row=0, column=1, sticky="ns")
+
+        self.table = Frame(canvas)
+        self.table.grid(columnspan=4, sticky= 'ew')
+        self.table.columnconfigure(0, weight=1)
+        self.table.columnconfigure(1, weight=1)
+        self.canvas = canvas
+        canvas_window = canvas.create_window((0, 0), window=self.table, anchor="nw")
+
+        # Add table headers (row 0)
+        for column_index in range(TABLE_COL_CNT):
+            e = Entry(self.table, state='normal')
+            if column_index == 0:
+                e.config(width=TABLE_INDEX_COL_W)
+            elif column_index == 1:
+                e.config(width=TABLE_POS_COL_W)
+            e.grid(row=0, column=column_index, sticky='ew')
+            e.config(readonlybackground=SELECTED_ROW_COLOR)
+
+        # Set header text and styles
+        index_header = self.table.grid_slaves(row=0, column=0)[0]
+        index_header.insert(0, "Index")
+        index_header.configure(readonlybackground=TITLE_ROW_COLOR, state='readonly')
+        pos_header = self.table.grid_slaves(row=0, column=1)[0]
+        pos_header.insert(0, "Position")
+        pos_header.configure(readonlybackground=TITLE_ROW_COLOR, state='readonly')
+
+        # Button sub frame in the saved position frame
+        button_frame = Frame(saved_positions_frame)
+        button_frame.grid(row=1, column=0, columnspan=4, sticky= 'ew', padx= 5, pady= 5)
+        button_frame.columnconfigure(0, weight= 1)
+        button_frame.columnconfigure(1, weight= 1)
+        Button(button_frame, text="Remove Selected Pos",
+               command=self._remove_selected_pos).grid(row=0, column=0, padx=5, pady=5, sticky='ew')
+        Button(button_frame, text="Clear Pos List",
+               command=self._clear_pos_list).grid(row=0, column=1, padx=5, pady=5, sticky='ew')
         
         # Performance section
         perf_frame = ttk.LabelFrame(main_frame, text="Performance Metrics", padding="10")
@@ -225,7 +288,84 @@ class AsyncSmoothJoystickController:
         self.root.focus_set()
         
         self.update_displays()
+
+    def _on_click(self, event, row_index):
+        # Reset all other rows to look normal
+        for entries in self.row_list:
+            for e in entries:
+                e.config(state='normal')
+                # set bg color to white
+
+        # Highlight the selected row
+        for e in self.row_list[row_index]:
+            e.config(state='readonly')
+            # if its the third row, don't change to readonly, but do change its color
+
+        self.selected_row_index = row_index
+        print(f"Row {self.selected_row_index} selected")
+
+    def _add_row(self):
+        row_entries = []
+        for column_index in range(TABLE_COL_CNT):
+            e = Entry(self.table, state='normal')
+            # Set column width
+            if column_index == 0:
+                e.config(width=TABLE_INDEX_COL_W)
+            elif column_index == 1:
+                e.config(width=TABLE_POS_COL_W)
+            e.bind("<Button-1>", lambda event, row=self.current_row_index: self._on_click(event, row))
+            e.grid(row=self.current_row_index + 1, column=column_index, sticky='ew')
+            row_entries.append(e)
+            e.config(readonlybackground=SELECTED_ROW_COLOR)
+        self.row_list.append(row_entries)
+        # update scroll bar range
+        self.canvas.configure(
+            scrollregion=self.canvas.bbox('all'))
+
+    def _remove_selected_pos(self):
+        # If no row is selected yet, return
+        if self.selected_row_index == None:
+            return
+
+        # Pop the row from both the position list and the table
+        self.positions_list.pop(self.selected_row_index)
+
+        # Clear display List
+        self._clear_display_list()
+
+        # rewrite all preceeding entries
+        self._rewrite_display_list()
+
+    def _clear_pos_list(self):
+        self.positions_list = []
+        self._clear_display_list()
     
+    def _rewrite_display_list(self):
+        for index, row in enumerate(self.positions_list):
+            self._add_row()
+            x, y, u, v = row
+            # Index Col
+            self.table.grid_slaves(row=index + 1, column=0)[0].delete(0, 'end')
+            self.table.grid_slaves(row=index + 1, column=0)[0].insert(0, index + 1)
+            # Position Col
+            self.table.grid_slaves(row=index + 1, column=1)[0].delete(0, 'end')
+            self.table.grid_slaves(
+                row=index + 1, column=1)[0].insert(0,f"X={self.positions_list[index][0]:.3f}, Y={self.positions_list[index][1]:.3f}, U={self.positions_list[index][2]:.3f}, V={self.positions_list[index][3]:.3f}")
+            # Increment
+            self.current_row_index += 1
+    
+    def _clear_display_list(self):
+        # Destroy everything except the first
+        for row in self.row_list:
+            for entry in row:
+                entry.destroy()
+        # clear every item in the list except the first
+        self.row_list = []
+        # self.positions_list = []
+        # reset the index
+        self.selected_row_index = None
+        self.current_row_index = 0
+
     def run_async_function(self, coro):
         """Run an async function from the GUI thread"""
         if self.loop and not self.loop.is_closed():
@@ -669,14 +809,23 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
         # Save position
         if self.joystick.get_button(1):
             if not hasattr(self, 'last_save') or current_time - self.last_save > 0.5:
-                self.positions['saved'] = (self.positions['x'], self.positions['y'], 
-                                         self.positions['u'], self.positions['v'])
+                self.positions_list.append( (self.positions['x'], self.positions['y'], 
+                                         self.positions['u'], self.positions['v']))
                 self.last_save = current_time
+                self._add_row()
+                self.table.grid_slaves(row=self.current_row_index + 1, column=0)[0].insert(0, self.current_row_index + 1)
+                self.table.grid_slaves(row=self.current_row_index + 1, column=1)[0].insert(0, f"X={self.positions_list[self.current_row_index][0]:.3f}, Y={self.positions_list[self.current_row_index][1]:.3f}, U={self.positions_list[self.current_row_index][2]:.3f}, V={self.positions_list[self.current_row_index][3]:.3f}")
+                # if self.current_row_index == 0:
+                #     self.selected_row_index = self.current_row_index
+                #     self.row_list[self.selected_row_index].config(state= 'readonly')
+                # else:
+                #     pass
+                self.current_row_index += 1
 
         # Go to saved position
         if self.joystick.get_button(3):
-            if not hasattr(self, 'last_goto') or current_time - self.last_goto > 0.5:
-                if self.positions['saved']:
+            if not hasattr(self, 'last_p') or current_time - self.last_goto > 0.5:
+                if self.positions_list[self.selected_row_index]:
                     def goto_callback():
                         return self.goto_saved_position()
                     self.run_async_function(goto_callback())
@@ -689,6 +838,37 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
                     return self.home_xy_axes()
                 self.run_async_function(home_xy_callback())
                 self.last_home_xy = current_time
+        
+        # Search feature spiral pattern
+        if self.joystick.get_button(4):
+            if not hasattr(self, 'last_search') or current_time - self.last_search > 0.5:
+                def spiral_search_callback():
+                    return self.spiral_search()
+                self.run_async_function(spiral_search_callback())
+                self.last_search = current_time
+
+    async def spiral_search(self):
+        """Perform search pattern smoothly"""
+
+        pos = self.positions_list[self.selected_row_index]
+        gcode = f"""G90
+SET_DUAL_CARRIAGE CARRIAGE=x
+SET_DUAL_CARRIAGE CARRIAGE=y
+G0 X{pos[0]:.3f} Y{pos[1]:.3f} F{self.config.base_speed}
+SET_DUAL_CARRIAGE CARRIAGE=x2
+SET_DUAL_CARRIAGE CARRIAGE=y2
+G0 X{pos[2]:.3f} Y{pos[3]:.3f} F{self.config.base_speed}
+G91"""
+        
+        try:
+            success = await self.websocket_client.send_gcode(gcode)
+            if success:
+                self.positions['x'] = pos[0]
+                self.positions['y'] = pos[1]
+                self.positions['u'] = pos[2]
+                self.positions['v'] = pos[3]
+        except Exception as e:
+            print(f"Error going to saved position: {e}")
 
     async def home_xy_axes(self):
         gcode = """G28 X Y\n"""
@@ -697,11 +877,11 @@ SET_KINEMATIC_POSITION X={self.positions['u']:.4f} Y={self.positions['v']:.4f}""
             if success:
                 print("Successfully homed XY axes")
         except Exception as e:
-            print(f"Error homing XY axes: {e}")
+            print(f"Error homing XY axes: {e}")                
 
     async def goto_saved_position(self):
         """Move to saved position smoothly"""
-        pos = self.positions['saved']
+        pos = self.positions_list[self.selected_row_index]
         gcode = f"""G90
 SET_DUAL_CARRIAGE CARRIAGE=x
 SET_DUAL_CARRIAGE CARRIAGE=y
@@ -777,13 +957,6 @@ G91"""
         self.velocity_text.insert(tk.END, f"Y: {self.current_velocities['y']:.1f} mm/min\n")
         self.velocity_text.insert(tk.END, f"U: {self.current_velocities['u']:.1f} mm/min\n")
         self.velocity_text.insert(tk.END, f"V: {self.current_velocities['v']:.1f} mm/min")
-        
-        # Update saved positions
-        if self.positions['saved']:
-            self.saved_positions_text.delete(1.0, tk.END)
-            saved = self.positions['saved']
-            self.saved_positions_text.insert(tk.END, 
-                f"Saved: X={saved[0]:.3f}, Y={saved[1]:.3f}, U={saved[2]:.3f}, V={saved[3]:.3f}")
         
         # Update performance metrics
         self.update_performance_display()
