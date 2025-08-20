@@ -85,6 +85,7 @@ class Printer:
                 return True
             # If code 400 (not homed) we return False so caller can handle
             if resp.get('error', {}).get('code') == 400:
+                print('Not homed')
                 return False
             return False
         except Exception as e:
