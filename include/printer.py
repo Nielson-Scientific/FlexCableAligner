@@ -24,6 +24,8 @@ class Printer:
         self.lock = threading.Lock()  # ensure request/response pairing
         self.connected = False
         self.last_error: Optional[str] = None
+        self.uv_carriage_prefix = "SET_DUAL_CARRIAGE CARRIAGE=x2\nSET_DUAL_CARRIAGE CARRIAGE=y2\n"
+        self.xy_carriage_prefix = "SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"
 
     def connect(self) -> bool:
         if websocket is None:
@@ -84,8 +86,8 @@ class Printer:
             if resp.get('result') == 'ok':
                 return True
             # If code 400 (not homed) we return False so caller can handle
-            if resp.get('error', {}).get('code') == 400:
-                print('Not homed')
+            elif resp.get('error', {}).get('code') == 400:
+                print(str(resp))
                 return False
             return False
         except Exception as e:
@@ -111,6 +113,14 @@ class Printer:
     def move_xy_with_carriage(self, dx: float, dy: float, feedrate: float) -> bool:
         script = f"SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\nG1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"
         return self.send_gcode(script)
+    
+    def get_position(self):
+        script = self.uv_carriage_prefix + "M114"
+        resp = self.send_gcode(script)
+        if resp.get('result') == 'ok':
+            print(str(resp.get('data')))
+            return resp.get('data')
+        return None
 
     def set_kinematic_position(self, x: float, y: float, u: float, v: float):
         script = (f"SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"

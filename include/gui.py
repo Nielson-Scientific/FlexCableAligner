@@ -208,6 +208,7 @@ class FlexAlignerGUI:
         # Execute relative moves
         if self.connected:
             self._execute_moves(dt)
+            print(self.printer.get_position())
 
         self._schedule_loop()
 
@@ -236,6 +237,9 @@ class FlexAlignerGUI:
                 self.positions['x'] += dx
                 self.positions['y'] += dy
                 self._log_move(dx, dy, feed)
+            else:
+                print('Failed to move, resetting kinematic position')
+                print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
         # UV
         du = (self.current_vel['u'] / 60.0) * dt * self.config.movement_scale
         dv = (self.current_vel['v'] / 60.0) * dt * self.config.movement_scale
