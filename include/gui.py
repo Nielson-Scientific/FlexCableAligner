@@ -291,6 +291,24 @@ class FlexAlignerGUI:
                 self.positions['x'] = self.positions['y'] = 0.0
                 self._last_home = t
 
+        # 8: spiral search pattern for left microscope
+        if self.joystick.get_button(8):
+            if not hasattr(self, 'last_search_xy') or t - self.last_search_xy > 0.5:
+                self.spiral_search(self.positions['x'],self.positions['y'], 8)
+                self.last_search_xy = t
+
+        # 9: Spiral search pattern for right microscope
+        if self.joystick.get_button(9):
+            if not hasattr(self, 'last_search_uv') or t - self.last_search_uv > 0.5:
+                self.spiral_search(self.positions['u'], self.positions['v'], 9)
+                self.last_search_uv = t
+
+        # 5: Search interrupt
+        if self.joystick.get_button(5):
+            if not hasattr(self, 'last_stop') or t - self.last_stop > 0.5:
+                self.search_interrupt()
+                self.last_stop = t
+# A13 541
     # -------------- Saved Positions -------------
     def _add_row(self):
         row_entries = []
@@ -319,7 +337,7 @@ class FlexAlignerGUI:
                 if r == row_index:
                     e.config(readonlybackground=SELECTED_ROW_COLOR)
                 else:
-                    e.config(readonlybackground='white')
+                    e.config(readonlybackground='lightblue')
 
     def _remove_selected_pos(self):
         if self.selected_row_index is None:
@@ -347,6 +365,86 @@ class FlexAlignerGUI:
         # Simplest: set kinematic so display matches saved
         self.printer.set_kinematic_position(pos[0], pos[1], pos[2], pos[3])
         self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'] = pos
+
+    # ------------- Spiral Search ----------------
+    def spiral_search(self, x, y, button):
+        """Perform search pattern smoothly"""
+        self.is_searching = True
+        import math
+
+        def spiral_coords(x, y, final_radius=5, loops=5, points_per_loop=50):
+            coords = []
+            total_points = loops * points_per_loop
+            b = final_radius / (2 * math.pi * loops)  # spiral spacing so that r = 5 mm at the end
+
+            for i in range(total_points + 1):
+                theta = 2 * math.pi * i / points_per_loop
+                r = b * theta
+                new_x = x + r * math.cos(theta)
+                new_y = y + r * math.sin(theta)
+                coords.append((new_x, new_y))
+
+            return coords
+        # def spiral_coords(x,y):
+        #     spiral_factor = -3.4
+        #     initial_step = 0.005
+        #     total_loops = 5
+        #     coords = []
+        #     for loop in range(total_loops):
+        #         if loop == 0:
+        #             new_x = x + initial_step
+        #             new_y = y + initial_step
+        #             coords.append((new_x, y))
+        #             coords.append((new_x, new_y))
+        #             x = new_x
+        #             y = new_y
+        #         else:
+        #             initial_step = initial_step * spiral_factor
+        #             new_x = x + initial_step
+        #             new_y = y * initial_step
+        #             coords.append((new_x, y))
+        #             coords.append((new_x, new_y))
+        #             x = new_x
+        #             y = new_y
+        #     return coords
+
+        self.spiral_coordinates = spiral_coords(x,y)
+        if button == 8:
+            for coord in self.spiral_coordinates:
+                gcode = f"""G90
+        SET_DUAL_CARRIAGE CARRIAGE=x
+        SET_DUAL_CARRIAGE CARRIAGE=y
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        """
+                
+                try:
+                    self.printer.send_gcode(gcode)
+                    self.positions['x'] = coord[0]
+                    self.positions['y'] = coord[1]
+                except Exception as e:
+                    print(f"Error in search: {e}")
+        else:
+            for coord in self.spiral_coordinates:
+                gcode = f"""G90
+        SET_DUAL_CARRIAGE CARRIAGE=x2
+        SET_DUAL_CARRIAGE CARRIAGE=y2
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        """
+                
+                try:
+                    self.printer.send_gcode(gcode)
+                    self.positions['u'] = coord[0]
+                    self.positions['v'] = coord[1]
+                except Exception as e:
+                    print(f"Error in search: {e}")
+        self.is_searching = False
+
+    def search_interrupt(self):
+        if self.is_searching == False:
+            pass
+        else:
+            self.reset_velocities()
+            self.spiral_coordinates = []
 
     # -------------- GUI updates -----------------
     def _update_speed(self, val):
