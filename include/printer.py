@@ -15,7 +15,7 @@ class Printer:
 
     ETX = b"\x03"  # message terminator per Klipper API server
 
-    def __init__(self, uds_path: str = "/tmp/klippy_uds"):
+    def __init__(self, uds_path: str = "/home/nielson-scientific/printer_data/comms/klippy.sock"):
         self.uds_path = uds_path
         self.sock: Optional[socket.socket] = None
         self._recv_buffer = bytearray()
