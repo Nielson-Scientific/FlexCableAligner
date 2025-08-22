@@ -179,6 +179,7 @@ class Printer:
                 timeout=0.5,
             )
             pos = resp["result"]["status"]["toolhead"]["position"]
+            print('Position object:', resp)
             return {"x": pos[0], "y": pos[1], "z": pos[2], "e": pos[3] if len(pos) > 3 else 0.0}
         except Exception as e:
             self.last_error = str(e)
