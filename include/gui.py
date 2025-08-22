@@ -241,8 +241,11 @@ class FlexAlignerGUI:
                 self._log_move(dx, dy, feed)
             else:
                 print(self.printer.last_error)
-                print('Failed to move, resetting kinematic position')
-                print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
+                if self.printer.last_error.startswith("Move out of range"):
+                    messagebox.showerror('Move out of range')
+                else:
+                    print('Failed to move, resetting kinematic position')
+                    print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
         # UV
         du = (self.current_vel['u'] / 60.0) * dt * self.config.movement_scale
         dv = (self.current_vel['v'] / 60.0) * dt * self.config.movement_scale
@@ -267,11 +270,11 @@ class FlexAlignerGUI:
             if not hasattr(self, '_last_fine') or t - self._last_fine > 0.1:
                 self.fine_mode = not self.fine_mode
                 if self.fine_mode:
-                    self.config.velocity_scale = 0.3
-                    self.config.movement_scale = 0.3
+                    self.config.velocity_scale = 0.5
+                    self.config.movement_scale = 0.5
                 else:
-                    self.config.velocity_scale = 1.5
-                    self.config.movement_scale = 1.5
+                    self.config.velocity_scale = 1.0
+                    self.config.movement_scale = 1.0
                 self.scale_var.set(self.config.movement_scale)
                 self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
                 self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
