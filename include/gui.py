@@ -274,7 +274,7 @@ class FlexAlignerGUI:
         # Button mapping similar to original (indices may vary by controller)
         # 0: toggle fine mode
         if self.joystick.get_button(0):
-            if not hasattr(self, '_last_fine') or t - self._last_fine > 0.1:
+            if not hasattr(self, '_fine_pressed') or not self._fine_pressed:
                 self.fine_mode = not self.fine_mode
                 # Fine mode now adjusts max speed only; scale remains unchanged
                 self.config.max_speed = 1000 if self.fine_mode else 3000
@@ -283,6 +283,9 @@ class FlexAlignerGUI:
                 self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
                 self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
                 self._last_fine = t
+                self._fine_pressed = True
+        else:
+            self._fine_pressed = False
         # 1: save position
         if self.joystick.get_button(1):
             if not hasattr(self, '_last_save') or t - self._last_save > 0.1:
@@ -323,6 +326,22 @@ class FlexAlignerGUI:
             if not hasattr(self, 'last_stop') or t - self.last_stop > 0.5:
                 self.search_interrupt()
                 self.last_stop = t
+
+
+        if self.joystick.get_axis(4) > 0.9:
+            self.config.max_speed = min(self.config.max_speed - 100, 3000)
+            # reflect in the speed slider and label
+            self.speed_var.set(self.config.max_speed)
+            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+            self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+
+        if self.joystick.get_axis(5) > 0.9:
+                self.config.max_speed = min(self.config.max_speed + 100, 3000)
+                # reflect in the speed slider and label
+                self.speed_var.set(self.config.max_speed)
+                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+                self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+            
 # A13 541
     # -------------- Saved Positions -------------
     def _add_row(self):
