@@ -290,13 +290,17 @@ class FlexAlignerGUI:
                 self._add_row()
                 self._last_save = t
         # 3: goto selected position
-        if self.joystick.get_button(3) and self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
-            if not hasattr(self, '_last_goto') or t - self._last_goto > 0.1:
-                self.goto_saved_position()
-                self._last_goto = t
+        if self.joystick.get_button(3):
+            print('Saved Position Return button pressed')
+            if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
+                if not hasattr(self, '_last_goto') or t - self._last_goto > 0.1:
+                    self.goto_saved_position()
+                    self._last_goto = t
         # 2: home XY
         if self.joystick.get_button(2):
+            print('Homing button pressed')
             if not hasattr(self, '_last_home') or t - self._last_home > 0.2:
+                print('Homing button debounced')
                 self.printer.home_xy()
                 self.positions['x'] = self.positions['y'] = 0.0
                 self._last_home = t
