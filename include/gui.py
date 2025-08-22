@@ -211,7 +211,6 @@ class FlexAlignerGUI:
             pos = self.printer.get_position()
             if pos is not None:
                 self.positions = pos
-            print(pos)
 
         self._schedule_loop()
 
@@ -265,32 +264,32 @@ class FlexAlignerGUI:
         # Button mapping similar to original (indices may vary by controller)
         # 0: toggle fine mode
         if self.joystick.get_button(0):
-            if not hasattr(self, '_last_fine') or t - self._last_fine > 0.2:
+            if not hasattr(self, '_last_fine') or t - self._last_fine > 0.1:
                 self.fine_mode = not self.fine_mode
                 if self.fine_mode:
+                    self.config.velocity_scale = 0.3
+                    self.config.movement_scale = 0.3
+                else:
                     self.config.velocity_scale = 1.5
                     self.config.movement_scale = 1.5
-                else:
-                    self.config.velocity_scale = 0.5
-                    self.config.movement_scale = 0.5
                 self.scale_var.set(self.config.movement_scale)
                 self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
                 self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
                 self._last_fine = t
         # 1: save position
         if self.joystick.get_button(1):
-            if not hasattr(self, '_last_save') or t - self._last_save > 0.2:
+            if not hasattr(self, '_last_save') or t - self._last_save > 0.1:
                 self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
                 self._add_row()
                 self._last_save = t
         # 3: goto selected position
         if self.joystick.get_button(3) and self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
-            if not hasattr(self, '_last_goto') or t - self._last_goto > 0.2:
+            if not hasattr(self, '_last_goto') or t - self._last_goto > 0.1:
                 self.goto_saved_position()
                 self._last_goto = t
         # 2: home XY
         if self.joystick.get_button(2):
-            if not hasattr(self, '_last_home') or t - self._last_home > 0.5:
+            if not hasattr(self, '_last_home') or t - self._last_home > 0.2:
                 self.printer.home_xy()
                 self.positions['x'] = self.positions['y'] = 0.0
                 self._last_home = t
