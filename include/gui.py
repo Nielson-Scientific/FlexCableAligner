@@ -208,7 +208,10 @@ class FlexAlignerGUI:
         # Execute relative moves
         if self.connected:
             self._execute_moves(dt)
-            print(self.printer.get_position())
+            pos = self.printer.get_position()
+            if pos is not None:
+                self.positions = pos
+            print(pos)
 
         self._schedule_loop()
 

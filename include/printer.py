@@ -172,15 +172,29 @@ class Printer:
         Returns a dict with keys x, y, z, e (as reported by toolhead.position).
         Note: This reflects the currently active carriage.
         """
+        positions = {}
         try:
+            # First set carriage to XY mode
+            self.send_gcode(self.xy_carriage_prefix)
             resp = self._rpc(
                 "objects/query",
                 {"objects": {"toolhead": ["position"]}},
                 timeout=0.5,
             )
             pos = resp["result"]["status"]["toolhead"]["position"]
-            print('Position object:', resp)
-            return {"x": pos[0], "y": pos[1], "z": pos[2], "e": pos[3] if len(pos) > 3 else 0.0}
+            positions["x"] = pos[0]
+            positions['y'] = pos[1]
+
+            # Now do the same for UV
+            self.send_gcode(self.uv_carriage_prefix)
+            resp = self._rpc(
+                "objects/query",
+                {"objects": {"toolhead": ["position"]}},
+                timeout=0.5,
+            )
+            pos = resp["result"]["status"]["toolhead"]["position"]
+            positions["u"] = pos[0]
+            positions['v'] = pos[1]
         except Exception as e:
             self.last_error = str(e)
             return None
