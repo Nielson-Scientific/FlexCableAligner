@@ -293,6 +293,7 @@ class FlexAlignerGUI:
         if self.joystick.get_button(3):
             print('Saved Position Return button pressed')
             if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
+                print(f'Returning to saved position at row index {self.selected_row_index}')
                 if not hasattr(self, '_last_goto') or t - self._last_goto > 0.1:
                     self.goto_saved_position()
                     self._last_goto = t
