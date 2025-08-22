@@ -152,6 +152,7 @@ class Printer:
     def move_uv(self, du: float, dv: float, feedrate: float) -> bool:
         # Carriage selection then move
         script = (
+            "G91\n"
             "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
             f"G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}"
@@ -160,6 +161,7 @@ class Printer:
 
     def move_xy_with_carriage(self, dx: float, dy: float, feedrate: float) -> bool:
         script = (
+            "G91\n"
             "SET_DUAL_CARRIAGE CARRIAGE=x\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y\n"
             f"G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"
