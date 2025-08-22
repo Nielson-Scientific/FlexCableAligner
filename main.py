@@ -1,7 +1,7 @@
-from include.AsyncSmoothJoystickController import AsyncSmoothJoystickController
+from include.gui import FlexAlignerGUI
 
 def main():
-    app = AsyncSmoothJoystickController()
+    app = FlexAlignerGUI()
     app.run()
 
 if __name__ == "__main__":
