@@ -241,8 +241,8 @@ class FlexAlignerGUI:
                 self._log_move(dx, dy, feed)
             else:
                 print(self.printer.last_error)
-                if self.printer.last_error.startswith("Move out of range", 'Move out of range!'):
-                    messagebox.showerror('Move out of range')
+                if self.printer.last_error.startswith("Move out of range"):
+                    messagebox.showerror('Move out of range', 'Move out of range!')
                 else:
                     print('Failed to move, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
@@ -376,9 +376,10 @@ class FlexAlignerGUI:
 
     def goto_saved_position(self):
         pos = self.positions_list[self.selected_row_index]
+        print('Moving to position: ', pos)
         # Absolute like move via setting kinematics then nothing moves physically; instead we issue relative moves required
         # Simplest: set kinematic so display matches saved
-        self.printer.set_kinematic_position(pos[0], pos[1], pos[2], pos[3])
+        self.printer.goto_position(pos[0], pos[1], pos[2], pos[3])
         self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'] = pos
 
     # ------------- Spiral Search ----------------

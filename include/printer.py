@@ -210,3 +210,17 @@ class Printer:
             f"SET_KINEMATIC_POSITION X={u:.4f} Y={v:.4f}"
         )
         return self.send_gcode(script)
+    
+
+    def goto_position(self, x: float, y: float, u: float, v: float, feedrate: float = 1500.0) -> bool:
+        script = (
+            "SET_DUAL_CARRIAGE CARRIAGE=x\n"
+            "SET_DUAL_CARRIAGE CARRIAGE=y\n"
+            "G90\n"
+            f"G1 X{x:.4f} Y{y:.4f} F{feedrate:.0f}\n"
+            "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
+            "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
+            f"G1 X{u:.4f} Y{v:.4f} F{feedrate:.0f}"
+            "G91\n"
+        )
+        return self.send_gcode(script)
