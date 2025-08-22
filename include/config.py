@@ -7,7 +7,7 @@ class JogConfig:
     def __init__(self):
         # Base speeds (mm/min)
         self.base_speed = 600
-        self.max_speed = 2000
+        self.max_speed = 1000
 
         # Joystick feel
         self.deadzone = 0.12
@@ -22,8 +22,8 @@ class JogConfig:
         self.movement_scale = 0.5
         self.velocity_scale = 0.5
 
-        # Fine mode multipliers
-        self.fine_velocity_factor = 0.20  # % of base/max speed in fine mode
+        # Fine mode multiplier (neutral so fine mode only affects max_speed via GUI)
+        self.fine_velocity_factor = 1.0
         self.fine_scale = 1.0
 
         # Jog interval bounds (dynamic scheduling)

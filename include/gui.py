@@ -269,14 +269,11 @@ class FlexAlignerGUI:
         if self.joystick.get_button(0):
             if not hasattr(self, '_last_fine') or t - self._last_fine > 0.1:
                 self.fine_mode = not self.fine_mode
-                if self.fine_mode:
-                    self.config.velocity_scale = 0.5
-                    self.config.movement_scale = 0.5
-                else:
-                    self.config.velocity_scale = 1.0
-                    self.config.movement_scale = 1.0
-                self.scale_var.set(self.config.movement_scale)
-                self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
+                # Fine mode now adjusts max speed only; scale remains unchanged
+                self.config.max_speed = 3000 if self.fine_mode else 1000
+                # reflect in the speed slider and label
+                self.speed_var.set(self.config.max_speed)
+                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
                 self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
                 self._last_fine = t
         # 1: save position
