@@ -1,24 +1,27 @@
 import json
-import socket
 import threading
 import time
 from typing import Optional, Any
 
+from websocket import create_connection, WebSocket
+
 
 class Printer:
-    """Synchronous Klipper JSON-RPC client over Unix Domain Socket (UDS).
+    """Synchronous Klipper JSON-RPC client over Moonraker WebSocket.
 
-    Keeps the same public interface as the previous WebSocket client: send G-Code,
-    relative mode, basic moves, and simple helpers. Intended to run on the same
-    Raspberry Pi as Klipper with the API server enabled (-a /tmp/klippy_uds).
+    Public interface is unchanged: send G-Code, movement helpers, etc.
+    Connects to Moonraker (default ws://localhost:7125/websocket).
     """
 
-    ETX = b"\x03"  # message terminator per Klipper API server
+    def __init__(self, url: str = "ws://products.local:7125/websocket", api_key: Optional[str] = None):
+        # Moonraker connection settings
+        self.url = url
+        self.api_key = api_key
 
-    def __init__(self, uds_path: str = "/home/nielson-scientific/printer_data/comms/klippy.sock"):
-        self.uds_path = uds_path
-        self.sock: Optional[socket.socket] = None
-        self._recv_buffer = bytearray()
+        # WebSocket handle
+        self.ws: Optional[WebSocket] = None
+
+        # RPC state
         self.message_id = 1
         self.lock = threading.Lock()  # ensure request/response pairing
         self.connected = False
@@ -29,79 +32,67 @@ class Printer:
     # ---- Connection management ----
     def connect(self) -> bool:
         try:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            s.settimeout(5.0)
-            s.connect(self.uds_path)
-            self.sock = s
+            headers = []
+            if self.api_key:
+                headers.append(f"X-Api-Key: {self.api_key}")
+            # Establish WebSocket connection to Moonraker
+            self.ws = create_connection(self.url, header=headers, timeout=5)
             self.connected = True
-            # Say hello and switch to relative mode
+
+            # Optional: query server info (non-fatal if it fails)
             try:
-                self._rpc("info", {"client_info": {"name": "FlexCableAligner", "version": "uds"}}, timeout=2.0)
+                self._rpc("server.info", {}, timeout=2.0)
             except Exception:
-                pass  # non-fatal
+                pass
+
             # Switch to relative move mode so jogs are easy
             self.send_gcode("G91", timeout=2.0)
             return True
         except Exception as e:
             self.last_error = str(e)
             self.connected = False
-            self.sock = None
+            self.ws = None
             return False
 
     def disconnect(self):
         try:
-            if self.sock:
+            if self.ws:
                 try:
-                    self.sock.shutdown(socket.SHUT_RDWR)
+                    self.ws.close()
                 except Exception:
                     pass
-                self.sock.close()
         finally:
-            self.sock = None
+            self.ws = None
             self.connected = False
-            self._recv_buffer = bytearray()
 
-    # ---- Low level JSON-RPC over UDS ----
+    # ---- Low level JSON-RPC over Moonraker WebSocket ----
     def _send(self, data: dict):
-        if not self.connected or not self.sock:
+        if not self.connected or not self.ws:
             raise RuntimeError("Not connected")
-        encoded = json.dumps(data, separators=(",", ":")).encode("utf-8") + self.ETX
-        self.sock.sendall(encoded)
+        encoded = json.dumps({"jsonrpc": "2.0", **data}, separators=(",", ":"))
+        self.ws.send(encoded)
 
-    def _recv_until_message(self, timeout: float) -> Optional[dict]:
-        if not self.connected or not self.sock:
+    def _recv_next(self, timeout: float) -> Optional[dict]:
+        if not self.connected or not self.ws:
             raise RuntimeError("Not connected")
-        end_time = time.time() + timeout
-        self.sock.settimeout(max(0.01, timeout))
-        while time.time() < end_time:
-            # Check if there's a complete message already buffered
-            idx = self._recv_buffer.find(self.ETX)
-            if idx != -1:
-                raw = self._recv_buffer[:idx]
-                del self._recv_buffer[: idx + 1]
-                if not raw:
-                    continue
-                try:
-                    return json.loads(raw.decode("utf-8"))
-                except json.JSONDecodeError:
-                    continue
-            try:
-                chunk = self.sock.recv(4096)
-                if not chunk:
-                    # socket closed
-                    self.disconnect()
-                    return None
-                self._recv_buffer.extend(chunk)
-            except socket.timeout:
-                # allow loop to re-check time and buffer
-                pass
-            except Exception:
-                self.disconnect()
+        # websocket-client raises WebSocketTimeoutException on timeout
+        prev_to = getattr(self.ws, 'sock', None)
+        self.ws.settimeout(max(0.01, timeout))
+        try:
+            raw = self.ws.recv()
+            if raw is None:
                 return None
-        return None
+            if isinstance(raw, (bytes, bytearray)):
+                raw = raw.decode("utf-8", errors="ignore")
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                return None
+        except Exception:
+            return None
 
     def _rpc(self, method: str, params: Optional[dict] = None, timeout: float = 2.0) -> dict:
-        if not self.connected or not self.sock:
+        if not self.connected or not self.ws:
             raise RuntimeError("Not connected")
         with self.lock:
             req_id = self.message_id
@@ -114,13 +105,15 @@ class Printer:
             self._send(payload)
             end_time = time.time() + timeout
             while time.time() < end_time:
-                msg = self._recv_until_message(max(0.0, end_time - time.time()))
+                msg = self._recv_next(max(0.01, end_time - time.time()))
                 if not msg:
-                    break
+                    continue
                 # Responses contain an id; notifications don't
                 if msg.get("id") == req_id:
                     if "error" in msg:
-                        raise RuntimeError(msg["error"].get("message", str(msg["error"])) )
+                        err = msg["error"]
+                        # Moonraker error format: {code, message}
+                        raise RuntimeError(err.get("message", str(err)))
                     return msg
                 # ignore async notifications or other responses
             raise TimeoutError(f"RPC {method} timed out")
@@ -128,8 +121,8 @@ class Printer:
     # ---- GCode helpers ----
     def send_gcode(self, script: str, timeout: float = 2.0) -> bool:
         try:
-            # Klipper UDS uses gcode/script; result is an object (often empty)
-            _ = self._rpc("gcode/script", {"script": script}, timeout=timeout)
+            # Moonraker uses method: printer.gcode.script
+            _ = self._rpc("printer.gcode.script", {"script": script}, timeout=timeout)
             return True
         except Exception as e:
             self.last_error = str(e)
@@ -140,7 +133,7 @@ class Printer:
 
     def emergency_stop(self):
         try:
-            self._rpc("emergency_stop", {}, timeout=1.0)
+            self._rpc("printer.emergency_stop", {}, timeout=1.0)
         except Exception as e:
             self.last_error = str(e)
 
@@ -179,7 +172,7 @@ class Printer:
             # First set carriage to XY mode
             self.send_gcode(self.xy_carriage_prefix)
             resp = self._rpc(
-                "objects/query",
+                "printer.objects.query",
                 {"objects": {"toolhead": ["position"]}},
                 timeout=0.5,
             )
@@ -190,7 +183,7 @@ class Printer:
             # Now do the same for UV
             self.send_gcode(self.uv_carriage_prefix)
             resp = self._rpc(
-                "objects/query",
+                "printer.objects.query",
                 {"objects": {"toolhead": ["position"]}},
                 timeout=0.5,
             )
@@ -222,7 +215,7 @@ class Printer:
             f"G1 X{x:.4f} Y{y:.4f} F{feedrate:.0f}\n"
             "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
-            f"G1 X{u:.4f} Y{v:.4f} F{feedrate:.0f}"
+            f"G1 X{u:.4f} Y{v:.4f} F{feedrate:.0f}\n"
             "G91\n"
         )
         return self.send_gcode(script)
