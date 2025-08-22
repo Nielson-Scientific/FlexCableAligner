@@ -241,6 +241,7 @@ class FlexAlignerGUI:
                 self.positions['y'] += dy
                 self._log_move(dx, dy, feed)
             else:
+                print(self.printer.last_error)
                 print('Failed to move, resetting kinematic position')
                 print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
         # UV
