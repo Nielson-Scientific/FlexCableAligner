@@ -241,7 +241,7 @@ class FlexAlignerGUI:
                 self._log_move(dx, dy, feed)
             else:
                 print(self.printer.last_error)
-                if self.printer.last_error.startswith("Move out of range"):
+                if self.printer.last_error.startswith("Move out of range", 'Move out of range!'):
                     messagebox.showerror('Move out of range')
                 else:
                     print('Failed to move, resetting kinematic position')
@@ -257,6 +257,13 @@ class FlexAlignerGUI:
                 self.positions['u'] += du
                 self.positions['v'] += dv
                 self._log_move(du, dv, feed)
+            else:
+                print(self.printer.last_error)
+                if self.printer.last_error.startswith('Move out of range'):
+                    messagebox.showerror('Move out of range', 'Move out of range!')
+                else:
+                    print('Move failed possibly due to homing issue, resetting kinematic position')
+                    print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
 
     def _log_move(self, dx, dy, feed):
         self.movement_history.append({'time': time.time(), 'distance': math.sqrt(dx*dx + dy*dy), 'feed': feed})
@@ -270,7 +277,7 @@ class FlexAlignerGUI:
             if not hasattr(self, '_last_fine') or t - self._last_fine > 0.1:
                 self.fine_mode = not self.fine_mode
                 # Fine mode now adjusts max speed only; scale remains unchanged
-                self.config.max_speed = 3000 if self.fine_mode else 1000
+                self.config.max_speed = 1000 if self.fine_mode else 3000
                 # reflect in the speed slider and label
                 self.speed_var.set(self.config.max_speed)
                 self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
