@@ -195,6 +195,7 @@ class Printer:
             pos = resp["result"]["status"]["toolhead"]["position"]
             positions["u"] = pos[0]
             positions['v'] = pos[1]
+            return positions
         except Exception as e:
             self.last_error = str(e)
             return None
