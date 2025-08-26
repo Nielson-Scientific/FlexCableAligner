@@ -3,8 +3,9 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox, Canvas, Frame, Entry, Button
 from collections import deque
+from threading import Lock
 
-import pygame
+from pynput import keyboard
 
 from include.config import JogConfig
 from include.printer import Printer
@@ -44,10 +45,41 @@ class FlexAlignerGUI:
         # Performance log
         self.movement_history = deque(maxlen=100)
 
-        # Pygame init
-        pygame.init()
-        pygame.joystick.init()
-        self.joystick = None
+        # Keyboard input state
+        self._pressed_keys = set()  # tokens like 'left', 'a', 'up'
+        self._keys_lock = Lock()
+        self._action_queue = deque()  # (action_name, args)
+        self._listener = None
+
+        # Search state
+        self.is_searching = False
+
+        # Key bindings
+        self._axis_bindings = {
+            # XY with arrows
+            'left': ('x', -1),
+            'right': ('x', +1),
+            'down': ('y', -1),
+            'up': ('y', +1),
+            # UV with IJKL
+            'j': ('u', -1),
+            'l': ('u', +1),
+            'k': ('v', -1),
+            'i': ('v', +1),
+        }
+
+        self._action_bindings = {
+            'f': ('toggle_fine', ()),
+            'p': ('save_position', ()),
+            'g': ('goto_saved', ()),
+            'h': ('home_xy', ()),
+            '1': ('spiral_xy', ()),
+            '2': ('spiral_uv', ()),
+            'c': ('search_interrupt', ()),
+            '-': ('speed_dec', ()),
+            '=': ('speed_inc', ()),
+            '+': ('speed_inc', ()),
+        }
 
         self._build_gui()
 
@@ -77,7 +109,7 @@ class FlexAlignerGUI:
         # Controller info
         ctrl = ttk.LabelFrame(main, text="Controller", padding=10)
         ctrl.grid(row=1, column=0, sticky='ew', pady=5)
-        self.controller_label = ttk.Label(ctrl, text="Controller: Not detected")
+        self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
         self.controller_label.grid(row=0, column=0, sticky='w')
 
         # Saved positions
@@ -144,19 +176,15 @@ class FlexAlignerGUI:
         self.root.bind('<Escape>', lambda e: self.emergency_stop())
         self.root.bind('<space>', lambda e: self.reset_velocities())
 
+        # Start keyboard listener
+        self._start_keyboard_listener()
+
         self._update_displays()
         self._schedule_loop()
 
     # -------------- Connection -----------------
     def connect(self):
-        # Controller
-        if pygame.joystick.get_count() == 0:
-            messagebox.showerror("Controller", "No joystick detected")
-            return
-        self.joystick = pygame.joystick.Joystick(0)
-        self.joystick.init()
-        self.controller_label.config(text=f"Controller: {self.joystick.get_name()}")
-        # Printer
+        # Printer only
         if not self.printer.connect():
             messagebox.showerror("Printer", f"Failed to connect: {self.printer.last_error}")
             return
@@ -187,19 +215,8 @@ class FlexAlignerGUI:
         dt = now - self.last_update_time
         self.last_update_time = now
 
-        # Read joystick
-        pygame.event.pump()
-        if self.joystick:
-            axes = [
-                self.joystick.get_axis(0),
-                -self.joystick.get_axis(1),
-                self.joystick.get_axis(2),
-                -self.joystick.get_axis(3),
-            ]
-            keys = ['x', 'y', 'u', 'v']
-            for key, val in zip(keys, axes):
-                self.target_vel[key] = self.config.get_velocity_curve(val, self.fine_mode)
-            self._handle_buttons()
+        # Process any queued actions from keyboard thread
+        self._process_actions()
 
         # Smooth
         for axis in self.current_vel:
@@ -268,79 +285,121 @@ class FlexAlignerGUI:
     def _log_move(self, dx, dy, feed):
         self.movement_history.append({'time': time.time(), 'distance': math.sqrt(dx*dx + dy*dy), 'feed': feed})
 
-    # -------------- Buttons --------------------
-    def _handle_buttons(self):
-        t = time.time()
-        # Button mapping similar to original (indices may vary by controller)
-        # 0: toggle fine mode
-        if self.joystick.get_button(0):
-            if not hasattr(self, '_fine_pressed') or not self._fine_pressed:
-                self.fine_mode = not self.fine_mode
-                # Fine mode now adjusts max speed only; scale remains unchanged
-                self.config.max_speed = 1000 if self.fine_mode else 3000
-                # reflect in the speed slider and label
-                self.speed_var.set(self.config.max_speed)
-                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-                self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
-                self._last_fine = t
-                self._fine_pressed = True
-        else:
-            self._fine_pressed = False
-        # 1: save position
-        if self.joystick.get_button(1):
-            if not hasattr(self, '_last_save') or t - self._last_save > 0.1:
-                self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
-                self._add_row()
-                self._last_save = t
-        # 3: goto selected position
-        if self.joystick.get_button(4):
-            print('Saved Position Return button pressed')
-            if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
-                print(f'Returning to saved position at row index {self.selected_row_index}')
-                if not hasattr(self, '_last_goto') or t - self._last_goto > 0.1:
-                    self.goto_saved_position()
-                    self._last_goto = t
-        # 2: home XY
-        if self.joystick.get_button(3):
-            print('Homing button pressed')
-            if not hasattr(self, '_last_home') or t - self._last_home > 0.2:
-                print('Homing button debounced')
-                self.printer.home_xy()
-                self.positions['x'] = self.positions['y'] = 0.0
-                self._last_home = t
 
-        # 8: spiral search pattern for left microscope
-        if self.joystick.get_button(8):
-            if not hasattr(self, 'last_search_xy') or t - self.last_search_xy > 0.5:
-                self.spiral_search(self.positions['x'],self.positions['y'], 8)
-                self.last_search_xy = t
+    # -------------- Keyboard handling --------------------
+    def _start_keyboard_listener(self):
+        if self._listener:
+            return
+        self._listener = keyboard.Listener(on_press=self._on_key_press, on_release=self._on_key_release)
+        self._listener.start()
 
-        # 9: Spiral search pattern for right microscope
-        if self.joystick.get_button(9):
-            if not hasattr(self, 'last_search_uv') or t - self.last_search_uv > 0.5:
-                self.spiral_search(self.positions['u'], self.positions['v'], 9)
-                self.last_search_uv = t
+    def _key_to_token(self, key) -> str | None:
+        try:
+            # Special keys
+            if isinstance(key, keyboard.Key):
+                special = {
+                    keyboard.Key.left: 'left',
+                    keyboard.Key.right: 'right',
+                    keyboard.Key.up: 'up',
+                    keyboard.Key.down: 'down',
+                    keyboard.Key.space: 'space',
+                    keyboard.Key.esc: 'esc',
+                }
+                return special.get(key)
+            # Character keys
+            if isinstance(key, keyboard.KeyCode):
+                if key.char is None:
+                    return None
+                return key.char.lower()
+        except Exception:
+            return None
+        return None
 
-        # 5: Search interrupt
-        if self.joystick.get_button(5):
-            if not hasattr(self, 'last_stop') or t - self.last_stop > 0.5:
-                self.search_interrupt()
-                self.last_stop = t
+    def _on_key_press(self, key):
+        token = self._key_to_token(key)
+        if token is None:
+            return
+        first_press = False
+        with self._keys_lock:
+            if token not in self._pressed_keys:
+                self._pressed_keys.add(token)
+                first_press = True
+            # Recompute target velocity for held keys
+            self._recompute_target_vel_locked()
+        # Queue one-shot actions only on first keydown
+        if first_press and token in self._action_bindings:
+            name, args = self._action_bindings[token]
+            self._enqueue_action(name, *args)
 
+    def _on_key_release(self, key):
+        token = self._key_to_token(key)
+        if token is None:
+            return
+        with self._keys_lock:
+            if token in self._pressed_keys:
+                self._pressed_keys.remove(token)
+            self._recompute_target_vel_locked()
 
-        if self.joystick.get_axis(4) > 0.9:
-            self.config.max_speed = min(self.config.max_speed - 100, 3000)
-            # reflect in the speed slider and label
-            self.speed_var.set(self.config.max_speed)
-            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-            self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+    def _recompute_target_vel_locked(self):
+        # Build per-axis input from pressed keys
+        axis_input = {"x": 0.0, "y": 0.0, "u": 0.0, "v": 0.0}
+        for tok in self._pressed_keys:
+            bind = self._axis_bindings.get(tok)
+            if not bind:
+                continue
+            axis, direction = bind
+            axis_input[axis] += direction
+        # Clamp and translate to target velocities using the same curve
+        for axis, val in axis_input.items():
+            val = max(-1.0, min(1.0, val))
+            self.target_vel[axis] = self.config.get_velocity_curve(val, self.fine_mode)
 
-        if self.joystick.get_axis(5) > 0.9:
-                self.config.max_speed = min(self.config.max_speed + 100, 3000)
-                # reflect in the speed slider and label
-                self.speed_var.set(self.config.max_speed)
-                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-                self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+    def _enqueue_action(self, name: str, *args):
+        with self._keys_lock:
+            self._action_queue.append((name, args))
+
+    def _process_actions(self):
+        # Execute queued actions on the Tk main thread
+        while True:
+            with self._keys_lock:
+                if not self._action_queue:
+                    break
+                name, args = self._action_queue.popleft()
+            try:
+                if name == 'toggle_fine':
+                    self.fine_mode = not self.fine_mode
+                    self.config.max_speed = 1000 if self.fine_mode else 3000
+                    self.speed_var.set(self.config.max_speed)
+                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+                    self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+                    # Recompute to apply new limits
+                    with self._keys_lock:
+                        self._recompute_target_vel_locked()
+                elif name == 'save_position':
+                    self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
+                    self._add_row()
+                elif name == 'goto_saved':
+                    if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
+                        self.goto_saved_position()
+                elif name == 'home_xy':
+                    self.printer.home_xy()
+                    self.positions['x'] = self.positions['y'] = 0.0
+                elif name == 'spiral_xy':
+                    self.spiral_search(self.positions['x'], self.positions['y'], 8)
+                elif name == 'spiral_uv':
+                    self.spiral_search(self.positions['u'], self.positions['v'], 9)
+                elif name == 'search_interrupt':
+                    self.search_interrupt()
+                elif name == 'speed_inc':
+                    self.config.max_speed = min(self.config.max_speed + 100, 3000)
+                    self.speed_var.set(self.config.max_speed)
+                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+                elif name == 'speed_dec':
+                    self.config.max_speed = max(100, self.config.max_speed - 100)
+                    self.speed_var.set(self.config.max_speed)
+                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+            except Exception as e:
+                print(f"Action '{name}' failed: {e}")
             
 # A13 541
     # -------------- Saved Positions -------------
@@ -528,4 +587,9 @@ class FlexAlignerGUI:
     def _on_close(self):
         self.running = False
         self.disconnect()
+        try:
+            if self._listener:
+                self._listener.stop()
+        except Exception:
+            pass
         self.root.destroy()

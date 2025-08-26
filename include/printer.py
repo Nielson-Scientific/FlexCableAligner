@@ -13,7 +13,7 @@ class Printer:
     Connects to Moonraker (default ws://localhost:7125/websocket).
     """
 
-    def __init__(self, url: str = "ws://products.local:7125/websocket", api_key: Optional[str] = None):
+    def __init__(self, url: str = "ws://nielson-aligner.local:7125/websocket", api_key: Optional[str] = None):
         # Moonraker connection settings
         self.url = url
         self.api_key = api_key
