@@ -5,6 +5,10 @@ from tkinter import ttk, messagebox, Canvas, Frame, Entry, Button
 from collections import deque
 from threading import Lock
 
+try:
+    import pygame
+except Exception:  # pygame is optional; keyboard mode still works
+    pygame = None
 from pynput import keyboard
 
 from include.config import JogConfig
@@ -53,6 +57,11 @@ class FlexAlignerGUI:
 
         # Search state
         self.is_searching = False
+        # Controller state
+        self.joystick = None
+        self._last_button_times = {}
+        self._fine_pressed = False
+        self.input_mode = 'keyboard'  # 'keyboard' | 'controller'
 
         # Key bindings
         self._axis_bindings = {
@@ -81,7 +90,11 @@ class FlexAlignerGUI:
             '+': ('speed_inc', ()),
         }
 
+        # Build GUI and start default input
         self._build_gui()
+        self._start_keyboard_listener()
+        self._update_displays()
+        self._schedule_loop()
 
     # ---------------- GUI BUILD -----------------
     def _build_gui(self):
@@ -106,11 +119,16 @@ class FlexAlignerGUI:
         self.status_label = ttk.Label(conn, text="Status: Disconnected", foreground='red')
         self.status_label.grid(row=1, column=0, columnspan=3, pady=5)
 
-        # Controller info
+        # Input mode + controller info
         ctrl = ttk.LabelFrame(main, text="Controller", padding=10)
         ctrl.grid(row=1, column=0, sticky='ew', pady=5)
+        ttk.Label(ctrl, text="Input:").grid(row=0, column=0, padx=(0,6))
+        self.input_var = tk.StringVar(value='Keyboard')
+        self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Controller'], state='readonly', width=12)
+        self.input_combo.grid(row=0, column=1, padx=(0,8))
+        self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
         self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
-        self.controller_label.grid(row=0, column=0, sticky='w')
+        self.controller_label.grid(row=0, column=2, sticky='w')
 
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
@@ -176,12 +194,6 @@ class FlexAlignerGUI:
         self.root.bind('<Escape>', lambda e: self.emergency_stop())
         self.root.bind('<space>', lambda e: self.reset_velocities())
 
-        # Start keyboard listener
-        self._start_keyboard_listener()
-
-        self._update_displays()
-        self._schedule_loop()
-
     # -------------- Connection -----------------
     def connect(self):
         # Printer only
@@ -215,8 +227,14 @@ class FlexAlignerGUI:
         dt = now - self.last_update_time
         self.last_update_time = now
 
-        # Process any queued actions from keyboard thread
-        self._process_actions()
+        # Input handling
+        if self.input_mode == 'keyboard':
+            # Process any queued actions from keyboard thread
+            self._process_actions()
+        else:
+            # Controller mode
+            self._read_joystick()
+            self._handle_joystick_buttons()
 
         # Smooth
         for axis in self.current_vel:
@@ -401,6 +419,161 @@ class FlexAlignerGUI:
             except Exception as e:
                 print(f"Action '{name}' failed: {e}")
             
+    # -------------- Controller handling --------------------
+    def _init_joystick(self) -> bool:
+        if pygame is None:
+            self.controller_label.config(text="Controller: pygame not available")
+            return False
+        try:
+            pygame.init()
+            pygame.joystick.init()
+            if pygame.joystick.get_count() == 0:
+                self.controller_label.config(text="Controller: Not detected")
+                return False
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+            self.controller_label.config(text=f"Controller: {self.joystick.get_name()}")
+            return True
+        except Exception as e:
+            self.controller_label.config(text=f"Controller error: {e}")
+            return False
+
+    def _shutdown_joystick(self):
+        if pygame is None:
+            self.joystick = None
+            return
+        try:
+            if self.joystick:
+                try:
+                    self.joystick.quit()
+                except Exception:
+                    pass
+            pygame.joystick.quit()
+            try:
+                pygame.quit()
+            except Exception:
+                pass
+        finally:
+            self.joystick = None
+
+    def _read_joystick(self):
+        if pygame is None:
+            return
+        try:
+            pygame.event.pump()
+        except Exception:
+            return
+        if not self.joystick:
+            return
+        # Axes mapping: [x, y, u, v]
+        try:
+            axes = [
+                self.joystick.get_axis(0),
+                -self.joystick.get_axis(1),
+                self.joystick.get_axis(2),
+                -self.joystick.get_axis(3),
+            ]
+        except Exception:
+            axes = [0.0, 0.0, 0.0, 0.0]
+        keys = ['x', 'y', 'u', 'v']
+        for key, val in zip(keys, axes):
+            self.target_vel[key] = self.config.get_velocity_curve(val, self.fine_mode)
+
+    def _handle_joystick_buttons(self):
+        if not self.joystick:
+            return
+        t = time.time()
+        def debounce(key, interval):
+            last = self._last_button_times.get(key, 0)
+            if t - last > interval:
+                self._last_button_times[key] = t
+                return True
+            return False
+
+        # 0: toggle fine mode
+        if self.joystick.get_button(0) and not self._fine_pressed:
+            self._fine_pressed = True
+            self.fine_mode = not self.fine_mode
+            self.config.max_speed = 1000 if self.fine_mode else 3000
+            self.speed_var.set(self.config.max_speed)
+            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+            self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+        if not self.joystick.get_button(0):
+            self._fine_pressed = False
+
+        # 1: save position
+        if self.joystick.get_button(1) and debounce('save', 0.1):
+            self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
+            self._add_row()
+
+        # 4: goto selected position
+        if self.joystick.get_button(4) and debounce('goto', 0.1):
+            if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
+                self.goto_saved_position()
+
+        # 3: home XY
+        if self.joystick.get_button(3) and debounce('home', 0.2):
+            self.printer.home_xy()
+            self.positions['x'] = self.positions['y'] = 0.0
+
+        # 8: spiral XY
+        if self.joystick.get_button(8) and debounce('spiral_xy', 0.5):
+            self.spiral_search(self.positions['x'], self.positions['y'], 8)
+
+        # 9: spiral UV
+        if self.joystick.get_button(9) and debounce('spiral_uv', 0.5):
+            self.spiral_search(self.positions['u'], self.positions['v'], 9)
+
+        # 5: interrupt search
+        if self.joystick.get_button(5) and debounce('interrupt', 0.5):
+            self.search_interrupt()
+
+        # Axes 4/5 as triggers for speed +/- (if present)
+        try:
+            if self.joystick.get_axis(4) > 0.9 and debounce('spd_dec', 0.15):
+                self.config.max_speed = max(100, self.config.max_speed - 100)
+                self.speed_var.set(self.config.max_speed)
+                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+            if self.joystick.get_axis(5) > 0.9 and debounce('spd_inc', 0.15):
+                self.config.max_speed = min(3000, self.config.max_speed + 100)
+                self.speed_var.set(self.config.max_speed)
+                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+        except Exception:
+            pass
+
+    # -------------- Input Mode switching ------------------
+    def _on_input_mode_change(self, _event=None):
+        choice = self.input_var.get().lower()
+        if choice.startswith('keyboard'):
+            self._switch_to_keyboard()
+        else:
+            self._switch_to_controller()
+
+    def _switch_to_keyboard(self):
+        self.input_mode = 'keyboard'
+        # Stop joystick
+        self._shutdown_joystick()
+        # Start keyboard listener
+        self._start_keyboard_listener()
+        self.controller_label.config(text="Controller: Keyboard (pynput)")
+        self.reset_velocities()
+
+    def _switch_to_controller(self):
+        self.input_mode = 'controller'
+        # Stop keyboard listener
+        try:
+            if self._listener:
+                self._listener.stop()
+        except Exception:
+            pass
+        # Init joystick
+        ok = self._init_joystick()
+        if not ok:
+            messagebox.showerror("Controller", "No joystick detected; staying in Keyboard mode")
+            self.input_var.set('Keyboard')
+            self.input_mode = 'keyboard'
+            self._start_keyboard_listener()
+        self.reset_velocities()
 # A13 541
     # -------------- Saved Positions -------------
     def _add_row(self):
