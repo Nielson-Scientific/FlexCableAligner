@@ -171,8 +171,8 @@ class FlexAlignerGUI:
         if self.input_mode == 'keyboard':
             self.speed_var = tk.DoubleVar(value=self.config.max_speed)
         else:
-            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (20000 - 500)))
-        self.speed_scale = ttk.Scale(settings, from_=500, to=20000, variable=self.speed_var, command=self._update_speed)
+            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (40000 - 500)))
+        self.speed_scale = ttk.Scale(settings, from_=500, to=40000, variable=self.speed_var, command=self._update_speed)
         self.speed_scale.grid(row=1, column=1, sticky='ew')
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
         self.speed_label.grid(row=1, column=2)
@@ -502,7 +502,7 @@ class FlexAlignerGUI:
         # Normalize [-1..1] -> [0..1]
         norm = (ax3 + 1.0) / 2.0
         # Map to the same range as the UI scale slider [0.1 .. 2.0]
-        new_speed = 0.1 + norm * (20000 - 500)
+        new_speed = 0.1 + norm * (40000 - 500)
         # Reflect in UI
         if hasattr(self, 'speed_var'):
             try:
