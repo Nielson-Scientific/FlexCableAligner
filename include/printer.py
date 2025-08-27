@@ -144,7 +144,7 @@ class Printer:
                 gcode = f"""G90
         SET_DUAL_CARRIAGE CARRIAGE=x
         SET_DUAL_CARRIAGE CARRIAGE=y
-        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f}
         """
                 
                 try:
@@ -156,7 +156,7 @@ class Printer:
                 gcode = f"""G90
         SET_DUAL_CARRIAGE CARRIAGE=x2
         SET_DUAL_CARRIAGE CARRIAGE=y2
-        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f}
         """
                 
                 try:
