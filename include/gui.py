@@ -626,7 +626,7 @@ class FlexAlignerGUI:
                 if r == row_index:
                     e.config(readonlybackground=SELECTED_ROW_COLOR)
                 else:
-                    e.config(readonlybackground='lightblue')
+                    e.config(readonlybackground='white')
 
     def _remove_selected_pos(self):
         if self.selected_row_index is None:
