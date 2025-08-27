@@ -55,15 +55,16 @@ class FlexAlignerGUI:
         self._action_queue = deque()  # (action_name, args)
         self._listener = None
 
-        # Search state
+        # Search / controller state
         self.is_searching = False
-        # Controller state
         self.joystick = None
         self._last_button_times = {}
         self._fine_pressed = False
         self.input_mode = 'keyboard'  # 'keyboard' | 'controller'
+        # Controller axes group selection: 'xy' or 'uv' (axes 0/1 control selected group)
+        self.controller_axes_group = 'xy'
 
-        # Key bindings
+        # Key bindings (keyboard mode)
         self._axis_bindings = {
             # XY with arrows
             'left': ('x', -1),
@@ -129,6 +130,9 @@ class FlexAlignerGUI:
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
         self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
         self.controller_label.grid(row=0, column=2, sticky='w')
+        # Show current controller axes mapping (XY or UV)
+        self.mapping_label = ttk.Label(ctrl, text="Axes: XY")
+        self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6,0))
 
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
@@ -466,18 +470,46 @@ class FlexAlignerGUI:
         if not self.joystick:
             return
         # Axes mapping: [x, y, u, v]
+        # Read axes 0/1 only and map to current group (XY or UV)
         try:
-            axes = [
-                self.joystick.get_axis(0),
-                -self.joystick.get_axis(1),
-                self.joystick.get_axis(2),
-                -self.joystick.get_axis(3),
-            ]
+            ax0 = self.joystick.get_axis(0)
+            ax1 = -self.joystick.get_axis(1)
         except Exception:
-            axes = [0.0, 0.0, 0.0, 0.0]
-        keys = ['x', 'y', 'u', 'v']
-        for key, val in zip(keys, axes):
-            self.target_vel[key] = self.config.get_velocity_curve(val, self.fine_mode)
+            ax0 = 0.0
+            ax1 = 0.0
+
+        # Zero all targets first
+        self.target_vel['x'] = 0.0
+        self.target_vel['y'] = 0.0
+        self.target_vel['u'] = 0.0
+        self.target_vel['v'] = 0.0
+
+        if self.controller_axes_group == 'xy':
+            self.target_vel['x'] = self.config.get_velocity_curve(ax0, self.fine_mode)
+            self.target_vel['y'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+        else:  # 'uv'
+            self.target_vel['u'] = self.config.get_velocity_curve(ax0, self.fine_mode)
+            self.target_vel['v'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+        
+        # Axis 3 controls overall velocity/movement scale smoothly (controller mode only)
+        try:
+            ax3 = -self.joystick.get_axis(3)  # invert so pushing up increases speed
+        except Exception:
+            ax3 = 0.0
+        # Normalize [-1..1] -> [0..1]
+        norm = (ax3 + 1.0) / 2.0
+        # Map to the same range as the UI scale slider [0.1 .. 2.0]
+        new_scale = 0.1 + norm * (2.0 - 0.1)
+        # Apply scale to both movement and velocity for consistent feel
+        self.config.movement_scale = new_scale
+        self.config.velocity_scale = new_scale
+        # Reflect in UI
+        if hasattr(self, 'scale_var'):
+            try:
+                self.scale_var.set(new_scale)
+                self.scale_label.config(text=f"{new_scale:.2f}x")
+            except Exception:
+                pass
 
     def _handle_joystick_buttons(self):
         if not self.joystick:
@@ -490,19 +522,22 @@ class FlexAlignerGUI:
                 return True
             return False
 
-        # 0: toggle fine mode
-        if self.joystick.get_button(0) and not self._fine_pressed:
-            self._fine_pressed = True
-            self.fine_mode = not self.fine_mode
-            self.config.max_speed = 1000 if self.fine_mode else 3000
-            self.speed_var.set(self.config.max_speed)
-            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-            self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
-        if not self.joystick.get_button(0):
-            self._fine_pressed = False
+        # 0: home XY
+        if self.joystick.get_button(0) and debounce('home', 0.3):
+            self.printer.home_xy()
+            self.positions['x'] = self.positions['y'] = 0.0
 
-        # 1: save position
-        if self.joystick.get_button(1) and debounce('save', 0.1):
+        # 1: toggle axes group XY <-> UV
+        if self.joystick.get_button(1) and debounce('toggle_axes', 0.2):
+            self.controller_axes_group = 'uv' if self.controller_axes_group == 'xy' else 'xy'
+            # Update label
+            if getattr(self, 'mapping_label', None):
+                self.mapping_label.config(text=f"Axes: {self.controller_axes_group.upper()}")
+            # Reset velocities when changing groups
+            self.reset_velocities()
+
+    # 2: save position
+        if self.joystick.get_button(2) and debounce('save', 0.1):
             self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
             self._add_row()
 
@@ -511,10 +546,8 @@ class FlexAlignerGUI:
             if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                 self.goto_saved_position()
 
-        # 3: home XY
-        if self.joystick.get_button(3) and debounce('home', 0.2):
-            self.printer.home_xy()
-            self.positions['x'] = self.positions['y'] = 0.0
+    # 4: goto selected position (unchanged)
+    # already handled above in button 4 block
 
         # 8: spiral XY
         if self.joystick.get_button(8) and debounce('spiral_xy', 0.5):
@@ -528,18 +561,7 @@ class FlexAlignerGUI:
         if self.joystick.get_button(5) and debounce('interrupt', 0.5):
             self.search_interrupt()
 
-        # Axes 4/5 as triggers for speed +/- (if present)
-        try:
-            if self.joystick.get_axis(4) > 0.9 and debounce('spd_dec', 0.15):
-                self.config.max_speed = max(100, self.config.max_speed - 100)
-                self.speed_var.set(self.config.max_speed)
-                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-            if self.joystick.get_axis(5) > 0.9 and debounce('spd_inc', 0.15):
-                self.config.max_speed = min(3000, self.config.max_speed + 100)
-                self.speed_var.set(self.config.max_speed)
-                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-        except Exception:
-            pass
+    # Axis 3 handles speed smoothly; no trigger-based speed changes
 
     # -------------- Input Mode switching ------------------
     def _on_input_mode_change(self, _event=None):
