@@ -621,12 +621,23 @@ class FlexAlignerGUI:
 
     def _on_click(self, _event, row_index):
         self.selected_row_index = row_index
-        for r, entries in enumerate(self.row_list):
+        # for r, entries in enumerate(self.row_list):
+        #     for e in entries:
+        #         if r == row_index:
+        #             e.config(state='readonly', background=SELECTED_ROW_COLOR)
+        #         else:
+        #             e.config(state='readonly', background='white')
+        # Reset all other rows to look normal
+        for entries in self.row_list:
             for e in entries:
-                if r == row_index:
-                    e.config(state='readonly', background=SELECTED_ROW_COLOR)
-                else:
-                    e.config(state='readonly', background='white')
+                e.config(state='normal')
+                # set bg color to white
+
+        # Highlight the selected row
+        for e in self.row_list[row_index]:
+            e.config(state='readonly')
+            # if its the third row, don't change to readonly, but do change its color
+
 
     def _remove_selected_pos(self):
         if self.selected_row_index is None:
