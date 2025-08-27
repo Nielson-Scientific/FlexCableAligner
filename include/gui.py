@@ -57,10 +57,9 @@ class FlexAlignerGUI:
 
         # Search / controller state
         self.is_searching = False
-        self.joystick = None
         self._last_button_times = {}
         self._fine_pressed = False
-        self.input_mode = 'keyboard'  # 'keyboard' | 'controller'
+        self.input_mode = 'controller'  # 'keyboard' | 'controller'
         # Controller axes group selection: 'xy' or 'uv' (axes 0/1 control selected group)
         self.controller_axes_group = 'xy'
 
@@ -133,7 +132,7 @@ class FlexAlignerGUI:
         # Show current controller axes mapping (XY or UV)
         self.mapping_label = ttk.Label(ctrl, text="Axes: XY")
         self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6,0))
-
+        self._init_joystick()
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
         saved.grid(row=1, column=1, sticky='ew', padx=10, pady=5)
@@ -182,11 +181,6 @@ class FlexAlignerGUI:
         self.scale_scale.grid(row=2, column=1, sticky='ew')
         self.scale_label = ttk.Label(settings, text=f"{self.config.movement_scale:.2f}x")
         self.scale_label.grid(row=2, column=2)
-
-        # preset = ttk.Frame(settings)
-        # preset.grid(row=3, column=0, columnspan=3, pady=5)
-        # for val in [0.5, 0.75, 1.0, 1.25, 1.5]:
-        #     ttk.Button(preset, text=f"{int(val*100)}%", command=lambda v=val: self._set_preset(v)).pack(side=tk.LEFT, padx=2)
 
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
@@ -621,13 +615,6 @@ class FlexAlignerGUI:
 
     def _on_click(self, _event, row_index):
         self.selected_row_index = row_index
-        # for r, entries in enumerate(self.row_list):
-        #     for e in entries:
-        #         if r == row_index:
-        #             e.config(state='readonly', background=SELECTED_ROW_COLOR)
-        #         else:
-        #             e.config(state='readonly', background='white')
-        # Reset all other rows to look normal
         for entries in self.row_list:
             for e in entries:
                 e.config(state='normal', background= 'white')
@@ -686,28 +673,6 @@ class FlexAlignerGUI:
                 coords.append((new_x, new_y))
 
             return coords
-        # def spiral_coords(x,y):
-        #     spiral_factor = -3.4
-        #     initial_step = 0.005
-        #     total_loops = 5
-        #     coords = []
-        #     for loop in range(total_loops):
-        #         if loop == 0:
-        #             new_x = x + initial_step
-        #             new_y = y + initial_step
-        #             coords.append((new_x, y))
-        #             coords.append((new_x, new_y))
-        #             x = new_x
-        #             y = new_y
-        #         else:
-        #             initial_step = initial_step * spiral_factor
-        #             new_x = x + initial_step
-        #             new_y = y * initial_step
-        #             coords.append((new_x, y))
-        #             coords.append((new_x, new_y))
-        #             x = new_x
-        #             y = new_y
-        #     return coords
 
         self.spiral_coordinates = spiral_coords(x,y)
         if button == 8:
