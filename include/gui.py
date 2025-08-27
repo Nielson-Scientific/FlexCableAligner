@@ -635,7 +635,7 @@ class FlexAlignerGUI:
 
         # Highlight the selected row
         for e in self.row_list[row_index]:
-            e.config(state='readonly')
+            e.config(state='readonly', background='lightblue')
             # if its the third row, don't change to readonly, but do change its color
 
 
