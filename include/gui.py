@@ -630,12 +630,12 @@ class FlexAlignerGUI:
         # Reset all other rows to look normal
         for entries in self.row_list:
             for e in entries:
-                e.config(state='normal', background= 'lightblue')
+                e.config(state='normal', background= 'white')
                 # set bg color to white
 
         # Highlight the selected row
-        for e in self.row_list[row_index]:
-            e.config(state='readonly', background='white')
+        for e in self.row_list[self.selected_row_index]:
+            e.config(state='readonly', background='lightblue')
             # if its the third row, don't change to readonly, but do change its color
 
 
