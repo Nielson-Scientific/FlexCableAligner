@@ -152,7 +152,7 @@ class Printer:
                 except Exception as e:
                     print(f"Error in search: {e}")
         else:
-            for coord in self.spiral_coordinates:
+            for coord in coordinates:
                 gcode = f"""G90
         SET_DUAL_CARRIAGE CARRIAGE=x2
         SET_DUAL_CARRIAGE CARRIAGE=y2
