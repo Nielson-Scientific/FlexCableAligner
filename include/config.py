@@ -7,7 +7,7 @@ class JogConfig:
     def __init__(self):
         # Base speeds (mm/min)
         self.base_speed = 600
-        self.max_speed = 40000
+        self.max_speed = 20000
 
         # Joystick feel
         self.deadzone = 0.12
