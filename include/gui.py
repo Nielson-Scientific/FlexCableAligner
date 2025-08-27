@@ -624,9 +624,9 @@ class FlexAlignerGUI:
         for r, entries in enumerate(self.row_list):
             for e in entries:
                 if r == row_index:
-                    e.config(readonlybackground=SELECTED_ROW_COLOR)
+                    e.config(state='readonly', background=SELECTED_ROW_COLOR)
                 else:
-                    e.config(readonlybackground='white')
+                    e.config(state='readonly', background='white')
 
     def _remove_selected_pos(self):
         if self.selected_row_index is None:
