@@ -549,7 +549,7 @@ class FlexAlignerGUI:
             if self.controller_axes_group == "xy":
                 self.spiral_search(self.positions['x'], self.positions['y'])
             else:
-                self.spiral_search(self.positions['u'], self.postions['v'])
+                self.spiral_search(self.positions['u'], self.positions['v'])
 
         # 5: interrupt search
         if self.joystick.get_button(5) and debounce('interrupt', 0.5):
