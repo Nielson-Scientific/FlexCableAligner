@@ -168,8 +168,11 @@ class FlexAlignerGUI:
         self.mode_label = ttk.Label(settings, text="Fine Mode: OFF")
         self.mode_label.grid(row=0, column=0, sticky='w')
         ttk.Label(settings, text="Max Speed:").grid(row=1, column=0, sticky='w')
-        self.speed_var = tk.DoubleVar(value=self.config.max_speed)
-        self.speed_scale = ttk.Scale(settings, from_=500, to=3000, variable=self.speed_var, command=self._update_speed)
+        if self.input_mode == 'keyboard':
+            self.speed_var = tk.DoubleVar(value=self.config.max_speed)
+        else:
+            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (20000 - 500)))
+        self.speed_scale = ttk.Scale(settings, from_=500, to=20000, variable=self.speed_var, command=self._update_speed)
         self.speed_scale.grid(row=1, column=1, sticky='ew')
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
         self.speed_label.grid(row=1, column=2)
@@ -180,10 +183,10 @@ class FlexAlignerGUI:
         self.scale_label = ttk.Label(settings, text=f"{self.config.movement_scale:.2f}x")
         self.scale_label.grid(row=2, column=2)
 
-        preset = ttk.Frame(settings)
-        preset.grid(row=3, column=0, columnspan=3, pady=5)
-        for val in [0.5, 0.75, 1.0, 1.25, 1.5]:
-            ttk.Button(preset, text=f"{int(val*100)}%", command=lambda v=val: self._set_preset(v)).pack(side=tk.LEFT, padx=2)
+        # preset = ttk.Frame(settings)
+        # preset.grid(row=3, column=0, columnspan=3, pady=5)
+        # for val in [0.5, 0.75, 1.0, 1.25, 1.5]:
+        #     ttk.Button(preset, text=f"{int(val*100)}%", command=lambda v=val: self._set_preset(v)).pack(side=tk.LEFT, padx=2)
 
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
@@ -499,15 +502,13 @@ class FlexAlignerGUI:
         # Normalize [-1..1] -> [0..1]
         norm = (ax3 + 1.0) / 2.0
         # Map to the same range as the UI scale slider [0.1 .. 2.0]
-        new_scale = 0.1 + norm * (2.0 - 0.1)
-        # Apply scale to both movement and velocity for consistent feel
-        self.config.movement_scale = new_scale
-        self.config.velocity_scale = new_scale
+        new_speed = 0.1 + norm * (20000 - 500)
         # Reflect in UI
-        if hasattr(self, 'scale_var'):
+        if hasattr(self, 'speed_var'):
             try:
-                self.scale_var.set(new_scale)
-                self.scale_label.config(text=f"{new_scale:.2f}x")
+                self.speed_var.set(new_speed)
+                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+                self._update_speed(new_speed)
             except Exception:
                 pass
 
