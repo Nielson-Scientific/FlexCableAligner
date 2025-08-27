@@ -123,7 +123,7 @@ class FlexAlignerGUI:
         ctrl = ttk.LabelFrame(main, text="Controller", padding=10)
         ctrl.grid(row=1, column=0, sticky='ew', pady=5)
         ttk.Label(ctrl, text="Input:").grid(row=0, column=0, padx=(0,6))
-        self.input_var = tk.StringVar(value='Keyboard')
+        self.input_var = tk.StringVar(value='Controller')
         self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Controller'], state='readonly', width=12)
         self.input_combo.grid(row=0, column=1, padx=(0,8))
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
