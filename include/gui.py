@@ -60,7 +60,7 @@ class FlexAlignerGUI:
         self.joystick = None
         self._last_button_times = {}
         self._fine_pressed = False
-        self.input_mode = 'controller'  # 'keyboard' | 'controller'
+        self.input_mode = 'keyboard'  # 'keyboard' | 'controller'
         # Controller axes group selection: 'xy' or 'uv' (axes 0/1 control selected group)
         self.controller_axes_group = 'xy'
 
