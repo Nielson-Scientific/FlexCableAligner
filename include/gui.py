@@ -544,13 +544,12 @@ class FlexAlignerGUI:
     # 4: goto selected position (unchanged)
     # already handled above in button 4 block
 
-        # 8: spiral XY
-        if self.joystick.get_button(8) and debounce('spiral_xy', 0.5):
-            self.spiral_search(self.positions['x'], self.positions['y'], 8)
-
-        # 9: spiral UV
-        if self.joystick.get_button(9) and debounce('spiral_uv', 0.5):
-            self.spiral_search(self.positions['u'], self.positions['v'], 9)
+        # 3: spiral
+        if self.joystick.get_button(3) and debounce('spiral_xy', 0.5):
+            if self.controller_axes_group == "xy":
+                self.spiral_search(self.positions['x'], self.positions['y'])
+            else:
+                self.spiral_search(self.positions['u'], self.postions['v'])
 
         # 5: interrupt search
         if self.joystick.get_button(5) and debounce('interrupt', 0.5):
@@ -655,10 +654,9 @@ class FlexAlignerGUI:
         self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'] = pos
 
     # ------------- Spiral Search ----------------
-    def spiral_search(self, x, y, button):
+    def spiral_search(self, x, y):
         """Perform search pattern smoothly"""
         self.is_searching = True
-        import math
 
         def spiral_coords(x, y, final_radius=5, loops=5, points_per_loop=50):
             coords = []
@@ -675,34 +673,7 @@ class FlexAlignerGUI:
             return coords
 
         self.spiral_coordinates = spiral_coords(x,y)
-        if button == 8:
-            for coord in self.spiral_coordinates:
-                gcode = f"""G90
-        SET_DUAL_CARRIAGE CARRIAGE=x
-        SET_DUAL_CARRIAGE CARRIAGE=y
-        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
-        """
-                
-                try:
-                    self.printer.send_gcode(gcode)
-                    self.positions['x'] = coord[0]
-                    self.positions['y'] = coord[1]
-                except Exception as e:
-                    print(f"Error in search: {e}")
-        else:
-            for coord in self.spiral_coordinates:
-                gcode = f"""G90
-        SET_DUAL_CARRIAGE CARRIAGE=x2
-        SET_DUAL_CARRIAGE CARRIAGE=y2
-        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
-        """
-                
-                try:
-                    self.printer.send_gcode(gcode)
-                    self.positions['u'] = coord[0]
-                    self.positions['v'] = coord[1]
-                except Exception as e:
-                    print(f"Error in search: {e}")
+        self.printer.run_spiral_search(self.controller_axes_group, self.spiral_coordinates)
         self.is_searching = False
 
     def search_interrupt(self):

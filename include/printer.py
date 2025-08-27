@@ -136,6 +136,34 @@ class Printer:
             self._rpc("printer.emergency_stop", {}, timeout=1.0)
         except Exception as e:
             self.last_error = str(e)
+    
+    # Absolute movement for spiral search
+    def run_spiral_search(self,axes_group, coordinates):
+        if axes_group == "xy":
+            for coord in coordinates:
+                gcode = f"""G90
+        SET_DUAL_CARRIAGE CARRIAGE=x
+        SET_DUAL_CARRIAGE CARRIAGE=y
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        """
+                
+                try:
+                    self.send_gcode(gcode)
+                except Exception as e:
+                    print(f"Error in search: {e}")
+        else:
+            for coord in self.spiral_coordinates:
+                gcode = f"""G90
+        SET_DUAL_CARRIAGE CARRIAGE=x2
+        SET_DUAL_CARRIAGE CARRIAGE=y2
+        G0 X{coord[0]:.3f} Y{coord[1]:.3f} F{self.config.base_speed}
+        """
+                
+                try:
+                    self.send_gcode(gcode)
+                except Exception as e:
+                    print(f"Error in search: {e}")
+        
 
     # Movement utilities use relative moves (G91 already set)
     def move_xy(self, dx: float, dy: float, feedrate: float) -> bool:
