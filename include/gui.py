@@ -31,6 +31,7 @@ class FlexAlignerGUI:
         self.printer = Printer()
         self.connected = False
         self.fine_mode = False
+        self.range_error_counter = 0
 
         # State
         self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
@@ -278,7 +279,12 @@ class FlexAlignerGUI:
             else:
                 print(self.printer.last_error)
                 if self.printer.last_error.startswith("Move out of range"):
-                    messagebox.showerror('Move out of range', 'Move out of range!')
+                    self.range_error_counter += 1
+                    if self.range_error_counter > 5:
+                        messagebox.showerror('Move out of range', 'Move out of range!')
+                        self.range_error_counter = 0
+                    else:
+                        pass
                 else:
                     print('Failed to move, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
@@ -295,8 +301,13 @@ class FlexAlignerGUI:
                 self._log_move(du, dv, feed)
             else:
                 print(self.printer.last_error)
-                if self.printer.last_error.startswith('Move out of range'):
-                    messagebox.showerror('Move out of range', 'Move out of range!')
+                if self.printer.last_error.startswith("Move out of range"):
+                    self.range_error_counter += 1
+                    if self.range_error_counter > 5:
+                        messagebox.showerror('Move out of range', 'Move out of range!')
+                        self.range_error_counter = 0
+                    else:
+                        pass
                 else:
                     print('Move failed possibly due to homing issue, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
@@ -483,10 +494,10 @@ class FlexAlignerGUI:
 
         if self.controller_axes_group == 'xy':
             self.target_vel['x'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['y'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+            self.target_vel['y'] = self.config.get_velocity_curve(-ax1, self.fine_mode)
         else:  # 'uv'
             self.target_vel['u'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['v'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+            self.target_vel['v'] = self.config.get_velocity_curve(-ax1, self.fine_mode)
         
         # Axis 3 controls overall velocity/movement scale smoothly (controller mode only)
         try:
@@ -690,7 +701,7 @@ class FlexAlignerGUI:
 
     def _update_scale(self, val):
         self.config.movement_scale = float(val)
-        self.config.velocity_scale = float(val)
+        # self.config.velocity_scale = float(val)
         self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
 
     def _set_preset(self, v):

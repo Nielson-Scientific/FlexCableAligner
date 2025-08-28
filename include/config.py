@@ -19,7 +19,7 @@ class JogConfig:
         self.velocity_stop_threshold = 5.0  # mm/min – treat as zero
 
         # Global scaling (one slider now)
-        self.movement_scale = 0.5
+        self.movement_scale = 0.15
         self.velocity_scale = 0.5
 
         # Fine mode multiplier (neutral so fine mode only affects max_speed via GUI)
