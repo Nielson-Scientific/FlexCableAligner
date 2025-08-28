@@ -129,7 +129,7 @@ class Printer:
             return False
 
     def home_xy(self) -> bool:
-        return self.send_gcode("G28 X Y")
+        return self.send_gcode("G28")
 
     def emergency_stop(self):
         try:
@@ -194,7 +194,7 @@ class Printer:
             positions['z'] = pos[2]  # Z is shared, so just take last
         
             # Now do the same for Z2
-            positions['z2'] = self._get_macro_result("GET_POSITION_Z2\n")
+            positions['z2'] = float(self._get_macro_result("GET_POSITION_Z2\n").split(':')[1])
             return positions
 
         except Exception as e:

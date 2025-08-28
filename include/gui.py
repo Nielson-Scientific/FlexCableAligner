@@ -10,6 +10,7 @@ try:
 except Exception:  # pygame is optional; keyboard mode still works
     pygame = None
 from pynput import keyboard
+import threading
 
 from include.config import JogConfig
 from include.printer import Printer
@@ -29,6 +30,8 @@ class FlexAlignerGUI:
     def __init__(self):
         self.config = JogConfig()
         self.printer = Printer()
+        self.background_printer = Printer()
+        threading.Thread(target=self._update_positions, daemon=True).start()
         self.connected = False
         self.fine_mode = False
         self.range_error_counter = 0
@@ -198,11 +201,28 @@ class FlexAlignerGUI:
         self.root.bind('<Escape>', lambda e: self.emergency_stop())
         self.root.bind('<space>', lambda e: self.reset_velocities())
 
+    def _update_positions(self):
+        while True:
+            pos = self.background_printer.get_position()
+            if pos is not None:
+                # Merge new positions, keep previous on parsing issues
+                for k in ('x', 'y', 'z', 'u', 'v', 'z2'):
+                    if k in pos:
+                        try:
+                            self.positions[k] = float(pos[k])
+                        except Exception:
+                            # Some macro outputs may be strings; ignore if not parseable
+                            self.positions[k] = pos[k]
+            time.sleep(1)
+
     # -------------- Connection -----------------
     def connect(self):
         # Printer only
         if not self.printer.connect():
             messagebox.showerror("Printer", f"Failed to connect: {self.printer.last_error}")
+            return
+        if not self.background_printer.connect():
+            messagebox.showerror("Background Printer", f"Failed to connect: {self.background_printer.last_error}")
             return
         self.connected = True
         self.status_label.config(text="Status: Connected", foreground='green')
@@ -229,7 +249,6 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
-        print(dt)
         self.last_update_time = now
 
         # Input handling
@@ -245,6 +264,7 @@ class FlexAlignerGUI:
             hx, hy = self.joystick.get_hat(0)
         except Exception:
             hx, hy = 0, 0
+        hy = -hy
         z_vel = self.config.get_velocity_curve(float(hy), self.fine_mode) * self.z_speed_scale
         if self.controller_axes_group == 'xy':
             self.target_vel['z'] = z_vel
