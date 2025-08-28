@@ -203,6 +203,9 @@ class FlexAlignerGUI:
 
     def _update_positions(self):
         while True:
+            if not self.connected:
+                time.sleep(1)
+                continue
             pos = self.background_printer.get_position()
             if pos is not None:
                 # Merge new positions, keep previous on parsing issues
@@ -326,7 +329,7 @@ class FlexAlignerGUI:
                     if self.range_error_counter > 5:
                         messagebox.showerror('Move out of range', 'Move out of range!')
                         self.range_error_counter = 0
-                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('['):
+                elif isinstance(self.printer.last_error, str) and (self.printer.last_error.startswith('[') or self.printer.last_error.startswith('socket')):
                     print('Reconnecting automatically...')
                     self.disconnect()
                     self.connect()
