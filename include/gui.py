@@ -31,10 +31,11 @@ class FlexAlignerGUI:
         self.config = JogConfig()
         self.printer = Printer()
         self.background_printer = Printer()
-        threading.Thread(target=self._update_positions, daemon=True).start()
         self.connected = False
         self.fine_mode = False
         self.range_error_counter = 0
+        threading.Thread(target=self._update_positions, daemon=True).start()
+
 
         # State
         self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
