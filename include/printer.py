@@ -13,7 +13,7 @@ class Printer:
     Connects to Moonraker (default ws://localhost:7125/websocket).
     """
 
-    def __init__(self, url: str = "ws://nielson-aligner.local:7125/websocket", api_key: Optional[str] = None):
+    def __init__(self, url: str = "ws://10.37.247.54:7125/websocket", api_key: Optional[str] = None):
         # Moonraker connection settings
         self.url = url
         self.api_key = api_key
@@ -142,22 +142,23 @@ class Printer:
         g = f"G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"
         return self.send_gcode(g)
 
-    def move_uv(self, du: float, dv: float, feedrate: float) -> bool:
+    def move_uv(self, du: float, dv: float, dz: float, feedrate: float) -> bool:
         # Carriage selection then move
         script = (
             "G91\n"
             "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
-            f"G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}"
+            f"G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}\n"
+            f"MOVE_Z2 DISTANCE={dz:.4f}"
         )
         return self.send_gcode(script)
 
-    def move_xy_with_carriage(self, dx: float, dy: float, feedrate: float) -> bool:
+    def move_xy_with_carriage(self, dx: float, dy: float, dz: float, feedrate: float) -> bool:
         script = (
             "G91\n"
             "SET_DUAL_CARRIAGE CARRIAGE=x\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y\n"
-            f"G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"
+            f"G1 X{dx:.4f} Y{dy:.4f} Z{dz:.4f} F{feedrate:.0f}\n"
         )
         return self.send_gcode(script)
 
@@ -190,7 +191,12 @@ class Printer:
             pos = resp["result"]["status"]["toolhead"]["position"]
             positions["u"] = pos[0]
             positions['v'] = pos[1]
+            positions['z'] = pos[2]  # Z is shared, so just take last
+        
+            # Now do the same for Z2
+            positions['z2'] = self._get_macro_result("GET_POSITION_Z2\n")
             return positions
+
         except Exception as e:
             self.last_error = str(e)
             return None
@@ -219,3 +225,87 @@ class Printer:
             "G91\n"
         )
         return self.send_gcode(script)
+
+    def _get_macro_result(self, script: str, timeout: float = 2.0) -> Optional[str]:
+        """Run a Klipper macro and capture its echoed terminal output.
+
+        This listens for Moonraker's notify_gcode_response events while submitting
+        the macro via printer.gcode.script, collecting any lines like:
+        - "echo: <text>" (from RESPOND/M118/ECHO)
+        - "// <text>" (Klipper info lines)
+
+        It stops when an 'ok' response is received or when the timeout elapses.
+
+        Args:
+            script: The exact script to send, e.g. "MY_MACRO PARAM=1".
+            timeout: Max seconds to wait for responses.
+
+        Returns:
+            The concatenated echoed text (without prefixes) if any were received; otherwise None.
+        """
+        if not self.connected or not self.ws:
+            raise RuntimeError("Not connected")
+
+        end_time = time.time() + max(0.05, timeout)
+        responses: list[str] = []
+        saw_ok = False
+
+        # Send the RPC under the same lock used by _rpc to serialize traffic and
+        # read both the RPC response and any notify_gcode_response messages.
+        with self.lock:
+            req_id = self.message_id
+            self.message_id += 1
+            payload = {
+                "id": req_id,
+                "method": "printer.gcode.script",
+                "params": {"script": script},
+            }
+            self._send(payload)
+
+            while time.time() < end_time:
+                msg = self._recv_next(max(0.01, end_time - time.time()))
+                if not msg:
+                    continue
+
+                # Capture gcode response notifications
+                if msg.get("method") == "notify_gcode_response":
+                    params = msg.get("params") or []
+                    # Moonraker sends ["<line>"]
+                    if params and isinstance(params[0], str):
+                        line = params[0].strip()
+                        # detect completion
+                        if line.lower() == "ok":
+                            saw_ok = True
+                        # extract human text from common prefixes
+                        text = None
+                        if line.startswith("echo:"):
+                            text = line[len("echo:"):].strip()
+                        elif line.startswith("//"):
+                            # Klipper informational prefix
+                            text = line.lstrip("/ ")
+                        # Avoid storing bare 'ok'
+                        if text:
+                            responses.append(text)
+                    # continue reading even if no line
+                    continue
+
+                # Paired response to our RPC ID
+                if msg.get("id") == req_id:
+                    # if there's an error, raise it immediately
+                    if "error" in msg:
+                        err = msg["error"]
+                        raise RuntimeError(err.get("message", str(err)))
+                    # don't return yet; keep collecting until ok or timeout
+                    if saw_ok:
+                        break
+                    else:
+                        # shorten remaining time a bit to allow responses to arrive
+                        end_time = max(time.time() + 0.2, end_time)
+                        continue
+
+                # Ignore unrelated notifications/responses
+                continue
+
+        if responses:
+            return "\n".join(responses)
+        return None

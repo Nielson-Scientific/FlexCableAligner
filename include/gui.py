@@ -34,13 +34,15 @@ class FlexAlignerGUI:
         self.range_error_counter = 0
 
         # State
-        self.positions = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
-        self.target_vel = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
-        self.current_vel = {'x': 0.0, 'y': 0.0, 'u': 0.0, 'v': 0.0}
+        self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
+        self.target_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
+        self.current_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
         self.last_update_time = time.time()
         self.last_movement_time = time.time()
         self.running = True
 
+        # Z movement is intentionally slower than XY/UV
+        self.z_speed_scale = 0.33
         # Saved positions
         self.positions_list = []
         self.row_list = []
@@ -171,14 +173,14 @@ class FlexAlignerGUI:
         if self.input_mode == 'keyboard':
             self.speed_var = tk.DoubleVar(value=self.config.max_speed)
         else:
-            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (20000 - 500)))
-        self.speed_scale = ttk.Scale(settings, from_=500, to=20000, variable=self.speed_var, command=self._update_speed)
+            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (self.config.max_speed - self.config.base_speed)))
+        self.speed_scale = ttk.Scale(settings, from_=self.config.base_speed, to=self.config.max_speed, variable=self.speed_var, command=self._update_speed)
         self.speed_scale.grid(row=1, column=1, sticky='ew')
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
         self.speed_label.grid(row=1, column=2)
         ttk.Label(settings, text="Scale:").grid(row=2, column=0, sticky='w')
         self.scale_var = tk.DoubleVar(value=self.config.movement_scale)
-        self.scale_scale = ttk.Scale(settings, from_=0.1, to=2.0, variable=self.scale_var, command=self._update_scale)
+        self.scale_scale = ttk.Scale(settings, from_=0.01, to=0.5, variable=self.scale_var, command=self._update_scale)
         self.scale_scale.grid(row=2, column=1, sticky='ew')
         self.scale_label = ttk.Label(settings, text=f"{self.config.movement_scale:.2f}x")
         self.scale_label.grid(row=2, column=2)
@@ -227,6 +229,7 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
+        print(dt)
         self.last_update_time = now
 
         # Input handling
@@ -237,7 +240,16 @@ class FlexAlignerGUI:
             # Controller mode
             self._read_joystick()
             self._handle_joystick_buttons()
-
+        # Hat vertical axis controls Z or Z2 (slower)
+        try:
+            hx, hy = self.joystick.get_hat(0)
+        except Exception:
+            hx, hy = 0, 0
+        z_vel = self.config.get_velocity_curve(float(hy), self.fine_mode) * self.z_speed_scale
+        if self.controller_axes_group == 'xy':
+            self.target_vel['z'] = z_vel
+        else:
+            self.target_vel['z2'] = z_vel
         # Smooth
         for axis in self.current_vel:
             self.current_vel[axis] = self._smooth(self.current_vel[axis], self.target_vel[axis], dt)
@@ -245,9 +257,16 @@ class FlexAlignerGUI:
         # Execute relative moves
         if self.connected:
             self._execute_moves(dt)
-            pos = self.printer.get_position()
+            pos = None #self.printer.get_position()
             if pos is not None:
-                self.positions = pos
+                    # Merge new positions, keep previous on parsing issues
+                    for k in ('x', 'y', 'z', 'u', 'v', 'z2'):
+                        if k in pos:
+                            try:
+                                self.positions[k] = float(pos[k])
+                            except Exception:
+                                # Some macro outputs may be strings; ignore if not parseable
+                                self.positions[k] = pos[k]
 
         self._schedule_loop()
 
@@ -265,49 +284,54 @@ class FlexAlignerGUI:
         return new_v
 
     def _execute_moves(self, dt):
-        # XY
+        # XY + Z (Z follows XY carriage)
         dx = (self.current_vel['x'] / 60.0) * dt * self.config.movement_scale
         dy = (self.current_vel['y'] / 60.0) * dt * self.config.movement_scale
-        if abs(dx) > self.config.min_move_threshold or abs(dy) > self.config.min_move_threshold:
-            vel_mag = math.sqrt(dx*dx + dy*dy) / dt * 60 if dt > 0 else 0
+        dz = (self.current_vel['z'] / 60.0) * dt * self.config.movement_scale
+        if (abs(dx) > self.config.min_move_threshold or
+            abs(dy) > self.config.min_move_threshold or
+            abs(dz) > self.config.min_move_threshold):
+            vel_mag = math.sqrt(dx*dx + dy*dy + dz*dz) / dt * 60 if dt > 0 else 0
             feed = max(100, min(self.config.max_speed, vel_mag))
-            ok = self.printer.move_xy_with_carriage(dx, dy, feed)
+            ok = self.printer.move_xy_with_carriage(dx, dy, dz, feed)
             if ok:
                 self.positions['x'] += dx
                 self.positions['y'] += dy
+                self.positions['z'] += dz
                 self._log_move(dx, dy, feed)
             else:
                 print(self.printer.last_error)
-                if self.printer.last_error.startswith("Move out of range"):
+                if isinstance(self.printer.last_error, str) and self.printer.last_error.startswith("Move out of range"):
                     self.range_error_counter += 1
                     if self.range_error_counter > 5:
                         messagebox.showerror('Move out of range', 'Move out of range!')
                         self.range_error_counter = 0
-                    else:
-                        pass
                 else:
                     print('Failed to move, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
-        # UV
+
+        # UV + Z2 (Z2 follows UV carriage)
         du = (self.current_vel['u'] / 60.0) * dt * self.config.movement_scale
         dv = (self.current_vel['v'] / 60.0) * dt * self.config.movement_scale
-        if abs(du) > self.config.min_move_threshold or abs(dv) > self.config.min_move_threshold:
-            vel_mag = math.sqrt(du*du + dv*dv) / dt * 60 if dt > 0 else 0
+        dz2 = (self.current_vel['z2'] / 60.0) * dt * self.config.movement_scale
+        if (abs(du) > self.config.min_move_threshold or
+            abs(dv) > self.config.min_move_threshold or
+            abs(dz2) > self.config.min_move_threshold):
+            vel_mag = math.sqrt(du*du + dv*dv + dz2*dz2) / dt * 60 if dt > 0 else 0
             feed = max(100, min(self.config.max_speed, vel_mag))
-            ok = self.printer.move_uv(du, dv, feed)
+            ok = self.printer.move_uv(du, dv, dz2, feed)
             if ok:
                 self.positions['u'] += du
                 self.positions['v'] += dv
+                self.positions['z2'] += dz2
                 self._log_move(du, dv, feed)
             else:
                 print(self.printer.last_error)
-                if self.printer.last_error.startswith("Move out of range"):
+                if isinstance(self.printer.last_error, str) and self.printer.last_error.startswith("Move out of range"):
                     self.range_error_counter += 1
                     if self.range_error_counter > 5:
                         messagebox.showerror('Move out of range', 'Move out of range!')
                         self.range_error_counter = 0
-                    else:
-                        pass
                 else:
                     print('Move failed possibly due to homing issue, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
@@ -384,6 +408,20 @@ class FlexAlignerGUI:
             val = max(-1.0, min(1.0, val))
             self.target_vel[axis] = self.config.get_velocity_curve(val, self.fine_mode)
 
+        # Handle Z/Z2 via W/S keys depending on selected carriage
+        z_input = 0.0
+        if 'w' in self._pressed_keys:
+            z_input += 1.0
+        if 's' in self._pressed_keys:
+            z_input -= 1.0
+        z_vel = self.config.get_velocity_curve(z_input, self.fine_mode) * self.z_speed_scale
+        # Reset Z targets first
+        self.target_vel['z'] = 0.0
+        self.target_vel['z2'] = 0.0
+        if self.controller_axes_group == 'xy':
+            self.target_vel['z'] = z_vel
+        else:
+            self.target_vel['z2'] = z_vel
     def _enqueue_action(self, name: str, *args):
         with self._keys_lock:
             self._action_queue.append((name, args))
@@ -726,14 +764,33 @@ class FlexAlignerGUI:
         self.pos_text.insert(tk.END, f"Y: {self.positions['y']:.3f}\n")
         self.pos_text.insert(tk.END, f"U: {self.positions['u']:.3f}\n")
         self.pos_text.insert(tk.END, f"V: {self.positions['v']:.3f}")
+        if 'z' in self.positions:
+            try:
+                self.pos_text.insert(tk.END, f"Z: {float(self.positions['z']):.3f}\n")
+            except Exception:
+                self.pos_text.insert(tk.END, f"Z: {self.positions['z']}\n")
         self.vel_text.delete(1.0, tk.END)
         self.vel_text.insert(tk.END, f"X: {self.current_vel['x']:.1f}\n")
         self.vel_text.insert(tk.END, f"Y: {self.current_vel['y']:.1f}\n")
-        self.vel_text.insert(tk.END, f"U: {self.current_vel['u']:.1f}\n")
+        if 'z' in self.positions:
+            try:
+                self.pos_text.insert(tk.END, f"Z: {float(self.positions['z']):.3f}\n")
+            except Exception:
+                self.pos_text.insert(tk.END, f"Z: {self.positions['z']}\n")
+        self.vel_text.insert(tk.END, f"Z: {self.current_vel.get('z', 0.0):.1f}\n")
+        self.pos_text.insert(tk.END, f"V: {self.positions['v']:.3f}\n")
+        if 'z2' in self.positions:
+            try:
+                self.pos_text.insert(tk.END, f"Z2: {float(self.positions['z2']):.3f}")
+            except Exception:
+                self.pos_text.insert(tk.END, f"Z2: {self.positions['z2']}")
         self.vel_text.insert(tk.END, f"V: {self.current_vel['v']:.1f}")
+        self.vel_text.insert(tk.END, f"Z2: {self.current_vel.get('z2', 0.0):.1f}")
         self.root.after(100, self._update_displays)
+        self.vel_text.insert(tk.END, f"Z: {self.current_vel.get('z', 0.0):.1f}\n")
 
-    # -------------- Lifecycle -------------------
+        self.vel_text.insert(tk.END, f"V: {self.current_vel['v']:.1f}\n")
+        self.vel_text.insert(tk.END, f"Z2: {self.current_vel.get('z2', 0.0):.1f}")
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.mainloop()

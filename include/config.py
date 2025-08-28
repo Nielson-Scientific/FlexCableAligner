@@ -6,7 +6,7 @@ class JogConfig:
 
     def __init__(self):
         # Base speeds (mm/min)
-        self.base_speed = 600
+        self.base_speed = 5000
         self.max_speed = 20000
 
         # Joystick feel
@@ -24,11 +24,11 @@ class JogConfig:
 
         # Fine mode multiplier (neutral so fine mode only affects max_speed via GUI)
         self.fine_velocity_factor = 1.0
-        self.fine_scale = 1.0
+        self.fine_scale = 0.5
 
         # Jog interval bounds (dynamic scheduling)
-        self.min_jog_interval = 0.02
-        self.max_jog_interval = 0.20
+        self.min_jog_interval = 0.05
+        self.max_jog_interval = 0.1
 
     def get_velocity_curve(self, stick_input: float, fine_mode: bool = False) -> float:
         """Convert joystick axis (-1..1) into target velocity (mm/min)."""
