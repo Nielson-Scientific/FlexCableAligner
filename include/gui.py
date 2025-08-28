@@ -481,7 +481,7 @@ class FlexAlignerGUI:
         # Read axes 0/1 only and map to current group (XY or UV)
         try:
             ax0 = self.joystick.get_axis(0)
-            ax1 = -self.joystick.get_axis(1)
+            ax1 = self.joystick.get_axis(1)
         except Exception:
             ax0 = 0.0
             ax1 = 0.0
@@ -494,10 +494,10 @@ class FlexAlignerGUI:
 
         if self.controller_axes_group == 'xy':
             self.target_vel['x'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['y'] = self.config.get_velocity_curve(-ax1, self.fine_mode)
+            self.target_vel['y'] = self.config.get_velocity_curve(ax1, self.fine_mode)
         else:  # 'uv'
             self.target_vel['u'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['v'] = self.config.get_velocity_curve(-ax1, self.fine_mode)
+            self.target_vel['v'] = self.config.get_velocity_curve(ax1, self.fine_mode)
         
         # Axis 3 controls overall velocity/movement scale smoothly (controller mode only)
         try:
