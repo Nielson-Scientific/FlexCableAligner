@@ -326,6 +326,10 @@ class FlexAlignerGUI:
                     if self.range_error_counter > 5:
                         messagebox.showerror('Move out of range', 'Move out of range!')
                         self.range_error_counter = 0
+                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('['):
+                    print('Reconnecting automatically...')
+                    self.disconnect()
+                    self.connect()
                 else:
                     print('Failed to move, resetting kinematic position')
                     print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
