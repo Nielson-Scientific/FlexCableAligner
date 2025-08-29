@@ -20,7 +20,6 @@ class JogConfig:
 
         # Global scaling (one slider now)
         self.movement_scale = 0.15
-        self.velocity_scale = 0.5
 
         # Fine mode multiplier (neutral so fine mode only affects max_speed via GUI)
         self.fine_velocity_factor = 1.0
@@ -30,7 +29,7 @@ class JogConfig:
         self.min_jog_interval = 0.05
         self.max_jog_interval = 0.1
 
-    def get_velocity_curve(self, stick_input: float, fine_mode: bool = False) -> float:
+    def get_velocity_curve(self, stick_input: float) -> float:
         """Convert joystick axis (-1..1) into target velocity (mm/min)."""
         if abs(stick_input) < self.deadzone:
             return 0.0
@@ -42,13 +41,9 @@ class JogConfig:
         # Curve
         curved = normalized ** self.acceleration_curve
 
-        if fine_mode:
-            max_vel = (self.base_speed + (self.max_speed - self.base_speed) * curved) * self.fine_velocity_factor
-        else:
-            max_vel = self.base_speed + (self.max_speed - self.base_speed) * curved
+        max_vel = self.base_speed + (self.max_speed - self.base_speed) * curved
 
         velocity = curved * max_vel
-        velocity *= self.velocity_scale
         return velocity if stick_input >= 0 else -velocity
 
     def get_dynamic_interval(self, velocity: float) -> float:

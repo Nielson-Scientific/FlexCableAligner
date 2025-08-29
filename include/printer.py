@@ -149,7 +149,8 @@ class Printer:
             "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
             f"G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}\n"
-            f"MOVE_Z2 DISTANCE={dz:.4f}"
+            f"MOVE_Z2 DISTANCE={dz:.4f}\n"
+            "M400\n"
         )
         return self.send_gcode(script)
 
@@ -159,6 +160,7 @@ class Printer:
             "SET_DUAL_CARRIAGE CARRIAGE=x\n"
             "SET_DUAL_CARRIAGE CARRIAGE=y\n"
             f"G1 X{dx:.4f} Y{dy:.4f} Z{dz:.4f} F{feedrate:.0f}\n"
+            "M400\n"
         )
         return self.send_gcode(script)
 

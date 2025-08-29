@@ -38,7 +38,7 @@ class FlexAlignerGUI:
 
 
         # State
-        self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
+        self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 889.0, 'v': 0.0, 'z2': 0.0}
         self.target_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
         self.current_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
         self.last_update_time = time.time()
@@ -184,7 +184,7 @@ class FlexAlignerGUI:
         self.speed_label.grid(row=1, column=2)
         ttk.Label(settings, text="Scale:").grid(row=2, column=0, sticky='w')
         self.scale_var = tk.DoubleVar(value=self.config.movement_scale)
-        self.scale_scale = ttk.Scale(settings, from_=0.01, to=0.5, variable=self.scale_var, command=self._update_scale)
+        self.scale_scale = ttk.Scale(settings, from_=0.01, to=1.0, variable=self.scale_var, command=self._update_scale)
         self.scale_scale.grid(row=2, column=1, sticky='ew')
         self.scale_label = ttk.Label(settings, text=f"{self.config.movement_scale:.2f}x")
         self.scale_label.grid(row=2, column=2)
@@ -253,6 +253,7 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
+        print("DT: ", dt)
         self.last_update_time = now
 
         # Input handling
@@ -269,14 +270,14 @@ class FlexAlignerGUI:
         except Exception:
             hx, hy = 0, 0
         hy = -hy
-        z_vel = self.config.get_velocity_curve(float(hy), self.fine_mode) * self.z_speed_scale
+        z_vel = self.config.get_velocity_curve(float(hy)) * self.z_speed_scale
         if self.controller_axes_group == 'xy':
             self.target_vel['z'] = z_vel
         else:
             self.target_vel['z2'] = z_vel
-        # Smooth
-        for axis in self.current_vel:
-            self.current_vel[axis] = self._smooth(self.current_vel[axis], self.target_vel[axis], dt)
+
+        print("Target velocity:", self.target_vel)
+        self.current_vel = self.target_vel.copy()
 
         # Execute relative moves
         if self.connected:
@@ -294,29 +295,18 @@ class FlexAlignerGUI:
 
         self._schedule_loop()
 
-    def _smooth(self, current, target, dt):
-        if abs(target) < 0.1:
-            # aggressive decay
-            alpha = 1.0 - math.exp(-dt / (self.config.velocity_smoothing * 0.15))
-            decay = max(alpha, 0.3)
-            new_v = current * (1 - decay)
-        else:
-            alpha = 1.0 - math.exp(-dt / self.config.velocity_smoothing)
-            new_v = current + alpha * (target - current)
-        if abs(new_v) < self.config.velocity_stop_threshold:
-            new_v = 0.0
-        return new_v
-
     def _execute_moves(self, dt):
         # XY + Z (Z follows XY carriage)
         dx = (self.current_vel['x'] / 60.0) * dt * self.config.movement_scale
         dy = (self.current_vel['y'] / 60.0) * dt * self.config.movement_scale
         dz = (self.current_vel['z'] / 60.0) * dt * self.config.movement_scale
+        print("DX:", dx, "DY:", dy, "DZ:", dz)
         if (abs(dx) > self.config.min_move_threshold or
             abs(dy) > self.config.min_move_threshold or
             abs(dz) > self.config.min_move_threshold):
             vel_mag = math.sqrt(dx*dx + dy*dy + dz*dz) / dt * 60 if dt > 0 else 0
-            feed = max(100, min(self.config.max_speed, vel_mag))
+            feed = vel_mag
+            print("Feedrate:", feed)
             ok = self.printer.move_xy_with_carriage(dx, dy, dz, feed)
             if ok:
                 self.positions['x'] += dx
@@ -334,19 +324,21 @@ class FlexAlignerGUI:
                     print('Reconnecting automatically...')
                     self.disconnect()
                     self.connect()
+                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('Must home'):
+                    print("Resetting kinematic positions...")
+                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
                 else:
                     print('Failed to move, resetting kinematic position')
-                    print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
-
-        # UV + Z2 (Z2 follows UV carriage)
+    
         du = (self.current_vel['u'] / 60.0) * dt * self.config.movement_scale
         dv = (self.current_vel['v'] / 60.0) * dt * self.config.movement_scale
         dz2 = (self.current_vel['z2'] / 60.0) * dt * self.config.movement_scale
+        print("DU:", du, "DV:", dv, "DZ2:", dz2)
         if (abs(du) > self.config.min_move_threshold or
             abs(dv) > self.config.min_move_threshold or
             abs(dz2) > self.config.min_move_threshold):
-            vel_mag = math.sqrt(du*du + dv*dv + dz2*dz2) / dt * 60 if dt > 0 else 0
-            feed = max(100, min(self.config.max_speed, vel_mag))
+            vel_mag = math.sqrt(du*du + dv*dv) / dt * 60 if dt > 0 else 0
+            feed = vel_mag
             ok = self.printer.move_uv(du, dv, dz2, feed)
             if ok:
                 self.positions['u'] += du
@@ -360,10 +352,15 @@ class FlexAlignerGUI:
                     if self.range_error_counter > 5:
                         messagebox.showerror('Move out of range', 'Move out of range!')
                         self.range_error_counter = 0
+                elif isinstance(self.printer.last_error, str) and (self.printer.last_error.startswith('[') or self.printer.last_error.startswith('socket')):
+                    print('Reconnecting automatically...')
+                    self.disconnect()
+                    self.connect()
+                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('Must home'):
+                    print("Resetting kinematic positions...")
+                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
                 else:
-                    print('Move failed possibly due to homing issue, resetting kinematic position')
-                    print(self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
-
+                    print('Failed to move, resetting kinematic position')
     def _log_move(self, dx, dy, feed):
         self.movement_history.append({'time': time.time(), 'distance': math.sqrt(dx*dx + dy*dy), 'feed': feed})
 
@@ -481,9 +478,11 @@ class FlexAlignerGUI:
                     self.printer.home_xy()
                     self.positions['x'] = self.positions['y'] = 0.0
                 elif name == 'spiral_xy':
-                    self.spiral_search(self.positions['x'], self.positions['y'], 8)
+                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
+                    # self.spiral_search(self.positions['x'], self.positions['y'], 8)
                 elif name == 'spiral_uv':
-                    self.spiral_search(self.positions['u'], self.positions['v'], 9)
+                    pass
+                    # self.spiral_search(self.positions['u'], self.positions['v'], 9)
                 elif name == 'search_interrupt':
                     self.search_interrupt()
                 elif name == 'speed_inc':
@@ -559,11 +558,11 @@ class FlexAlignerGUI:
         self.target_vel['v'] = 0.0
 
         if self.controller_axes_group == 'xy':
-            self.target_vel['x'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['y'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+            self.target_vel['x'] = self.config.get_velocity_curve(ax0)
+            self.target_vel['y'] = self.config.get_velocity_curve(ax1)
         else:  # 'uv'
-            self.target_vel['u'] = self.config.get_velocity_curve(ax0, self.fine_mode)
-            self.target_vel['v'] = self.config.get_velocity_curve(ax1, self.fine_mode)
+            self.target_vel['u'] = self.config.get_velocity_curve(ax0)
+            self.target_vel['v'] = self.config.get_velocity_curve(ax1)
         
         # Axis 3 controls overall velocity/movement scale smoothly (controller mode only)
         try:
@@ -621,16 +620,13 @@ class FlexAlignerGUI:
     # 4: goto selected position (unchanged)
     # already handled above in button 4 block
 
-        # 3: spiral
-        if self.joystick.get_button(3) and debounce('spiral_xy', 0.5):
-            if self.controller_axes_group == "xy":
-                self.spiral_search(self.positions['x'], self.positions['y'])
-            else:
-                self.spiral_search(self.positions['u'], self.positions['v'])
+        # 3: reset kinematic position
+        if self.joystick.get_button(3) and debounce('reset_kinematic', 0.5):
+            self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
 
         # 5: interrupt search
-        if self.joystick.get_button(5) and debounce('interrupt', 0.5):
-            self.search_interrupt()
+        # if self.joystick.get_button(5) and debounce('interrupt', 0.5):
+        #     self.search_interrupt()
 
     # Axis 3 handles speed smoothly; no trigger-based speed changes
 
