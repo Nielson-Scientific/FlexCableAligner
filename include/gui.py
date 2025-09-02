@@ -3,35 +3,28 @@ import time
 import tkinter as tk
 from tkinter import ttk, messagebox, Canvas, Frame, Entry, Button
 from collections import deque
-from threading import Lock
+from threading import Lock, Thread
+
+from pynput import keyboard
 
 try:
     import pygame
 except Exception:  # pygame is optional; keyboard mode still works
     pygame = None
-from pynput import keyboard
 
-from include.config import JogConfig
-from include.printer import Printer
+from .config import JogConfig
+from .printer import Printer
 
 
+# Simple UI constants
 TABLE_COL_CNT = 2
-TABLE_INDEX_COL_W = 5
-TABLE_POS_COL_W = 48
-
-TITLE_ROW_COLOR = 'lightgrey'
-SELECTED_ROW_COLOR = 'lightblue'
+TABLE_INDEX_COL_W = 8
+TABLE_POS_COL_W = 42
+TITLE_ROW_COLOR = '#e6e6e6'
+SELECTED_ROW_COLOR = '#b3d9ff'
 
 
 class FlexAlignerGUI:
-    """GUI + controller for Marlin over USB with two carriages.
-
-    Carriage 1: X/Y/Z
-    Carriage 2: A/B/C
-
-    Jogging uses a continuous long move interrupted by M410 on changes/stops.
-    """
-
     def __init__(self):
         self.config = JogConfig()
         self.printer = Printer()
@@ -65,6 +58,8 @@ class FlexAlignerGUI:
         self._keys_lock = Lock()
         self._action_queue = deque()  # (action_name, args)
         self._listener = None
+        self._pos_lock = Lock()
+        self._poller_thread = None
 
         # Controller / carriage state
         self._last_button_times = {}
@@ -102,6 +97,7 @@ class FlexAlignerGUI:
         self._start_keyboard_listener()
         self._update_displays()
         self._schedule_loop()
+        self._start_position_poller()
 
     # ---------------- GUI BUILD -----------------
     def _build_gui(self):
@@ -418,7 +414,8 @@ class FlexAlignerGUI:
                     self.printer.set_carriage(1)
                     self.printer.stop_jog()
                     self.printer.home_xy()
-                    self.positions['x'] = self.positions['y'] = 0.0
+                    for key in self.positions.keys():
+                        self.positions[key] = 0.0
                 elif name == 'speed_inc':
                     self.config.max_speed = min(self.config.max_speed + 100, 20000)
                     self.speed_var.set(self.config.max_speed)
@@ -448,6 +445,19 @@ class FlexAlignerGUI:
         except Exception as e:
             self.controller_label.config(text=f"Controller error: {e}")
             return False
+
+    def _shutdown_joystick(self):
+        try:
+            if self.joystick:
+                self.joystick.quit()
+        except Exception:
+            pass
+        try:
+            if pygame:
+                pygame.joystick.quit()
+        except Exception:
+            pass
+        self.joystick = None
 
     def _handle_joystick_buttons(self):
         if not getattr(self, 'joystick', None):
@@ -666,6 +676,37 @@ class FlexAlignerGUI:
         except Exception:
             pass
         self.root.destroy()
+        # poller thread is daemon; no need to join, but we can attempt a brief join
+        try:
+            if self._poller_thread and self._poller_thread.is_alive():
+                self._poller_thread.join(timeout=0.2)
+        except Exception:
+            pass
+
+    # ---- Background position polling (non-blocking UI) ----
+    def _start_position_poller(self):
+        if self._poller_thread is not None:
+            return
+
+        def _run():
+            while True:
+                if not self.running:
+                    break
+                if self.connected:
+                    try:
+                        pos = self.printer.get_position()
+                        if pos:
+                            with self._pos_lock:
+                                # Only XYZ are reported by Marlin; keep ABC as-is
+                                self.positions['x'] = pos.get('x', self.positions['x'])
+                                self.positions['y'] = pos.get('y', self.positions['y'])
+                                self.positions['z'] = pos.get('z', self.positions['z'])
+                    except Exception:
+                        pass
+                time.sleep(0.25)
+
+        self._poller_thread = Thread(target=_run, daemon=True)
+        self._poller_thread.start()
 
     # --------- New helpers for simplified jogging ---------
     def _dir_and_feed_from_keyboard(self) -> tuple[tuple[int, int, int], float]:
@@ -677,19 +718,31 @@ class FlexAlignerGUI:
         dz = 0
         # planar
         if self.selected_carriage == 1:
-            if 'left' in pressed: dx -= 1
-            if 'right' in pressed: dx += 1
-            if 'down' in pressed: dy -= 1
-            if 'up' in pressed: dy += 1
-            if 's' in pressed: dz -= 1
-            if 'w' in pressed: dz += 1
+            if 'left' in pressed:
+                dx -= 1
+            if 'right' in pressed:
+                dx += 1
+            if 'down' in pressed:
+                dy -= 1
+            if 'up' in pressed:
+                dy += 1
+            if 's' in pressed:
+                dz -= 1
+            if 'w' in pressed:
+                dz += 1
         else:
-            if 'j' in pressed: dx -= 1  # A
-            if 'l' in pressed: dx += 1
-            if 'k' in pressed: dy -= 1  # B
-            if 'i' in pressed: dy += 1
-            if 's' in pressed: dz -= 1  # C via W/S as well
-            if 'w' in pressed: dz += 1
+            if 'j' in pressed:
+                dx -= 1  # A
+            if 'l' in pressed:
+                dx += 1
+            if 'k' in pressed:
+                dy -= 1  # B
+            if 'i' in pressed:
+                dy += 1
+            if 's' in pressed:
+                dz -= 1  # C via W/S as well
+            if 'w' in pressed:
+                dz += 1
 
         # Z/C slower
         feed = float(self.config.max_speed)
@@ -714,7 +767,6 @@ class FlexAlignerGUI:
         except Exception:
             ax0 = 0.0
             ax1 = 0.0
-        dz = 0
         # Hat vertical for Z/C
         try:
             _hx, hy = self.joystick.get_hat(0)

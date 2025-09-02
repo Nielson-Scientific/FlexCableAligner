@@ -151,7 +151,7 @@ class Printer:
             self.last_error = str(e)
 
     def home_xy(self) -> bool:
-        return self.send_gcode('G28 X Y')
+        return self.send_gcode('G28')
 
     # Carriage selection (1 -> XYZ, 2 -> ABC)
     def set_carriage(self, which: int):
@@ -201,7 +201,8 @@ class Printer:
         if not parts:
             return True
         g1 = f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}"
-        ok = self.send_gcode(g1)
+        # For latency: don't wait for ok on long jog G1; M410 will stop immediately when needed
+        ok = self.send_gcode(g1, wait_ok=False)
         if ok:
             self._last_dir[self._carriage] = dir_tuple
             self._last_feed = feedrate
@@ -230,11 +231,15 @@ class Printer:
         if not self.connected:
             return None
         try:
-            self._write_line('M114')
+            with self._io_lock:
+                self._write_line('M114')
             end = time.time() + 0.2
             line = ''
             while time.time() < end:
-                s = self.ser.readline().decode('utf-8', errors='ignore').strip()
+                try:
+                    s = self.ser.readline().decode('utf-8', errors='ignore').strip()
+                except Exception:
+                    s = ''
                 if s:
                     line = s
                     if 'ok' in s.lower():
