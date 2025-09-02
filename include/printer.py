@@ -115,6 +115,7 @@ class Printer:
         with self._io_lock:
             self.ser.write(data)
             self.ser.flush()
+        print(f"DEBUG_CB: Serial Buffer written and flushed: {line.strip()}")
 
     def _read_until_ok(self, timeout: float = 2.0) -> bool:
         if not self.ser:
