@@ -163,6 +163,7 @@ class Printer:
 
     # Continuous jog control
     def jog(self, vx: float, vy: float, vz: float, feedrate: float) -> bool:
+        print(f"DEBUG_CB: Jogging on {self._carriage}: vx={vx}, vy={vy}, vz={vz}, feedrate={feedrate}")
         """Start/maintain a long move for current carriage in given direction/speed.
 
         - Uses G91 relative mode.
@@ -206,6 +207,7 @@ class Printer:
             return True
         g1 = f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}"
         # For latency: don't wait for ok on long jog G1; M410 will stop immediately when needed
+        print(f"DEBUG_CB: Sending G1 on {self._carriage}: {g1}")
         ok = self.send_gcode(g1, wait_ok=False)
         if ok:
             self._last_dir[self._carriage] = dir_tuple
@@ -217,6 +219,7 @@ class Printer:
         ok = self.send_gcode('M410')
         self._last_dir[self._carriage] = (0.0, 0.0, 0.0)
         self._last_feed = 0.0
+        print("DEBUG_CB: Stopped jogging")
         return ok
 
     # Direct small moves (optional)
