@@ -284,6 +284,7 @@ class FlexAlignerGUI:
         if changed_dir or changed_feed:
             # We only need the signs; Printer.jog uses sign and feed
             sx, sy, sz = (1 if d > 0 else (-1 if d < 0 else 0) for d in dir_tuple)
+            print(f"DEBUG: Jogging with dir=({sx}, {sy}, {sz}), feed={max(1.0, feed)}")
             self.printer.jog(sx, sy, sz, max(1.0, feed))
             self._last_dir_sent[self.selected_carriage] = dir_tuple
             self._last_feed_sent[self.selected_carriage] = feed
