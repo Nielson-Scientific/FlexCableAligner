@@ -23,6 +23,7 @@ class Printer:
         self.baud = baud
         self.read_timeout = read_timeout
 
+        # Serial connection state
         self.ser: Optional[serial.Serial] = None
         self.connected = False
         self.last_error: Optional[str] = None
@@ -31,7 +32,9 @@ class Printer:
         self._carriage = 1  # 1 or 2
         self._last_dir = {1: (0.0, 0.0, 0.0), 2: (0.0, 0.0, 0.0)}
         self._last_feed = 0.0
-        self._io_lock = threading.Lock()
+
+        # I/O lock (re-entrant) to serialize serial access across threads
+        self._io_lock = threading.RLock()
 
     # ---- Connection ----
     def connect(self) -> bool:
@@ -135,11 +138,12 @@ class Printer:
     # ---- Public API ----
     def send_gcode(self, gcode: str, wait_ok: bool = True, timeout: float = 2.0) -> bool:
         try:
-            for line in gcode.splitlines():
-                if not line.strip():
-                    continue
-                self._write_line(line)
-            return self._read_until_ok(timeout) if wait_ok else True
+            with self._io_lock:
+                for line in gcode.splitlines():
+                    if not line.strip():
+                        continue
+                    self._write_line(line)
+                return self._read_until_ok(timeout) if wait_ok else True
         except Exception as e:
             self.last_error = str(e)
             return False
@@ -230,9 +234,12 @@ class Printer:
     def get_position(self) -> Optional[dict[str, float]]:
         if not self.connected:
             return None
+        # Try non-blocking to avoid interfering with motion commands
+        acquired = self._io_lock.acquire(blocking=False)
+        if not acquired:
+            return None
         try:
-            with self._io_lock:
-                self._write_line('M114')
+            self._write_line('M114')
             end = time.time() + 0.2
             line = ''
             while time.time() < end:
@@ -262,3 +269,8 @@ class Printer:
         except Exception as e:
             self.last_error = str(e)
             return None
+        finally:
+            try:
+                self._io_lock.release()
+            except Exception:
+                pass
