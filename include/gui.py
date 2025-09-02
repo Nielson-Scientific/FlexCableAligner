@@ -698,9 +698,9 @@ class FlexAlignerGUI:
                         if pos:
                             with self._pos_lock:
                                 # Only XYZ are reported by Marlin; keep ABC as-is
-                                self.positions['x'] = pos.get('x', self.positions['x'])
-                                self.positions['y'] = pos.get('y', self.positions['y'])
-                                self.positions['z'] = pos.get('z', self.positions['z'])
+                                # self.positions['x'] = pos.get('x', self.positions['x']) what if we didn't - cael debug test
+                                # self.positions['y'] = pos.get('y', self.positions['y'])
+                                # self.positions['z'] = pos.get('z', self.positions['z'])
                     except Exception:
                         pass
                 time.sleep(0.25)
