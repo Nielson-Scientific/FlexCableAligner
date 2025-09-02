@@ -10,7 +10,6 @@ try:
 except Exception:  # pygame is optional; keyboard mode still works
     pygame = None
 from pynput import keyboard
-import threading
 
 from include.config import JogConfig
 from include.printer import Printer
@@ -18,36 +17,38 @@ from include.printer import Printer
 
 TABLE_COL_CNT = 2
 TABLE_INDEX_COL_W = 5
-TABLE_POS_COL_W = 40
+TABLE_POS_COL_W = 48
 
 TITLE_ROW_COLOR = 'lightgrey'
 SELECTED_ROW_COLOR = 'lightblue'
 
 
 class FlexAlignerGUI:
-    """GUI + joystick loop (synchronous)"""
+    """GUI + controller for Marlin over USB with two carriages.
+
+    Carriage 1: X/Y/Z
+    Carriage 2: A/B/C
+
+    Jogging uses a continuous long move interrupted by M410 on changes/stops.
+    """
 
     def __init__(self):
         self.config = JogConfig()
         self.printer = Printer()
-        self.background_printer = Printer()
         self.connected = False
         self.fine_mode = False
         self.range_error_counter = 0
-        threading.Thread(target=self._update_positions, daemon=True).start()
-
 
         # State
-        self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 889.0, 'v': 0.0, 'z2': 0.0}
-        self.target_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
-        self.current_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'u': 0.0, 'v': 0.0, 'z2': 0.0}
+        self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
+        self.target_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
+        self.current_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
         self.last_update_time = time.time()
-        self.last_movement_time = time.time()
         self.running = True
 
-        # Z movement is intentionally slower than XY/UV
+        # Z/C movement is intentionally slower than planar
         self.z_speed_scale = 0.33
-        # Saved positions
+        # Saved positions (x,y,z,a,b,c)
         self.positions_list = []
         self.row_list = []
         self.selected_row_index = None
@@ -56,48 +57,41 @@ class FlexAlignerGUI:
         # Performance log
         self.movement_history = deque(maxlen=100)
 
-        # Keyboard input state
-        self._pressed_keys = set()  # tokens like 'left', 'a', 'up'
+        # Input state
+        self._pressed_keys = set()
         self._keys_lock = Lock()
         self._action_queue = deque()  # (action_name, args)
         self._listener = None
 
-        # Search / controller state
-        self.is_searching = False
+        # Controller / carriage state
         self._last_button_times = {}
-        self._fine_pressed = False
         self.input_mode = 'controller'  # 'keyboard' | 'controller'
-        # Controller axes group selection: 'xy' or 'uv' (axes 0/1 control selected group)
-        self.controller_axes_group = 'xy'
+        self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
 
         # Key bindings (keyboard mode)
         self._axis_bindings = {
-            # XY with arrows
+            # Carriage 1 XY with arrows
             'left': ('x', -1),
             'right': ('x', +1),
             'down': ('y', -1),
             'up': ('y', +1),
-            # UV with IJKL
-            'j': ('u', -1),
-            'l': ('u', +1),
-            'k': ('v', -1),
-            'i': ('v', +1),
+            # Carriage 2 AB with IJKL
+            'j': ('a', -1),
+            'l': ('a', +1),
+            'k': ('b', -1),
+            'i': ('b', +1),
         }
-
         self._action_bindings = {
             'f': ('toggle_fine', ()),
             'p': ('save_position', ()),
             'g': ('goto_saved', ()),
             'h': ('home_xy', ()),
-            '1': ('spiral_xy', ()),
-            '2': ('spiral_uv', ()),
-            'c': ('search_interrupt', ()),
             '-': ('speed_dec', ()),
             '=': ('speed_inc', ()),
             '+': ('speed_inc', ()),
         }
 
-        # Build GUI and start default input
+        # Build GUI and start input
         self._build_gui()
         self._start_keyboard_listener()
         self._update_displays()
@@ -106,8 +100,8 @@ class FlexAlignerGUI:
     # ---------------- GUI BUILD -----------------
     def _build_gui(self):
         self.root = tk.Tk()
-        self.root.title("Flex Cable Aligner Controller")
-        self.root.geometry("850x650")
+        self.root.title("Flex Cable Aligner Controller (Marlin USB)")
+        self.root.geometry("900x700")
 
         main = ttk.Frame(self.root, padding=10)
         main.grid(sticky='nsew')
@@ -129,21 +123,22 @@ class FlexAlignerGUI:
         # Input mode + controller info
         ctrl = ttk.LabelFrame(main, text="Controller", padding=10)
         ctrl.grid(row=1, column=0, sticky='ew', pady=5)
-        ttk.Label(ctrl, text="Input:").grid(row=0, column=0, padx=(0,6))
+        ttk.Label(ctrl, text="Input:").grid(row=0, column=0, padx=(0, 6))
         self.input_var = tk.StringVar(value='Controller')
         self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Controller'], state='readonly', width=12)
-        self.input_combo.grid(row=0, column=1, padx=(0,8))
+        self.input_combo.grid(row=0, column=1, padx=(0, 8))
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
         self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
         self.controller_label.grid(row=0, column=2, sticky='w')
-        # Show current controller axes mapping (XY or UV)
-        self.mapping_label = ttk.Label(ctrl, text="Axes: XY")
-        self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6,0))
+        # Show current carriage selection
+        self.mapping_label = ttk.Label(ctrl, text="Carriage: 1 (XYZ)")
+        self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6, 0))
         self._init_joystick()
+
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
         saved.grid(row=1, column=1, sticky='ew', padx=10, pady=5)
-        canvas = Canvas(saved, width=250, height=100)
+        canvas = Canvas(saved, width=300, height=120)
         scrollbar = ttk.Scrollbar(saved, orient='vertical', command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.grid(row=0, column=0, sticky='nsew')
@@ -177,7 +172,15 @@ class FlexAlignerGUI:
         if self.input_mode == 'keyboard':
             self.speed_var = tk.DoubleVar(value=self.config.max_speed)
         else:
-            self.speed_var = tk.DoubleVar(value=((0.1 + ((self.joystick.get_axis(3) + 1.0) / 2.0)) * (self.config.max_speed - self.config.base_speed)))
+            # Map controller axis to speed on first render if available
+            try:
+                js = self.joystick
+                raw = -js.get_axis(3)
+                norm = (raw + 1.0) / 2.0
+                guess = self.config.base_speed + norm * (self.config.max_speed - self.config.base_speed)
+            except Exception:
+                guess = self.config.max_speed
+            self.speed_var = tk.DoubleVar(value=guess)
         self.speed_scale = ttk.Scale(settings, from_=self.config.base_speed, to=self.config.max_speed, variable=self.speed_var, command=self._update_speed)
         self.speed_scale.grid(row=1, column=1, sticky='ew')
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
@@ -192,41 +195,20 @@ class FlexAlignerGUI:
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
         pos_frame.grid(row=3, column=0, columnspan=2, sticky='ew', pady=5)
-        self.pos_text = tk.Text(pos_frame, height=5, width=50)
+        self.pos_text = tk.Text(pos_frame, height=8, width=50)
         self.pos_text.grid(row=0, column=0)
         vel_frame = ttk.LabelFrame(main, text="Velocities", padding=10)
         vel_frame.grid(row=3, column=1, sticky='ew')
-        self.vel_text = tk.Text(vel_frame, height=5, width=30)
+        self.vel_text = tk.Text(vel_frame, height=8, width=30)
         self.vel_text.grid(row=0, column=0)
 
         self.root.bind('<Escape>', lambda e: self.emergency_stop())
         self.root.bind('<space>', lambda e: self.reset_velocities())
 
-    def _update_positions(self):
-        while True:
-            if not self.connected:
-                time.sleep(1)
-                continue
-            pos = self.background_printer.get_position()
-            if pos is not None:
-                # Merge new positions, keep previous on parsing issues
-                for k in ('x', 'y', 'z', 'u', 'v', 'z2'):
-                    if k in pos:
-                        try:
-                            self.positions[k] = float(pos[k])
-                        except Exception:
-                            # Some macro outputs may be strings; ignore if not parseable
-                            self.positions[k] = pos[k]
-            time.sleep(1)
-
     # -------------- Connection -----------------
     def connect(self):
-        # Printer only
         if not self.printer.connect():
             messagebox.showerror("Printer", f"Failed to connect: {self.printer.last_error}")
-            return
-        if not self.background_printer.connect():
-            messagebox.showerror("Background Printer", f"Failed to connect: {self.background_printer.last_error}")
             return
         self.connected = True
         self.status_label.config(text="Status: Connected", foreground='green')
@@ -243,7 +225,6 @@ class FlexAlignerGUI:
 
     # -------------- Movement Loop --------------
     def _schedule_loop(self):
-        # dynamic interval based on current max velocity
         max_v = max(abs(v) for v in self.current_vel.values())
         interval = self.config.get_dynamic_interval(max_v)
         self.root.after(int(interval * 1000), self._loop_iteration)
@@ -253,117 +234,68 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
-        print("DT: ", dt)
         self.last_update_time = now
 
         # Input handling
         if self.input_mode == 'keyboard':
-            # Process any queued actions from keyboard thread
             self._process_actions()
         else:
-            # Controller mode
             self._read_joystick()
             self._handle_joystick_buttons()
-        # Hat vertical axis controls Z or Z2 (slower)
+        # Hat vertical axis controls Z or C (slower)
         try:
             hx, hy = self.joystick.get_hat(0)
         except Exception:
             hx, hy = 0, 0
         hy = -hy
         z_vel = self.config.get_velocity_curve(float(hy)) * self.z_speed_scale
-        if self.controller_axes_group == 'xy':
+        # Reset Z/C first
+        self.target_vel['z'] = 0.0
+        self.target_vel['c'] = 0.0
+        if self.selected_carriage == 1:
             self.target_vel['z'] = z_vel
         else:
-            self.target_vel['z2'] = z_vel
+            self.target_vel['c'] = z_vel
 
-        print("Target velocity:", self.target_vel)
         self.current_vel = self.target_vel.copy()
 
-        # Execute relative moves
+        # Execute continuous jog
         if self.connected:
-            self._execute_moves(dt)
-            pos = None #self.printer.get_position()
-            if pos is not None:
-                    # Merge new positions, keep previous on parsing issues
-                    for k in ('x', 'y', 'z', 'u', 'v', 'z2'):
-                        if k in pos:
-                            try:
-                                self.positions[k] = float(pos[k])
-                            except Exception:
-                                # Some macro outputs may be strings; ignore if not parseable
-                                self.positions[k] = pos[k]
+            self._execute_jog(dt)
 
         self._schedule_loop()
 
-    def _execute_moves(self, dt):
-        # XY + Z (Z follows XY carriage)
-        dx = (self.current_vel['x'] / 60.0) * dt * self.config.movement_scale
-        dy = (self.current_vel['y'] / 60.0) * dt * self.config.movement_scale
-        dz = (self.current_vel['z'] / 60.0) * dt * self.config.movement_scale
-        print("DX:", dx, "DY:", dy, "DZ:", dz)
-        if (abs(dx) > self.config.min_move_threshold or
-            abs(dy) > self.config.min_move_threshold or
-            abs(dz) > self.config.min_move_threshold):
-            vel_mag = math.sqrt(dx*dx + dy*dy + dz*dz) / dt * 60 if dt > 0 else 0
-            feed = vel_mag
-            print("Feedrate:", feed)
-            ok = self.printer.move_xy_with_carriage(dx, dy, dz, feed)
-            if ok:
-                self.positions['x'] += dx
-                self.positions['y'] += dy
-                self.positions['z'] += dz
-                self._log_move(dx, dy, feed)
-            else:
-                print(self.printer.last_error)
-                if isinstance(self.printer.last_error, str) and self.printer.last_error.startswith("Move out of range"):
-                    self.range_error_counter += 1
-                    if self.range_error_counter > 5:
-                        messagebox.showerror('Move out of range', 'Move out of range!')
-                        self.range_error_counter = 0
-                elif isinstance(self.printer.last_error, str) and (self.printer.last_error.startswith('[') or self.printer.last_error.startswith('socket')):
-                    print('Reconnecting automatically...')
-                    self.disconnect()
-                    self.connect()
-                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('Must home'):
-                    print("Resetting kinematic positions...")
-                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
-                else:
-                    print('Failed to move, resetting kinematic position')
-    
-        du = (self.current_vel['u'] / 60.0) * dt * self.config.movement_scale
-        dv = (self.current_vel['v'] / 60.0) * dt * self.config.movement_scale
-        dz2 = (self.current_vel['z2'] / 60.0) * dt * self.config.movement_scale
-        print("DU:", du, "DV:", dv, "DZ2:", dz2)
-        if (abs(du) > self.config.min_move_threshold or
-            abs(dv) > self.config.min_move_threshold or
-            abs(dz2) > self.config.min_move_threshold):
-            vel_mag = math.sqrt(du*du + dv*dv) / dt * 60 if dt > 0 else 0
-            feed = vel_mag
-            ok = self.printer.move_uv(du, dv, dz2, feed)
-            if ok:
-                self.positions['u'] += du
-                self.positions['v'] += dv
-                self.positions['z2'] += dz2
-                self._log_move(du, dv, feed)
-            else:
-                print(self.printer.last_error)
-                if isinstance(self.printer.last_error, str) and self.printer.last_error.startswith("Move out of range"):
-                    self.range_error_counter += 1
-                    if self.range_error_counter > 5:
-                        messagebox.showerror('Move out of range', 'Move out of range!')
-                        self.range_error_counter = 0
-                elif isinstance(self.printer.last_error, str) and (self.printer.last_error.startswith('[') or self.printer.last_error.startswith('socket')):
-                    print('Reconnecting automatically...')
-                    self.disconnect()
-                    self.connect()
-                elif isinstance(self.printer.last_error, str) and self.printer.last_error.startswith('Must home'):
-                    print("Resetting kinematic positions...")
-                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
-                else:
-                    print('Failed to move, resetting kinematic position')
-    def _log_move(self, dx, dy, feed):
-        self.movement_history.append({'time': time.time(), 'distance': math.sqrt(dx*dx + dy*dy), 'feed': feed})
+    def _execute_jog(self, dt):
+        # Build velocity vector for selected carriage
+        if self.selected_carriage == 1:
+            vx = self.current_vel['x'] * self.config.movement_scale
+            vy = self.current_vel['y'] * self.config.movement_scale
+            vz = self.current_vel['z'] * self.config.movement_scale
+        else:
+            vx = self.current_vel['a'] * self.config.movement_scale
+            vy = self.current_vel['b'] * self.config.movement_scale
+            vz = self.current_vel['c'] * self.config.movement_scale
 
+        feed = math.sqrt(vx * vx + vy * vy + vz * vz)
+        self.printer.set_carriage(self.selected_carriage)
+        if feed < self.config.velocity_stop_threshold:
+            self.printer.stop_jog()
+            return
+
+        # Integrate local display positions
+        dx = (vx / 60.0) * dt
+        dy = (vy / 60.0) * dt
+        dz = (vz / 60.0) * dt
+        if self.selected_carriage == 1:
+            self.positions['x'] += dx
+            self.positions['y'] += dy
+            self.positions['z'] += dz
+        else:
+            self.positions['a'] += dx
+            self.positions['b'] += dy
+            self.positions['c'] += dz
+        # Command/update jog
+        self.printer.jog(vx, vy, vz, max(feed, 100.0))
 
     # -------------- Keyboard handling --------------------
     def _start_keyboard_listener(self):
@@ -374,7 +306,6 @@ class FlexAlignerGUI:
 
     def _key_to_token(self, key) -> str | None:
         try:
-            # Special keys
             if isinstance(key, keyboard.Key):
                 special = {
                     keyboard.Key.left: 'left',
@@ -385,7 +316,6 @@ class FlexAlignerGUI:
                     keyboard.Key.esc: 'esc',
                 }
                 return special.get(key)
-            # Character keys
             if isinstance(key, keyboard.KeyCode):
                 if key.char is None:
                     return None
@@ -403,9 +333,7 @@ class FlexAlignerGUI:
             if token not in self._pressed_keys:
                 self._pressed_keys.add(token)
                 first_press = True
-            # Recompute target velocity for held keys
             self._recompute_target_vel_locked()
-        # Queue one-shot actions only on first keydown
         if first_press and token in self._action_bindings:
             name, args = self._action_bindings[token]
             self._enqueue_action(name, *args)
@@ -421,7 +349,7 @@ class FlexAlignerGUI:
 
     def _recompute_target_vel_locked(self):
         # Build per-axis input from pressed keys
-        axis_input = {"x": 0.0, "y": 0.0, "u": 0.0, "v": 0.0}
+        axis_input = {"x": 0.0, "y": 0.0, "a": 0.0, "b": 0.0}
         for tok in self._pressed_keys:
             bind = self._axis_bindings.get(tok)
             if not bind:
@@ -431,28 +359,27 @@ class FlexAlignerGUI:
         # Clamp and translate to target velocities using the same curve
         for axis, val in axis_input.items():
             val = max(-1.0, min(1.0, val))
-            self.target_vel[axis] = self.config.get_velocity_curve(val, self.fine_mode)
+            self.target_vel[axis] = self.config.get_velocity_curve(val)
 
-        # Handle Z/Z2 via W/S keys depending on selected carriage
+        # Handle Z/C via W/S keys depending on selected carriage
         z_input = 0.0
         if 'w' in self._pressed_keys:
             z_input += 1.0
         if 's' in self._pressed_keys:
             z_input -= 1.0
-        z_vel = self.config.get_velocity_curve(z_input, self.fine_mode) * self.z_speed_scale
-        # Reset Z targets first
+        z_vel = self.config.get_velocity_curve(z_input) * self.z_speed_scale
         self.target_vel['z'] = 0.0
-        self.target_vel['z2'] = 0.0
-        if self.controller_axes_group == 'xy':
+        self.target_vel['c'] = 0.0
+        if self.selected_carriage == 1:
             self.target_vel['z'] = z_vel
         else:
-            self.target_vel['z2'] = z_vel
+            self.target_vel['c'] = z_vel
+
     def _enqueue_action(self, name: str, *args):
         with self._keys_lock:
             self._action_queue.append((name, args))
 
     def _process_actions(self):
-        # Execute queued actions on the Tk main thread
         while True:
             with self._keys_lock:
                 if not self._action_queue:
@@ -461,32 +388,27 @@ class FlexAlignerGUI:
             try:
                 if name == 'toggle_fine':
                     self.fine_mode = not self.fine_mode
-                    self.config.max_speed = 1000 if self.fine_mode else 3000
+                    # In this simplified mode, fine toggles just clamp max speed for the slider
+                    self.config.max_speed = 1000 if self.fine_mode else 20000
                     self.speed_var.set(self.config.max_speed)
                     self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
                     self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
-                    # Recompute to apply new limits
                     with self._keys_lock:
                         self._recompute_target_vel_locked()
                 elif name == 'save_position':
-                    self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
+                    self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['z'],
+                                                self.positions['a'], self.positions['b'], self.positions['c']))
                     self._add_row()
                 elif name == 'goto_saved':
                     if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                         self.goto_saved_position()
                 elif name == 'home_xy':
+                    self.printer.set_carriage(1)
+                    self.printer.stop_jog()
                     self.printer.home_xy()
                     self.positions['x'] = self.positions['y'] = 0.0
-                elif name == 'spiral_xy':
-                    self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
-                    # self.spiral_search(self.positions['x'], self.positions['y'], 8)
-                elif name == 'spiral_uv':
-                    pass
-                    # self.spiral_search(self.positions['u'], self.positions['v'], 9)
-                elif name == 'search_interrupt':
-                    self.search_interrupt()
                 elif name == 'speed_inc':
-                    self.config.max_speed = min(self.config.max_speed + 100, 3000)
+                    self.config.max_speed = min(self.config.max_speed + 100, 20000)
                     self.speed_var.set(self.config.max_speed)
                     self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
                 elif name == 'speed_dec':
@@ -495,7 +417,7 @@ class FlexAlignerGUI:
                     self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
             except Exception as e:
                 print(f"Action '{name}' failed: {e}")
-            
+
     # -------------- Controller handling --------------------
     def _init_joystick(self) -> bool:
         if pygame is None:
@@ -540,10 +462,9 @@ class FlexAlignerGUI:
             pygame.event.pump()
         except Exception:
             return
-        if not self.joystick:
+        if not getattr(self, 'joystick', None):
             return
-        # Axes mapping: [x, y, u, v]
-        # Read axes 0/1 only and map to current group (XY or UV)
+        # Axes mapping: [x, y] for selected carriage (1: XY, 2: AB)
         try:
             ax0 = self.joystick.get_axis(0)
             ax1 = self.joystick.get_axis(1)
@@ -551,41 +472,38 @@ class FlexAlignerGUI:
             ax0 = 0.0
             ax1 = 0.0
 
-        # Zero all targets first
+        # Zero planar targets first
         self.target_vel['x'] = 0.0
         self.target_vel['y'] = 0.0
-        self.target_vel['u'] = 0.0
-        self.target_vel['v'] = 0.0
+        self.target_vel['a'] = 0.0
+        self.target_vel['b'] = 0.0
 
-        if self.controller_axes_group == 'xy':
+        if self.selected_carriage == 1:
             self.target_vel['x'] = self.config.get_velocity_curve(ax0)
             self.target_vel['y'] = self.config.get_velocity_curve(ax1)
-        else:  # 'uv'
-            self.target_vel['u'] = self.config.get_velocity_curve(ax0)
-            self.target_vel['v'] = self.config.get_velocity_curve(ax1)
-        
-        # Axis 3 controls overall velocity/movement scale smoothly (controller mode only)
+        else:
+            self.target_vel['a'] = self.config.get_velocity_curve(ax0)
+            self.target_vel['b'] = self.config.get_velocity_curve(ax1)
+
+        # Axis 3 controls overall max speed in UI
         try:
-            ax3 = -self.joystick.get_axis(3)  # invert so pushing up increases speed
+            ax3 = -self.joystick.get_axis(3)
         except Exception:
             ax3 = 0.0
-        # Normalize [-1..1] -> [0..1]
         norm = (ax3 + 1.0) / 2.0
-        # Map to the same range as the UI scale slider [0.1 .. 2.0]
-        new_speed = 0.1 + norm * (20000 - 500)
-        # Reflect in UI
+        new_speed = self.config.base_speed + norm * (20000 - self.config.base_speed)
         if hasattr(self, 'speed_var'):
             try:
                 self.speed_var.set(new_speed)
-                self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
                 self._update_speed(new_speed)
             except Exception:
                 pass
 
     def _handle_joystick_buttons(self):
-        if not self.joystick:
+        if not getattr(self, 'joystick', None):
             return
         t = time.time()
+
         def debounce(key, interval):
             last = self._last_button_times.get(key, 0)
             if t - last > interval:
@@ -595,40 +513,30 @@ class FlexAlignerGUI:
 
         # 0: home XY
         if self.joystick.get_button(0) and debounce('home', 0.3):
+            self.printer.set_carriage(1)
+            self.printer.stop_jog()
             self.printer.home_xy()
             self.positions['x'] = self.positions['y'] = 0.0
 
-        # 1: toggle axes group XY <-> UV
-        if self.joystick.get_button(1) and debounce('toggle_axes', 0.2):
-            self.controller_axes_group = 'uv' if self.controller_axes_group == 'xy' else 'xy'
-            # Update label
+        # 1: toggle carriage 1 <-> 2
+        if self.joystick.get_button(1) and debounce('toggle_car', 0.2):
+            self.selected_carriage = 2 if self.selected_carriage == 1 else 1
             if getattr(self, 'mapping_label', None):
-                self.mapping_label.config(text=f"Axes: {self.controller_axes_group.upper()}")
-            # Reset velocities when changing groups
+                text = 'Carriage: 1 (XYZ)' if self.selected_carriage == 1 else 'Carriage: 2 (ABC)'
+                self.mapping_label.config(text=text)
             self.reset_velocities()
+            self.printer.stop_jog()
 
-    # 2: save position
-        if self.joystick.get_button(2) and debounce('save', 0.1):
-            self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v']))
+        # 2: save position
+        if self.joystick.get_button(2) and debounce('save', 0.2):
+            self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['z'],
+                                        self.positions['a'], self.positions['b'], self.positions['c']))
             self._add_row()
 
         # 4: goto selected position
-        if self.joystick.get_button(4) and debounce('goto', 0.1):
+        if self.joystick.get_button(4) and debounce('goto', 0.2):
             if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                 self.goto_saved_position()
-
-    # 4: goto selected position (unchanged)
-    # already handled above in button 4 block
-
-        # 3: reset kinematic position
-        if self.joystick.get_button(3) and debounce('reset_kinematic', 0.5):
-            self.printer.set_kinematic_position(self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'])
-
-        # 5: interrupt search
-        # if self.joystick.get_button(5) and debounce('interrupt', 0.5):
-        #     self.search_interrupt()
-
-    # Axis 3 handles speed smoothly; no trigger-based speed changes
 
     # -------------- Input Mode switching ------------------
     def _on_input_mode_change(self, _event=None):
@@ -640,22 +548,19 @@ class FlexAlignerGUI:
 
     def _switch_to_keyboard(self):
         self.input_mode = 'keyboard'
-        # Stop joystick
         self._shutdown_joystick()
-        # Start keyboard listener
         self._start_keyboard_listener()
         self.controller_label.config(text="Controller: Keyboard (pynput)")
         self.reset_velocities()
+        self.printer.stop_jog()
 
     def _switch_to_controller(self):
         self.input_mode = 'controller'
-        # Stop keyboard listener
         try:
             if self._listener:
                 self._listener.stop()
         except Exception:
             pass
-        # Init joystick
         ok = self._init_joystick()
         if not ok:
             messagebox.showerror("Controller", "No joystick detected; staying in Keyboard mode")
@@ -663,7 +568,8 @@ class FlexAlignerGUI:
             self.input_mode = 'keyboard'
             self._start_keyboard_listener()
         self.reset_velocities()
-# A13 541
+        self.printer.stop_jog()
+
     # -------------- Saved Positions -------------
     def _add_row(self):
         row_entries = []
@@ -676,11 +582,10 @@ class FlexAlignerGUI:
             e.grid(row=self.current_row_index + 1, column=col)
             e.bind('<Button-1>', lambda ev, idx=self.current_row_index: self._on_click(ev, idx))
             row_entries.append(e)
-        # fill
         idx = self.current_row_index
         pos = self.positions_list[idx]
         self.table.grid_slaves(row=idx + 1, column=0)[0].insert(0, idx + 1)
-        self.table.grid_slaves(row=idx + 1, column=1)[0].insert(0, f"X={pos[0]:.3f}, Y={pos[1]:.3f}, U={pos[2]:.3f}, V={pos[3]:.3f}")
+        self.table.grid_slaves(row=idx + 1, column=1)[0].insert(0, f"X={pos[0]:.3f}, Y={pos[1]:.3f}, Z={pos[2]:.3f}, A={pos[3]:.3f}, B={pos[4]:.3f}, C={pos[5]:.3f}")
         self.row_list.append(row_entries)
         self.current_row_index += 1
         self.canvas.configure(scrollregion=self.canvas.bbox('all'))
@@ -689,14 +594,9 @@ class FlexAlignerGUI:
         self.selected_row_index = row_index
         for entries in self.row_list:
             for e in entries:
-                e.config(state='normal', background= 'white')
-                # set bg color to white
-
-        # Highlight the selected row
+                e.config(state='normal', background='white')
         for e in self.row_list[self.selected_row_index]:
-            e.config(state='readonly', readonlybackground='lightblue')
-            # if its the third row, don't change to readonly, but do change its color
-
+            e.config(state='readonly', readonlybackground=SELECTED_ROW_COLOR)
 
     def _remove_selected_pos(self):
         if self.selected_row_index is None:
@@ -714,47 +614,28 @@ class FlexAlignerGUI:
                 e.destroy()
         self.row_list = []
         self.current_row_index = 0
-        for pos in self.positions_list:
+        for _ in self.positions_list:
             self._add_row()
         self.selected_row_index = None
 
     def goto_saved_position(self):
         pos = self.positions_list[self.selected_row_index]
-        print('Moving to position: ', pos)
-        # Absolute like move via setting kinematics then nothing moves physically; instead we issue relative moves required
-        # Simplest: set kinematic so display matches saved
-        self.printer.goto_position(pos[0], pos[1], pos[2], pos[3])
-        self.positions['x'], self.positions['y'], self.positions['u'], self.positions['v'] = pos
-
-    # ------------- Spiral Search ----------------
-    def spiral_search(self, x, y):
-        """Perform search pattern smoothly"""
-        self.is_searching = True
-
-        def spiral_coords(x, y, final_radius=5, loops=5, points_per_loop=50):
-            coords = []
-            total_points = loops * points_per_loop
-            b = final_radius / (2 * math.pi * loops)  # spiral spacing so that r = 5 mm at the end
-
-            for i in range(total_points + 1):
-                theta = 2 * math.pi * i / points_per_loop
-                r = b * theta
-                new_x = x + r * math.cos(theta)
-                new_y = y + r * math.sin(theta)
-                coords.append((new_x, new_y))
-
-            return coords
-
-        self.spiral_coordinates = spiral_coords(x,y)
-        self.printer.run_spiral_search(self.controller_axes_group, self.spiral_coordinates)
-        self.is_searching = False
-
-    def search_interrupt(self):
-        if self.is_searching == False:
-            pass
-        else:
-            self.reset_velocities()
-            self.spiral_coordinates = []
+        # Carriage 1 deltas
+        dx = pos[0] - self.positions['x']
+        dy = pos[1] - self.positions['y']
+        dz = pos[2] - self.positions['z']
+        self.printer.set_carriage(1)
+        self.printer.stop_jog()
+        self.printer.move_relative(dx, dy, dz, feedrate=self.config.max_speed)
+        self.positions['x'], self.positions['y'], self.positions['z'] = pos[0], pos[1], pos[2]
+        # Carriage 2 deltas
+        da = pos[3] - self.positions['a']
+        db = pos[4] - self.positions['b']
+        dc = pos[5] - self.positions['c']
+        self.printer.set_carriage(2)
+        self.printer.stop_jog()
+        self.printer.move_relative(da, db, dc, feedrate=self.config.max_speed)
+        self.positions['a'], self.positions['b'], self.positions['c'] = pos[3], pos[4], pos[5]
 
     # -------------- GUI updates -----------------
     def _update_speed(self, val):
@@ -763,16 +644,15 @@ class FlexAlignerGUI:
 
     def _update_scale(self, val):
         self.config.movement_scale = float(val)
-        # self.config.velocity_scale = float(val)
         self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
 
     def _set_preset(self, v):
-        self.config.movement_scale = self.config.velocity_scale = v
+        self.config.movement_scale = v
         self.scale_var.set(v)
         self.scale_label.config(text=f"{v:.2f}x")
 
     def reset_velocities(self):
-        for k in self.target_vel:
+        for k in list(self.target_vel.keys()):
             self.target_vel[k] = 0.0
             self.current_vel[k] = 0.0
 
@@ -786,35 +666,21 @@ class FlexAlignerGUI:
         self.pos_text.delete(1.0, tk.END)
         self.pos_text.insert(tk.END, f"X: {self.positions['x']:.3f}\n")
         self.pos_text.insert(tk.END, f"Y: {self.positions['y']:.3f}\n")
-        self.pos_text.insert(tk.END, f"U: {self.positions['u']:.3f}\n")
-        self.pos_text.insert(tk.END, f"V: {self.positions['v']:.3f}")
-        if 'z' in self.positions:
-            try:
-                self.pos_text.insert(tk.END, f"Z: {float(self.positions['z']):.3f}\n")
-            except Exception:
-                self.pos_text.insert(tk.END, f"Z: {self.positions['z']}\n")
+        self.pos_text.insert(tk.END, f"Z: {self.positions['z']:.3f}\n")
+        self.pos_text.insert(tk.END, f"A: {self.positions['a']:.3f}\n")
+        self.pos_text.insert(tk.END, f"B: {self.positions['b']:.3f}\n")
+        self.pos_text.insert(tk.END, f"C: {self.positions['c']:.3f}")
+
         self.vel_text.delete(1.0, tk.END)
         self.vel_text.insert(tk.END, f"X: {self.current_vel['x']:.1f}\n")
         self.vel_text.insert(tk.END, f"Y: {self.current_vel['y']:.1f}\n")
-        if 'z' in self.positions:
-            try:
-                self.pos_text.insert(tk.END, f"Z: {float(self.positions['z']):.3f}\n")
-            except Exception:
-                self.pos_text.insert(tk.END, f"Z: {self.positions['z']}\n")
         self.vel_text.insert(tk.END, f"Z: {self.current_vel.get('z', 0.0):.1f}\n")
-        self.pos_text.insert(tk.END, f"V: {self.positions['v']:.3f}\n")
-        if 'z2' in self.positions:
-            try:
-                self.pos_text.insert(tk.END, f"Z2: {float(self.positions['z2']):.3f}")
-            except Exception:
-                self.pos_text.insert(tk.END, f"Z2: {self.positions['z2']}")
-        self.vel_text.insert(tk.END, f"V: {self.current_vel['v']:.1f}")
-        self.vel_text.insert(tk.END, f"Z2: {self.current_vel.get('z2', 0.0):.1f}")
-        self.root.after(100, self._update_displays)
-        self.vel_text.insert(tk.END, f"Z: {self.current_vel.get('z', 0.0):.1f}\n")
+        self.vel_text.insert(tk.END, f"A: {self.current_vel.get('a', 0.0):.1f}\n")
+        self.vel_text.insert(tk.END, f"B: {self.current_vel.get('b', 0.0):.1f}\n")
+        self.vel_text.insert(tk.END, f"C: {self.current_vel.get('c', 0.0):.1f}")
 
-        self.vel_text.insert(tk.END, f"V: {self.current_vel['v']:.1f}\n")
-        self.vel_text.insert(tk.END, f"Z2: {self.current_vel.get('z2', 0.0):.1f}")
+        self.root.after(100, self._update_displays)
+
     def run(self):
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.mainloop()

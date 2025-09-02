@@ -1,313 +1,259 @@
-import json
+import os
 import threading
 import time
-from typing import Optional, Any
+from typing import Optional
 
-from websocket import create_connection, WebSocket
+import serial  # pyserial
 
 
 class Printer:
-    """Synchronous Klipper JSON-RPC client over Moonraker WebSocket.
+    """Marlin over USB serial with continuous jogging.
 
-    Public interface is unchanged: send G-Code, movement helpers, etc.
-    Connects to Moonraker (default ws://localhost:7125/websocket).
+    Changes vs previous implementation:
+    - Talks to Marlin via a serial COM port (USB CDC)
+    - Uses relative positioning (G91) for all moves
+    - Two carriages mapped to XYZ (carriage 1) and ABC (carriage 2)
+    - Jogging sends one long G1 in the current direction; change/stop via M410
     """
 
-    def __init__(self, url: str = "ws://10.37.247.54:7125/websocket", api_key: Optional[str] = None):
-        # Moonraker connection settings
-        self.url = url
-        self.api_key = api_key
+    def __init__(self, port: str | None = None, baud: int = 250000, read_timeout: float = 0.2):
+        # Allow env var override for convenience on Linux/Mac: MARLIN_PORT=/dev/ttyACM0
+        env_port = os.environ.get('MARLIN_PORT')
+        self.port = port or env_port  # e.g., '/dev/ttyACM0' on Linux, 'COM4' on Windows
+        self.baud = baud
+        self.read_timeout = read_timeout
 
-        # WebSocket handle
-        self.ws: Optional[WebSocket] = None
-
-        # RPC state
-        self.message_id = 1
-        self.lock = threading.Lock()  # ensure request/response pairing
+        self.ser: Optional[serial.Serial] = None
         self.connected = False
         self.last_error: Optional[str] = None
-        self.uv_carriage_prefix = "SET_DUAL_CARRIAGE CARRIAGE=x2\nSET_DUAL_CARRIAGE CARRIAGE=y2\n"
-        self.xy_carriage_prefix = "SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"
 
-    # ---- Connection management ----
+        # Jog state: track last commanded long move per carriage to avoid spam
+        self._carriage = 1  # 1 or 2
+        self._last_dir = {1: (0.0, 0.0, 0.0), 2: (0.0, 0.0, 0.0)}
+        self._last_feed = 0.0
+        self._io_lock = threading.Lock()
+
+    # ---- Connection ----
     def connect(self) -> bool:
         try:
-            headers = []
-            if self.api_key:
-                headers.append(f"X-Api-Key: {self.api_key}")
-            # Establish WebSocket connection to Moonraker
-            self.ws = create_connection(self.url, header=headers, timeout=5)
+            if self.ser and self.ser.is_open:
+                self.disconnect()
+
+            # Auto-detect a likely COM port if not provided (Windows only quick pass)
+            if self.port is None:
+                try:
+                    import serial.tools.list_ports as lp
+                    ports = [p.device for p in lp.comports()]
+                except Exception:
+                    ports = []
+                # naive pick: first with 'USB' or 'ACM' or any
+                choice = None
+                for p in ports:
+                    if 'USB' in p.upper() or 'ACM' in p.upper() or 'COM' in p.upper():
+                        choice = p
+                        break
+                self.port = choice or (ports[0] if ports else None)
+            if not self.port:
+                self.last_error = 'No serial port found. Please set Printer.port before connect().'
+                return False
+
+            self.ser = serial.Serial(self.port, self.baud, timeout=self.read_timeout)
             self.connected = True
 
-            # Optional: query server info (non-fatal if it fails)
-            try:
-                self._rpc("server.info", {}, timeout=2.0)
-            except Exception:
-                pass
+            # Marlin resets on connect; wait a moment and clear buffer
+            time.sleep(1.5)
+            self._drain_input()
 
-            # Switch to relative move mode so jogs are easy
-            self.send_gcode("G91", timeout=2.0)
+            # Relative moves and units
+            self.send_gcode('G21')  # mm
+            self.send_gcode('G91')  # relative
+            self.send_gcode('M114')  # prime comms
             return True
         except Exception as e:
             self.last_error = str(e)
             self.connected = False
-            self.ws = None
+            try:
+                if self.ser:
+                    self.ser.close()
+            except Exception:
+                pass
+            self.ser = None
             return False
 
     def disconnect(self):
         try:
-            if self.ws:
+            if self.ser:
                 try:
-                    self.ws.close()
+                    self.ser.close()
                 except Exception:
                     pass
         finally:
-            self.ws = None
+            self.ser = None
             self.connected = False
 
-    # ---- Low level JSON-RPC over Moonraker WebSocket ----
-    def _send(self, data: dict):
-        if not self.connected or not self.ws:
-            raise RuntimeError("Not connected")
-        encoded = json.dumps({"jsonrpc": "2.0", **data}, separators=(",", ":"))
-        self.ws.send(encoded)
-
-    def _recv_next(self, timeout: float) -> Optional[dict]:
-        if not self.connected or not self.ws:
-            raise RuntimeError("Not connected")
-        # websocket-client raises WebSocketTimeoutException on timeout
-        prev_to = getattr(self.ws, 'sock', None)
-        self.ws.settimeout(max(0.01, timeout))
+    # ---- I/O helpers ----
+    def _drain_input(self):
+        if not self.ser:
+            return
         try:
-            raw = self.ws.recv()
-            if raw is None:
-                return None
-            if isinstance(raw, (bytes, bytearray)):
-                raw = raw.decode("utf-8", errors="ignore")
-            try:
-                return json.loads(raw)
-            except json.JSONDecodeError:
-                return None
+            self.ser.reset_input_buffer()
         except Exception:
-            return None
+            # fallback: read whatever is pending
+            try:
+                while self.ser.in_waiting:
+                    _ = self.ser.readline()
+            except Exception:
+                pass
 
-    def _rpc(self, method: str, params: Optional[dict] = None, timeout: float = 2.0) -> dict:
-        if not self.connected or not self.ws:
-            raise RuntimeError("Not connected")
-        with self.lock:
-            req_id = self.message_id
-            self.message_id += 1
-            payload = {
-                "id": req_id,
-                "method": method,
-                "params": params or {},
-            }
-            self._send(payload)
-            end_time = time.time() + timeout
-            while time.time() < end_time:
-                msg = self._recv_next(max(0.01, end_time - time.time()))
-                if not msg:
-                    continue
-                # Responses contain an id; notifications don't
-                if msg.get("id") == req_id:
-                    if "error" in msg:
-                        err = msg["error"]
-                        # Moonraker error format: {code, message}
-                        raise RuntimeError(err.get("message", str(err)))
-                    return msg
-                # ignore async notifications or other responses
-            raise TimeoutError(f"RPC {method} timed out")
+    def _write_line(self, line: str):
+        if not self.connected or not self.ser:
+            raise RuntimeError('Not connected')
+        data = (line.strip() + "\n").encode('ascii', errors='ignore')
+        with self._io_lock:
+            self.ser.write(data)
+            self.ser.flush()
 
-    # ---- GCode helpers ----
-    def send_gcode(self, script: str, timeout: float = 2.0) -> bool:
+    def _read_until_ok(self, timeout: float = 2.0) -> bool:
+        if not self.ser:
+            return False
+        end = time.time() + max(0.01, timeout)
+        ok = False
+        while time.time() < end:
+            try:
+                line = self.ser.readline().decode('utf-8', errors='ignore').strip()
+            except Exception:
+                line = ''
+            if not line:
+                continue
+            if line.lower().startswith('error'):
+                self.last_error = line
+            if line.lower() == 'ok' or line.endswith('ok'):
+                ok = True
+                break
+        return ok
+
+    # ---- Public API ----
+    def send_gcode(self, gcode: str, wait_ok: bool = True, timeout: float = 2.0) -> bool:
         try:
-            # Moonraker uses method: printer.gcode.script
-            _ = self._rpc("printer.gcode.script", {"script": script}, timeout=timeout)
-            return True
+            for line in gcode.splitlines():
+                if not line.strip():
+                    continue
+                self._write_line(line)
+            return self._read_until_ok(timeout) if wait_ok else True
         except Exception as e:
             self.last_error = str(e)
             return False
 
-    def home_xy(self) -> bool:
-        return self.send_gcode("G28")
-
     def emergency_stop(self):
         try:
-            self._rpc("printer.emergency_stop", {}, timeout=1.0)
+            self.send_gcode('M112', wait_ok=False)
         except Exception as e:
             self.last_error = str(e)
 
-    # Movement utilities use relative moves (G91 already set)
-    def move_xy(self, dx: float, dy: float, feedrate: float) -> bool:
-        g = f"G1 X{dx:.4f} Y{dy:.4f} F{feedrate:.0f}"
-        return self.send_gcode(g)
+    def home_xy(self) -> bool:
+        return self.send_gcode('G28 X Y')
 
-    def move_uv(self, du: float, dv: float, dz: float, feedrate: float) -> bool:
-        # Carriage selection then move
-        script = (
-            "G91\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
-            f"G1 X{du:.4f} Y{dv:.4f} F{feedrate:.0f}\n"
-            f"MOVE_Z2 DISTANCE={dz:.4f}\n"
-            "M400\n"
-        )
-        return self.send_gcode(script)
+    # Carriage selection (1 -> XYZ, 2 -> ABC)
+    def set_carriage(self, which: int):
+        self._carriage = 1 if which != 2 else 2
 
-    def move_xy_with_carriage(self, dx: float, dy: float, dz: float, feedrate: float) -> bool:
-        script = (
-            "G91\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=x\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y\n"
-            f"G1 X{dx:.4f} Y{dy:.4f} Z{dz:.4f} F{feedrate:.0f}\n"
-            "M400\n"
-        )
-        return self.send_gcode(script)
+    # Continuous jog control
+    def jog(self, vx: float, vy: float, vz: float, feedrate: float) -> bool:
+        """Start/maintain a long move for current carriage in given direction/speed.
 
-    def get_position(self) -> Optional[dict[str, float]]:
-        """Query Klipper for current toolhead position via objects/query.
-
-        Returns a dict with keys x, y, z, e (as reported by toolhead.position).
-        Note: This reflects the currently active carriage.
+        - Uses G91 relative mode.
+        - If direction or feed changes, issues M410 then a new long G1.
+        - vx,vy,vz are signed velocities in mm/min (converted into a unit direction).
         """
-        positions = {}
+        if not self.connected:
+            return False
+
+        # Map components to axes by carriage
+        if self._carriage == 1:
+            ax = ('X', 'Y', 'Z')
+        else:
+            ax = ('A', 'B', 'C')
+
+        # Direction vector
+        dir_tuple = (
+            1.0 if vx > 0 else (-1.0 if vx < 0 else 0.0),
+            1.0 if vy > 0 else (-1.0 if vy < 0 else 0.0),
+            1.0 if vz > 0 else (-1.0 if vz < 0 else 0.0),
+        )
+
+        # If all zero -> stop
+        if dir_tuple == (0.0, 0.0, 0.0) or feedrate <= 0:
+            return self.stop_jog()
+
+        # Only (re)issue when direction or feed changed
+        if dir_tuple == self._last_dir[self._carriage] and abs(feedrate - self._last_feed) < 1e-6:
+            return True
+
+        # Stop existing motion immediately
+        self.send_gcode('M410', wait_ok=False)
+
+        # Large distance along each active axis (kept small but sufficient; M410 will stop it)
+        dist = 1000.0  # mm
+        parts = []
+        for comp, axis in zip(dir_tuple, ax):
+            if comp != 0.0:
+                parts.append(f"{axis}{dist * comp:.3f}")
+        if not parts:
+            return True
+        g1 = f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}"
+        ok = self.send_gcode(g1)
+        if ok:
+            self._last_dir[self._carriage] = dir_tuple
+            self._last_feed = feedrate
+        return ok
+
+    def stop_jog(self) -> bool:
+        # Immediate stop of planner queue
+        ok = self.send_gcode('M410')
+        self._last_dir[self._carriage] = (0.0, 0.0, 0.0)
+        self._last_feed = 0.0
+        return ok
+
+    # Direct small moves (optional)
+    def move_relative(self, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0, feedrate: float = 1000.0) -> bool:
+        if self._carriage == 2:
+            axes = [('A', dx), ('B', dy), ('C', dz)]
+        else:
+            axes = [('X', dx), ('Y', dy), ('Z', dz)]
+        parts = [f"{a}{v:.4f}" for a, v in axes if abs(v) > 1e-6]
+        if not parts:
+            return True
+        return self.send_gcode(f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}")
+
+    # Basic position query (Marlin M114 parsing is heuristic)
+    def get_position(self) -> Optional[dict[str, float]]:
+        if not self.connected:
+            return None
         try:
-            # First set carriage to XY mode
-            self.send_gcode(self.xy_carriage_prefix)
-            resp = self._rpc(
-                "printer.objects.query",
-                {"objects": {"toolhead": ["position"]}},
-                timeout=0.5,
-            )
-            pos = resp["result"]["status"]["toolhead"]["position"]
-            positions["x"] = pos[0]
-            positions['y'] = pos[1]
-
-            # Now do the same for UV
-            self.send_gcode(self.uv_carriage_prefix)
-            resp = self._rpc(
-                "printer.objects.query",
-                {"objects": {"toolhead": ["position"]}},
-                timeout=0.5,
-            )
-            pos = resp["result"]["status"]["toolhead"]["position"]
-            positions["u"] = pos[0]
-            positions['v'] = pos[1]
-            positions['z'] = pos[2]  # Z is shared, so just take last
-        
-            # Now do the same for Z2
-            positions['z2'] = float(self._get_macro_result("GET_POSITION_Z2\n").split(':')[1])
-            return positions
-
+            self._write_line('M114')
+            end = time.time() + 0.2
+            line = ''
+            while time.time() < end:
+                s = self.ser.readline().decode('utf-8', errors='ignore').strip()
+                if s:
+                    line = s
+                    if 'ok' in s.lower():
+                        break
+            # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
+            vals: dict[str, float] = {}
+            for token in line.replace(',', ' ').split():
+                if ':' in token:
+                    k, v = token.split(':', 1)
+                    try:
+                        vals[k.lower()] = float(v)
+                    except Exception:
+                        pass
+            # Map to our axes; Marlin won't report A/B/C; return current XYZ only
+            return {
+                'x': vals.get('x', 0.0),
+                'y': vals.get('y', 0.0),
+                'z': vals.get('z', 0.0),
+            }
         except Exception as e:
             self.last_error = str(e)
             return None
-
-    def set_kinematic_position(self, x: float, y: float, u: float, v: float) -> bool:
-        script = (
-            "SET_DUAL_CARRIAGE CARRIAGE=x\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y\n"
-            f"SET_KINEMATIC_POSITION X={x:.4f} Y={y:.4f}\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
-            f"SET_KINEMATIC_POSITION X={u:.4f} Y={v:.4f}"
-        )
-        return self.send_gcode(script)
-    
-
-    def goto_position(self, x: float, y: float, u: float, v: float, feedrate: float = 1500.0) -> bool:
-        script = (
-            "SET_DUAL_CARRIAGE CARRIAGE=x\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y\n"
-            "G90\n"
-            f"G1 X{x:.4f} Y{y:.4f} F{feedrate:.0f}\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=x2\n"
-            "SET_DUAL_CARRIAGE CARRIAGE=y2\n"
-            f"G1 X{u:.4f} Y{v:.4f} F{feedrate:.0f}\n"
-            "G91\n"
-        )
-        return self.send_gcode(script)
-
-    def _get_macro_result(self, script: str, timeout: float = 2.0) -> Optional[str]:
-        """Run a Klipper macro and capture its echoed terminal output.
-
-        This listens for Moonraker's notify_gcode_response events while submitting
-        the macro via printer.gcode.script, collecting any lines like:
-        - "echo: <text>" (from RESPOND/M118/ECHO)
-        - "// <text>" (Klipper info lines)
-
-        It stops when an 'ok' response is received or when the timeout elapses.
-
-        Args:
-            script: The exact script to send, e.g. "MY_MACRO PARAM=1".
-            timeout: Max seconds to wait for responses.
-
-        Returns:
-            The concatenated echoed text (without prefixes) if any were received; otherwise None.
-        """
-        if not self.connected or not self.ws:
-            raise RuntimeError("Not connected")
-
-        end_time = time.time() + max(0.05, timeout)
-        responses: list[str] = []
-        saw_ok = False
-
-        # Send the RPC under the same lock used by _rpc to serialize traffic and
-        # read both the RPC response and any notify_gcode_response messages.
-        with self.lock:
-            req_id = self.message_id
-            self.message_id += 1
-            payload = {
-                "id": req_id,
-                "method": "printer.gcode.script",
-                "params": {"script": script},
-            }
-            self._send(payload)
-
-            while time.time() < end_time:
-                msg = self._recv_next(max(0.01, end_time - time.time()))
-                if not msg:
-                    continue
-
-                # Capture gcode response notifications
-                if msg.get("method") == "notify_gcode_response":
-                    params = msg.get("params") or []
-                    # Moonraker sends ["<line>"]
-                    if params and isinstance(params[0], str):
-                        line = params[0].strip()
-                        # detect completion
-                        if line.lower() == "ok":
-                            saw_ok = True
-                        # extract human text from common prefixes
-                        text = None
-                        if line.startswith("echo:"):
-                            text = line[len("echo:"):].strip()
-                        elif line.startswith("//"):
-                            # Klipper informational prefix
-                            text = line.lstrip("/ ")
-                        # Avoid storing bare 'ok'
-                        if text:
-                            responses.append(text)
-                    # continue reading even if no line
-                    continue
-
-                # Paired response to our RPC ID
-                if msg.get("id") == req_id:
-                    # if there's an error, raise it immediately
-                    if "error" in msg:
-                        err = msg["error"]
-                        raise RuntimeError(err.get("message", str(err)))
-                    # don't return yet; keep collecting until ok or timeout
-                    if saw_ok:
-                        break
-                    else:
-                        # shorten remaining time a bit to allow responses to arrive
-                        end_time = max(time.time() + 0.2, end_time)
-                        continue
-
-                # Ignore unrelated notifications/responses
-                continue
-
-        if responses:
-            return "\n".join(responses)
-        return None
