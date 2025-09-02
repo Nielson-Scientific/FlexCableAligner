@@ -41,10 +41,13 @@ class FlexAlignerGUI:
 
         # State
         self.positions = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
-        self.target_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
+        # Display-only current velocities (mm/min components)
         self.current_vel = {'x': 0.0, 'y': 0.0, 'z': 0.0, 'a': 0.0, 'b': 0.0, 'c': 0.0}
         self.last_update_time = time.time()
         self.running = True
+
+        # Joystick handle (guarded everywhere)
+        self.joystick = None
 
         # Z/C movement is intentionally slower than planar
         self.z_speed_scale = 0.33
@@ -67,6 +70,9 @@ class FlexAlignerGUI:
         self._last_button_times = {}
         self.input_mode = 'controller'  # 'keyboard' | 'controller'
         self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
+        # Track last jog command to avoid resends and latency
+        self._last_dir_sent = {1: (0, 0, 0), 2: (0, 0, 0)}
+        self._last_feed_sent = {1: 0.0, 2: 0.0}
 
         # Key bindings (keyboard mode)
         self._axis_bindings = {
@@ -234,56 +240,71 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
-        print(dt)
         self.last_update_time = now
 
         # Input handling
         if self.input_mode == 'keyboard':
             self._process_actions()
+            dir_tuple, feed = self._dir_and_feed_from_keyboard()
         else:
+            # update speed slider from axis 3 and read direction
             self._read_joystick()
+            dir_tuple, feed = self._dir_and_feed_from_joystick()
             self._handle_joystick_buttons()
-        # Hat vertical axis controls Z or C (slower)
-        try:
-            hx, hy = self.joystick.get_hat(0)
-        except Exception:
-            hx, hy = 0, 0
-        hy = -hy
-        z_vel = self.config.get_velocity_curve(float(hy)) * self.z_speed_scale
-        # Reset Z/C first
-        self.target_vel['z'] = 0.0
-        self.target_vel['c'] = 0.0
-        if self.selected_carriage == 1:
-            self.target_vel['z'] = z_vel
-        else:
-            self.target_vel['c'] = z_vel
 
-        self.current_vel = self.target_vel.copy()
-
-        # Execute continuous jog
+        # Execute continuous jog only on changes; integrate display positions
         if self.connected:
-            self._execute_jog(dt)
+            self._execute_jog(dt, dir_tuple, feed)
 
         self._schedule_loop()
 
-    def _execute_jog(self, dt):
-        # Build velocity vector for selected carriage
-        if self.selected_carriage == 1:
-            vx = self.current_vel['x'] * self.config.movement_scale
-            vy = self.current_vel['y'] * self.config.movement_scale
-            vz = self.current_vel['z'] * self.config.movement_scale
-        else:
-            vx = self.current_vel['a'] * self.config.movement_scale
-            vy = self.current_vel['b'] * self.config.movement_scale
-            vz = self.current_vel['c'] * self.config.movement_scale
-
-        feed = math.sqrt(vx * vx + vy * vy + vz * vz)
+    def _execute_jog(self, dt, dir_tuple: tuple[int, int, int], feed: float):
+        # Apply global scaling once to feed
+        feed = max(0.0, float(feed)) * float(self.config.movement_scale)
         self.printer.set_carriage(self.selected_carriage)
-        if feed < self.config.velocity_stop_threshold:
-            self.printer.stop_jog()
+
+        # Decide if we need to send/stop
+        last_dir = self._last_dir_sent[self.selected_carriage]
+        last_feed = self._last_feed_sent[self.selected_carriage]
+        changed_dir = dir_tuple != last_dir
+        changed_feed = abs(feed - last_feed) > 50.0  # only resend if speed moved meaningfully
+
+        if dir_tuple == (0, 0, 0) or feed < self.config.velocity_stop_threshold:
+            if last_dir != (0, 0, 0):
+                self.printer.stop_jog()
+                self._last_dir_sent[self.selected_carriage] = (0, 0, 0)
+                self._last_feed_sent[self.selected_carriage] = 0.0
+            # Zero display velocities
+            self._set_display_velocities(0.0, 0.0, 0.0)
             return
 
-        # Integrate local display positions
+        # Update positions and display velocities (approximate components)
+        vx, vy, vz = self._components_from_dir_and_feed(dir_tuple, feed)
+        self._integrate_positions(dt, vx, vy, vz)
+        self._set_display_velocities(vx, vy, vz)
+
+        # Only command on meaningful change
+        if changed_dir or changed_feed:
+            # We only need the signs; Printer.jog uses sign and feed
+            sx, sy, sz = (1 if d > 0 else (-1 if d < 0 else 0) for d in dir_tuple)
+            self.printer.jog(sx, sy, sz, max(1.0, feed))
+            self._last_dir_sent[self.selected_carriage] = dir_tuple
+            self._last_feed_sent[self.selected_carriage] = feed
+
+    def _components_from_dir_and_feed(self, dir_tuple: tuple[int, int, int], feed: float) -> tuple[float, float, float]:
+        # Distribute vector speed across active axes uniformly (unit vector over active axes)
+        ax = [float(d) for d in dir_tuple]
+        active = [i for i, d in enumerate(ax) if d != 0.0]
+        if not active or feed <= 0:
+            return 0.0, 0.0, 0.0
+        # unit components: each active axis gets 1/sqrt(n) with sign
+        n = math.sqrt(len(active))
+        comps = [0.0, 0.0, 0.0]
+        for i in active:
+            comps[i] = (ax[i] / n) * feed
+        return comps[0], comps[1], comps[2]
+
+    def _integrate_positions(self, dt: float, vx: float, vy: float, vz: float):
         dx = (vx / 60.0) * dt
         dy = (vy / 60.0) * dt
         dz = (vz / 60.0) * dt
@@ -295,8 +316,22 @@ class FlexAlignerGUI:
             self.positions['a'] += dx
             self.positions['b'] += dy
             self.positions['c'] += dz
-        # Command/update jog
-        self.printer.jog(vx, vy, vz, max(feed, 100.0))
+
+    def _set_display_velocities(self, vx: float, vy: float, vz: float):
+        if self.selected_carriage == 1:
+            self.current_vel['x'] = vx
+            self.current_vel['y'] = vy
+            self.current_vel['z'] = vz
+            self.current_vel['a'] = 0.0
+            self.current_vel['b'] = 0.0
+            self.current_vel['c'] = 0.0
+        else:
+            self.current_vel['a'] = vx
+            self.current_vel['b'] = vy
+            self.current_vel['c'] = vz
+            self.current_vel['x'] = 0.0
+            self.current_vel['y'] = 0.0
+            self.current_vel['z'] = 0.0
 
     # -------------- Keyboard handling --------------------
     def _start_keyboard_listener(self):
@@ -349,32 +384,8 @@ class FlexAlignerGUI:
             self._recompute_target_vel_locked()
 
     def _recompute_target_vel_locked(self):
-        # Build per-axis input from pressed keys
-        axis_input = {"x": 0.0, "y": 0.0, "a": 0.0, "b": 0.0}
-        for tok in self._pressed_keys:
-            bind = self._axis_bindings.get(tok)
-            if not bind:
-                continue
-            axis, direction = bind
-            axis_input[axis] += direction
-        # Clamp and translate to target velocities using the same curve
-        for axis, val in axis_input.items():
-            val = max(-1.0, min(1.0, val))
-            self.target_vel[axis] = self.config.get_velocity_curve(val)
-
-        # Handle Z/C via W/S keys depending on selected carriage
-        z_input = 0.0
-        if 'w' in self._pressed_keys:
-            z_input += 1.0
-        if 's' in self._pressed_keys:
-            z_input -= 1.0
-        z_vel = self.config.get_velocity_curve(z_input) * self.z_speed_scale
-        self.target_vel['z'] = 0.0
-        self.target_vel['c'] = 0.0
-        if self.selected_carriage == 1:
-            self.target_vel['z'] = z_vel
-        else:
-            self.target_vel['c'] = z_vel
+        # No-op kept for compatibility; keyboard direction is computed per-loop
+        return
 
     def _enqueue_action(self, name: str, *args):
         with self._keys_lock:
@@ -438,68 +449,6 @@ class FlexAlignerGUI:
             self.controller_label.config(text=f"Controller error: {e}")
             return False
 
-    def _shutdown_joystick(self):
-        if pygame is None:
-            self.joystick = None
-            return
-        try:
-            if self.joystick:
-                try:
-                    self.joystick.quit()
-                except Exception:
-                    pass
-            pygame.joystick.quit()
-            try:
-                pygame.quit()
-            except Exception:
-                pass
-        finally:
-            self.joystick = None
-
-    def _read_joystick(self):
-        if pygame is None:
-            return
-        try:
-            pygame.event.pump()
-        except Exception:
-            return
-        if not getattr(self, 'joystick', None):
-            return
-        # Axes mapping: [x, y] for selected carriage (1: XY, 2: AB)
-        try:
-            ax0 = self.joystick.get_axis(0)
-            ax1 = self.joystick.get_axis(1)
-        except Exception:
-            ax0 = 0.0
-            ax1 = 0.0
-
-        # Zero planar targets first
-        self.target_vel['x'] = 0.0
-        self.target_vel['y'] = 0.0
-        self.target_vel['a'] = 0.0
-        self.target_vel['b'] = 0.0
-
-        if self.selected_carriage == 1:
-            self.target_vel['x'] = self.config.get_velocity_curve(ax0)
-            self.target_vel['y'] = self.config.get_velocity_curve(ax1)
-        else:
-            self.target_vel['a'] = self.config.get_velocity_curve(ax0)
-            self.target_vel['b'] = self.config.get_velocity_curve(ax1)
-
-        # Axis 3 controls overall max speed in UI
-        try:
-            ax3 = -self.joystick.get_axis(3)
-        except Exception:
-            ax3 = 0.0
-        norm = (ax3 + 1.0) / 2.0
-        new_speed = self.config.base_speed + norm * (20000 - self.config.base_speed)
-        if hasattr(self, 'speed_var'):
-            try:
-                self.speed_var.set(new_speed)
-                self._update_speed(new_speed)
-            except Exception:
-                pass
-
     def _handle_joystick_buttons(self):
         if not getattr(self, 'joystick', None):
             return
@@ -552,8 +501,7 @@ class FlexAlignerGUI:
         self._shutdown_joystick()
         self._start_keyboard_listener()
         self.controller_label.config(text="Controller: Keyboard (pynput)")
-        self.reset_velocities()
-        self.printer.stop_jog()
+        self._stop_current_motion()
 
     def _switch_to_controller(self):
         self.input_mode = 'controller'
@@ -568,8 +516,31 @@ class FlexAlignerGUI:
             self.input_var.set('Keyboard')
             self.input_mode = 'keyboard'
             self._start_keyboard_listener()
-        self.reset_velocities()
-        self.printer.stop_jog()
+        self._stop_current_motion()
+
+    def _read_joystick(self):
+        if pygame is None:
+            return
+        if not getattr(self, 'joystick', None):
+            return
+        try:
+            pygame.event.pump()
+        except Exception:
+            return
+        # Axis 3 controls overall max speed in UI (throttled updates)
+        try:
+            ax3 = -float(self.joystick.get_axis(3))
+        except Exception:
+            ax3 = 0.0
+        norm = (ax3 + 1.0) / 2.0
+        new_speed = self.config.base_speed + norm * (20000 - self.config.base_speed)
+        if hasattr(self, 'speed_var'):
+            try:
+                if abs(float(self.speed_var.get()) - new_speed) > 25.0:
+                    self.speed_var.set(new_speed)
+                    self._update_speed(new_speed)
+            except Exception:
+                pass
 
     # -------------- Saved Positions -------------
     def _add_row(self):
@@ -653,8 +624,8 @@ class FlexAlignerGUI:
         self.scale_label.config(text=f"{v:.2f}x")
 
     def reset_velocities(self):
-        for k in list(self.target_vel.keys()):
-            self.target_vel[k] = 0.0
+        # Zero display velocities
+        for k in list(self.current_vel.keys()):
             self.current_vel[k] = 0.0
 
     def emergency_stop(self):
@@ -695,3 +666,77 @@ class FlexAlignerGUI:
         except Exception:
             pass
         self.root.destroy()
+
+    # --------- New helpers for simplified jogging ---------
+    def _dir_and_feed_from_keyboard(self) -> tuple[tuple[int, int, int], float]:
+        # Aggregate pressed keys into a direction for the selected carriage
+        with self._keys_lock:
+            pressed = set(self._pressed_keys)
+        dx = 0
+        dy = 0
+        dz = 0
+        # planar
+        if self.selected_carriage == 1:
+            if 'left' in pressed: dx -= 1
+            if 'right' in pressed: dx += 1
+            if 'down' in pressed: dy -= 1
+            if 'up' in pressed: dy += 1
+            if 's' in pressed: dz -= 1
+            if 'w' in pressed: dz += 1
+        else:
+            if 'j' in pressed: dx -= 1  # A
+            if 'l' in pressed: dx += 1
+            if 'k' in pressed: dy -= 1  # B
+            if 'i' in pressed: dy += 1
+            if 's' in pressed: dz -= 1  # C via W/S as well
+            if 'w' in pressed: dz += 1
+
+        # Z/C slower
+        feed = float(self.config.max_speed)
+        if dz != 0:
+            feed *= float(self.z_speed_scale)
+        return (int(max(-1, min(1, dx))), int(max(-1, min(1, dy))), int(max(-1, min(1, dz)))), feed
+
+    def _dir_and_feed_from_joystick(self) -> tuple[tuple[int, int, int], float]:
+        # Default neutral
+        dir_tuple = (0, 0, 0)
+        feed = float(self.config.max_speed)
+        if pygame is None or not getattr(self, 'joystick', None):
+            return dir_tuple, feed
+        try:
+            pygame.event.pump()
+        except Exception:
+            return dir_tuple, feed
+        # axes 0/1 planar
+        try:
+            ax0 = float(self.joystick.get_axis(0))
+            ax1 = float(self.joystick.get_axis(1))
+        except Exception:
+            ax0 = 0.0
+            ax1 = 0.0
+        dz = 0
+        # Hat vertical for Z/C
+        try:
+            _hx, hy = self.joystick.get_hat(0)
+        except Exception:
+            hy = 0
+        hy = -int(hy)
+        dz = 1 if hy > 0 else (-1 if hy < 0 else 0)
+
+        dead = float(self.config.deadzone)
+        dx = 1 if ax0 > dead else (-1 if ax0 < -dead else 0)
+        dy = 1 if ax1 > dead else (-1 if ax1 < -dead else 0)
+
+        # Z/C slower
+        if dz != 0:
+            feed *= float(self.z_speed_scale)
+        return (dx, dy, dz), feed
+
+    def _stop_current_motion(self):
+        self.reset_velocities()
+        self._last_dir_sent[self.selected_carriage] = (0, 0, 0)
+        self._last_feed_sent[self.selected_carriage] = 0.0
+        try:
+            self.printer.stop_jog()
+        except Exception:
+            pass
