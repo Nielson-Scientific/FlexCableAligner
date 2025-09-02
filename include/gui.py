@@ -250,6 +250,7 @@ class FlexAlignerGUI:
 
         # Execute continuous jog only on changes; integrate display positions
         if self.connected:
+            print(f"DEBUG: Loop dir_tuple={dir_tuple}, feed={feed}, dt={dt:.3f}")
             self._execute_jog(dt, dir_tuple, feed)
 
         self._schedule_loop()
