@@ -697,6 +697,7 @@ class FlexAlignerGUI:
                         pos = self.printer.get_position()
                         if pos:
                             with self._pos_lock:
+                                pass # :)
                                 # Only XYZ are reported by Marlin; keep ABC as-is
                                 # self.positions['x'] = pos.get('x', self.positions['x']) what if we didn't - cael debug test
                                 # self.positions['y'] = pos.get('y', self.positions['y'])
