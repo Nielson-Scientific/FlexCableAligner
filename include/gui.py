@@ -689,6 +689,7 @@ class FlexAlignerGUI:
             return
 
         def _run():
+            pass #cael debug test
             while True:
                 if not self.running:
                     break
