@@ -143,6 +143,7 @@ class Printer:
                     if not line.strip():
                         continue
                     self._write_line(line)
+                    
                 return self._read_until_ok(timeout) if wait_ok else True
         except Exception as e:
             self.last_error = str(e)
@@ -209,6 +210,7 @@ class Printer:
         # For latency: don't wait for ok on long jog G1; M410 will stop immediately when needed
         print(f"DEBUG_CB: Sending G1 on {self._carriage}: {g1}")
         ok = self.send_gcode(g1, wait_ok=False)
+        print(f"DEBUG_CB: sent")
         if ok:
             self._last_dir[self._carriage] = dir_tuple
             self._last_feed = feedrate
