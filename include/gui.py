@@ -234,6 +234,7 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
+        print(dt)
         self.last_update_time = now
 
         # Input handling
