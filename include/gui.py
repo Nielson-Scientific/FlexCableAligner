@@ -689,21 +689,23 @@ class FlexAlignerGUI:
             return
 
         def _run():
-            while True:
-                if not self.running:
-                    break
-                if self.connected:
-                    try:
-                        pos = self.printer.get_position()
-                        if pos:
-                            with self._pos_lock:
-                                # Only XYZ are reported by Marlin; keep ABC as-is
-                                self.positions['x'] = pos.get('x', self.positions['x'])
-                                self.positions['y'] = pos.get('y', self.positions['y'])
-                                self.positions['z'] = pos.get('z', self.positions['z'])
-                    except Exception:
-                        pass
-                time.sleep(0.25)
+            pass #cael debug test
+            # while True:
+            #     if not self.running:
+            #         break
+            #     if self.connected:
+            #         try:
+            #             pos = self.printer.get_position()
+            #             if pos:
+            #                 with self._pos_lock:
+            #                     pass # :)
+            #                     # Only XYZ are reported by Marlin; keep ABC as-is
+            #                     # self.positions['x'] = pos.get('x', self.positions['x']) what if we didn't - cael debug test
+            #                     # self.positions['y'] = pos.get('y', self.positions['y'])
+            #                     # self.positions['z'] = pos.get('z', self.positions['z'])
+            #         except Exception:
+            #             pass
+            #     time.sleep(0.25)
 
         self._poller_thread = Thread(target=_run, daemon=True)
         self._poller_thread.start()
