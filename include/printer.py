@@ -83,7 +83,7 @@ class Printer:
 
             # start reader
             self._reader_stop.clear()
-            self.reader_thread = threading.Thread(
+            self._reader_thread = threading.Thread(
                 target=self._reader_loop,
                 name="MarlinReader",
                 daemon=True
