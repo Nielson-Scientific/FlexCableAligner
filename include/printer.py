@@ -26,6 +26,7 @@ class Printer:
         # Serial connection state
         self.ser: Optional[serial.Serial] = None
         self.connected = False
+        self.is_moving = False
         self.last_error: Optional[str] = None
 
         # Jog state: track last commanded long move per carriage to avoid spam
@@ -197,7 +198,8 @@ class Printer:
             return True
 
         # Stop existing motion immediately
-        self.send_gcode('M410', wait_ok=False)
+        if self.is_moving:
+            self.send_gcode('M410', wait_ok=False)
 
         # Large distance along each active axis (kept small but sufficient; M410 will stop it)
         dist = 1000.0  # mm
@@ -207,19 +209,21 @@ class Printer:
                 parts.append(f"{axis}{dist * comp:.3f}")
         if not parts:
             return True
-        g1 = f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}"
+        g1 = f"G1 {' '.join(parts)} F{max(1,int(feedrate))}"
         # For latency: don't wait for ok on long jog G1; M410 will stop immediately when needed
         print(f"DEBUG_CB: Sending G1 on {self._carriage}: {g1}")
-        ok = self.send_gcode(g1, wait_ok=False)
+        ok = self.send_gcode(g1, wait_ok=True)
         print(f"DEBUG_CB: sent")
         if ok:
             self._last_dir[self._carriage] = dir_tuple
             self._last_feed = feedrate
+        self.is_moving = True
         return ok
 
     def stop_jog(self) -> bool:
         # Immediate stop of planner queue
         ok = self.send_gcode('M410')
+        self.is_moving = False
         self._last_dir[self._carriage] = (0.0, 0.0, 0.0)
         self._last_feed = 0.0
         print("DEBUG_CB: Stopped jogging")
