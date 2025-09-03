@@ -7,6 +7,7 @@ from collections import deque
 from typing import Optional, Tuple
 
 import octoprint.plugin
+from flask import jsonify
 
 
 class FlexCableAlignerPlugin(
@@ -14,7 +15,9 @@ class FlexCableAlignerPlugin(
     octoprint.plugin.ShutdownPlugin,
     octoprint.plugin.SettingsPlugin,
     octoprint.plugin.TemplatePlugin,
-) :
+    octoprint.plugin.AssetPlugin,
+    octoprint.plugin.SimpleApiPlugin,
+):
     """OctoPrint plugin for joystick-based jogging (pygame).
 
     Keeps the axis and button mappings from the standalone app:
@@ -28,6 +31,7 @@ class FlexCableAlignerPlugin(
     """
 
     def __init__(self):
+        # Threads and libs
         self._thread: Optional[threading.Thread] = None
         self._running = threading.Event()
         self._joystick = None
@@ -40,22 +44,53 @@ class FlexCableAlignerPlugin(
         self._last_button_times: dict[str, float] = {}
 
         # Positions and saved positions (integrated locally, like the GUI)
-        self._positions = {k: 0.0 for k in ('x', 'y', 'z', 'a', 'b', 'c')}
+        self._positions = {k: 0.0 for k in ("x", "y", "z", "a", "b", "c")}
         self._positions_list: list[Tuple[float, float, float, float, float, float]] = []
         self._last_update_time = time.time()
+
+        # UI state (exposed via SimpleApiPlugin)
+        self._ui_feed = 0.0
+        self._ui_dir = (0, 0, 0)
+        self._last_stop_sent = 0.0
 
     # ----- Settings -----
     def get_settings_defaults(self):
         return dict(
             base_speed=5000.0,
             max_speed=20000.0,
-            deadzone=0.12,
+            deadzone=0.20,
             z_speed_scale=0.33,
         )
 
-    # No UI needed, but keep a simple, empty template hook for settings page if desired
+    # Sidebar panel UI to show carriage and velocity
     def get_template_configs(self):
-        return []
+        return [
+            dict(type="sidebar", name="Flex Cable Aligner", template="flex_cable_aligner_sidebar.jinja2", custom_bindings=True)
+        ]
+
+    def get_assets(self):
+        return {
+            "js": ["js/flex_cable_aligner.js"],
+            "css": ["css/flex_cable_aligner.css"],
+        }
+
+    # Simple GET API for polling status
+    def on_api_get(self, request):
+        try:
+            data = dict(
+                carriage=self._selected_carriage,
+                feed=self._ui_feed,
+                dir=self._ui_dir,
+                operational=self._is_operational(),
+            )
+            return jsonify(data)
+        except Exception as e:
+            self._logger.warning("Status API error: %s", e)
+            return jsonify(dict(error=str(e))), 500
+
+    # route name for SimpleApiPlugin
+    def get_api_commands(self):
+        return dict()
 
     # ----- Lifecycle -----
     def on_after_startup(self):
@@ -167,13 +202,21 @@ class FlexCableAlignerPlugin(
             # Handle buttons (homing, carriage toggle, save/goto)
             self._handle_buttons()
 
-            # Send jog/stop on change
+            # Capture UI state
+            self._ui_feed = float(feed)
+            self._ui_dir = tuple(dir_tuple)
+
+            # Send jog/stop on change and ensure stop in deadzone
             if self._is_operational():
                 if dir_tuple == (0, 0, 0) or feed < 5.0:
-                    if last_dir != (0, 0, 0):
+                    # Always ensure M410 when in deadzone: send immediately on first entry
+                    # then at most every 0.25s while staying in deadzone
+                    now_t = time.time()
+                    if last_dir != (0, 0, 0) or self._last_stop_sent == 0.0 or (now_t - self._last_stop_sent) > 0.25:
                         self._stop_jog()
-                        last_dir = (0, 0, 0)
-                        last_feed = 0.0
+                        self._last_stop_sent = now_t
+                    last_dir = (0, 0, 0)
+                    last_feed = 0.0
                 else:
                     if dir_tuple != last_dir or abs(feed - last_feed) > 50.0:
                         self._jog(dir_tuple, feed)
