@@ -282,9 +282,11 @@ class Printer:
                         pos_line = s
                         break
             if pos_line is None:
+                print('Could not get line')
                 return None
 
             # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
+            print(pos_line)
             vals: dict[str, float] = {}
             for token in pos_line.replace(',', ' ').split():
                 if ':' not in token:
