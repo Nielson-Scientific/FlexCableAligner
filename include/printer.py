@@ -287,6 +287,7 @@ class Printer:
 
             # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
             print(pos_line)
+            pos_line = pos_line.split('Count')
             vals: dict[str, float] = {}
             for token in pos_line.replace(',', ' ').split():
                 if ':' not in token:
@@ -308,6 +309,9 @@ class Printer:
                 'x': float(vals.get('x', 0.0)),
                 'y': float(vals.get('y', 0.0)),
                 'z': float(vals.get('z', 0.0)),
+                'a': float(vals.get('a', 0.0)),
+                'b': float(vals.get('b', 0.0)),
+                'c': float(vals.get('c', 0.0)),
             }
             print(return_dict)
             return return_dict
