@@ -188,6 +188,20 @@ class FlexAlignerGUI:
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
         self.speed_label.grid(row=1, column=2)
 
+        # Simple step move controls (increment + 4 buttons for X/Y)
+        step = ttk.LabelFrame(settings, text="Step Move", padding=8)
+        step.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(10, 0))
+        ttk.Label(step, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
+        self.increment_var = tk.DoubleVar(value=1.0)
+        self.increment_entry = ttk.Entry(step, textvariable=self.increment_var, width=8)
+        self.increment_entry.grid(row=0, column=1, sticky='w')
+        # Axis buttons laid out like arrows
+        b_opts = {'width': 6}
+        ttk.Button(step, text="+Y", command=lambda: self._move_step('y', +1), **b_opts).grid(row=1, column=1, pady=4)
+        ttk.Button(step, text="-X", command=lambda: self._move_step('x', -1), **b_opts).grid(row=2, column=0, padx=4)
+        ttk.Button(step, text="+X", command=lambda: self._move_step('x', +1), **b_opts).grid(row=2, column=2, padx=4)
+        ttk.Button(step, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=3, column=1, pady=4)
+
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
         pos_frame.grid(row=3, column=0, columnspan=2, sticky='ew', pady=5)
@@ -786,3 +800,42 @@ class FlexAlignerGUI:
             self.printer.stop_jog()
         except Exception:
             pass
+
+    # --------- Step move helpers (UI buttons) ---------
+    def _move_step(self, axis: str, sign: int):
+        """Move the active carriage by +/-increment along X/A or Y/B based on selection."""
+        try:
+            inc = abs(float(self.increment_var.get()))
+        except Exception:
+            messagebox.showerror("Step Move", "Please enter a valid numeric increment (mm)")
+            return
+        if inc <= 0:
+            return
+        if not self.connected:
+            messagebox.showwarning("Printer", "Not connected to printer")
+            return
+
+        # Ensure we're issuing a discrete move (stop any jogging first)
+        try:
+            self.printer.stop_jog()
+        except Exception:
+            pass
+
+        self.printer.set_carriage(self.selected_carriage)
+        dx = dy = 0.0
+        if axis.lower() == 'x':
+            dx = float(sign) * inc
+        elif axis.lower() == 'y':
+            dy = float(sign) * inc
+        else:
+            return
+
+        ok = self.printer.move_relative(dx=dx, dy=dy, dz=0.0, feedrate=self.config.max_speed)
+        if ok:
+            # Keep local display positions in sync
+            if self.selected_carriage == 1:
+                self.positions['x'] += dx
+                self.positions['y'] += dy
+            else:
+                self.positions['a'] += dx
+                self.positions['b'] += dy
