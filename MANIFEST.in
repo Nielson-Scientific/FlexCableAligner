@@ -1,0 +1,2 @@
+include setup.py
+recursive-include octoprint_flex_cable_aligner *
