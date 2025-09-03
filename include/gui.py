@@ -27,7 +27,7 @@ SELECTED_ROW_COLOR = '#b3d9ff'
 class FlexAlignerGUI:
     def __init__(self):
         self.config = JogConfig()
-        self.printer = Printer()
+        self.printer = Printer(port='COM6')
         self.connected = False
         self.fine_mode = False
         self.range_error_counter = 0
