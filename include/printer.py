@@ -250,7 +250,7 @@ class Printer:
             return None
         try:
             self._write_line('M114')
-            end = time.time() + 0.2
+            end = time.time() + 1.0
             line = ''
             while time.time() < end:
                 try:
