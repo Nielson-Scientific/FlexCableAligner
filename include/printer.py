@@ -169,6 +169,7 @@ class Printer:
     
     def _reader_loop(self):
         """Continuously drains lines from Marlin, never blocking the writer."""
+        print("DEBUG_CB: Reader thread started")
         buf = bytearray()
         read = self.ser.read
         while not self._reader_stop.is_set():
@@ -218,7 +219,7 @@ class Printer:
 
         # Push to a queue for the UI/logger (drop if full to avoid back-pressure)
         try:
-            self._inbound_q.put_nowait(line)
+            self._inbound_queue.put_nowait(line)
         except queue.Full:
             pass
 
