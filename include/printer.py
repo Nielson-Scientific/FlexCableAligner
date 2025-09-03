@@ -304,11 +304,13 @@ class Printer:
                     vals[k] = float(vnum)
                 except Exception:
                     pass
-            return {
+            return_dict =  {
                 'x': float(vals.get('x', 0.0)),
                 'y': float(vals.get('y', 0.0)),
                 'z': float(vals.get('z', 0.0)),
             }
+            print(return_dict)
+            return return_dict
         except Exception as e:
             self.last_error = str(e)
             return None
