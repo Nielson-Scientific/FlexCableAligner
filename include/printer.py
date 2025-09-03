@@ -262,6 +262,7 @@ class Printer:
                     if 'ok' in s.lower():
                         break
             # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
+            print(line)
             vals: dict[str, float] = {}
             for token in line.replace(',', ' ').split():
                 if ':' in token:

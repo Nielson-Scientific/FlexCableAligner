@@ -512,6 +512,10 @@ class FlexAlignerGUI:
             if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                 self.goto_saved_position()
 
+        # Get current position
+        if self.joystick.get_button(3) and debounce('get_pos', 0.2):
+            self.printer.get_position()
+
     # -------------- Input Mode switching ------------------
     def _on_input_mode_change(self, _event=None):
         choice = self.input_var.get().lower()
