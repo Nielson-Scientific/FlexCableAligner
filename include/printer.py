@@ -76,7 +76,7 @@ class Printer:
                 xonxoff = False,
                 rtscts=False,
                 dsrdtr=False,
-                exclusive=True
+                # exclusive=True
             )
             self.ser.reset_input_buffer()
             self.ser.reset_output_buffer()
