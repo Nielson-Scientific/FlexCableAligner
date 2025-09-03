@@ -230,6 +230,7 @@ class FlexAlignerGUI:
             return
         now = time.time()
         dt = now - self.last_update_time
+        print(dt)
         self.last_update_time = now
 
         # Input handling
@@ -243,12 +244,12 @@ class FlexAlignerGUI:
             self._handle_joystick_buttons()
 
         # Execute continuous jog only on changes; integrate display positions
-        print(dir_tuple)
         if self.connected:
+            print(feed)
             self._execute_jog(dt, dir_tuple, feed)
 
         # If there is no direction, stop the jog
-        if dir_tuple == (0, 0, 0):
+        if dir_tuple == (0, 0, 0) and self.printer.is_moving:
             self.printer.stop_jog()
 
         self._schedule_loop()
