@@ -4,7 +4,7 @@ class KeyBoardController(ControllerAbstract):
     def __init__(self):
         self.bi = ButtonInventory()
         
-
+        
     def get_label(self) -> str:
         return "Keyboard Controller"
 
