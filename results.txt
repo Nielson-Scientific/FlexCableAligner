@@ -1,0 +1,13 @@
+[TX] wrote 5 bytes: M115 (+\n) queue->write_start=0.03ms write_dur=0.03ms
+Sending jog...
+[TX] wrote 4 bytes: G91 (+\n) queue->write_start=0.04ms write_dur=0.02ms
+[TX] wrote 15 bytes: G0 X5.0 F12000 (+\n) queue->write_start=0.07ms write_dur=0.01ms
+[TX] wrote 4 bytes: G90 (+\n) queue->write_start=0.08ms write_dur=0.01ms
+Now sending M400 to wait for completion (optional)
+[TX] wrote 5 bytes: M400 (+\n) queue->write_start=0.05ms write_dur=0.03ms
+Done. If jog start was delayed, check for:
+- Port reopen/reset (keep port open; DTR/RTS low)
+- Blocking flush/write or sleeps before first send
+- Missing newline at end of G-code lines
+- Reader not draining the port (backpressure)
+- Blocking commands queued before jog (M400/M109/M190/G28)
