@@ -203,14 +203,10 @@ class Printer:
                 pass
 
     def _handle_line(self, line: str):
-        # Keep pipe empty: enqueue or just log.
-        # Recognize common Marlin tokens to aid pacing if you want.
-        if line == 'ok':
+        l = line.strip().lower()
+        if l.startswith('ok'):            # <-- crucial
             self._last_ok_ts = time.monotonic()
             self._ok_event.set()
-        # You can parse 'busy:' to detect planner saturation, etc.
-
-        # Push to a queue for the UI/logger (drop if full to avoid back-pressure)
         try:
             self._inbound_queue.put_nowait(line)
         except queue.Full:

@@ -209,7 +209,13 @@ class FlexAlignerGUI:
 
     # -------------- Connection -----------------
     def connect(self):
-        if not self.printer.connect():
+            def _do_connect():
+                ok = self.printer.connect()
+                self.root.after(0, lambda: self._finish_connect(ok))
+            Thread(target=_do_connect, daemon=True).start()
+
+    def _finish_connect(self, ok):
+        if not ok:
             messagebox.showerror("Printer", f"Failed to connect: {self.printer.last_error}")
             return
         self.connected = True
@@ -387,6 +393,9 @@ class FlexAlignerGUI:
         with self._keys_lock:
             self._action_queue.append((name, args))
 
+    def _zero_positions_xy(self):
+        self.positions['x'] = self.positions['y'] = 0.0
+
     def _process_actions(self):
         while True:
             with self._keys_lock:
@@ -411,11 +420,19 @@ class FlexAlignerGUI:
                     if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                         self.goto_saved_position()
                 elif name == 'home_xy':
-                    self.printer.set_carriage(1)
-                    self.printer.stop_jog()
-                    self.printer.home_xy()
-                    for key in self.positions.keys():
-                        self.positions[key] = 0.0
+                    def _do_home():
+                        try:
+                            self.printer.set_carriage(1)
+                            self.printer.stop_jog()
+                            ok = self.printer.home_xy()  # can take many seconds
+                            if not ok:
+                                print("Home failed:", self.printer.last_error)
+                            else:
+                                # only update UI state from the main thread
+                                self.root.after(0, lambda: [self._zero_positions_xy()])
+                        except Exception as e:
+                            print("Home thread error:", e)
+                    Thread(target=_do_home, daemon=True).start()
                 elif name == 'speed_inc':
                     self.config.max_speed = min(self.config.max_speed + 100, 20000)
                     self.speed_var.set(self.config.max_speed)
