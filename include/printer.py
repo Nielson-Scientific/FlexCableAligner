@@ -44,6 +44,9 @@ class Printer:
         # I/O lock (re-entrant) to serialize serial access across threads
         self._io_lock = threading.RLock()
 
+        # ok event
+        self._ok_event = threading.Event()
+
     # ---- Connection ----
     def connect(self) -> bool:
         try:
@@ -78,8 +81,15 @@ class Printer:
                 dsrdtr=False,
                 # exclusive=True
             )
+
             self.ser.reset_input_buffer()
             self.ser.reset_output_buffer()
+
+            # Marlin resets on connect; wait a moment and clear buffer
+            time.sleep(1.5)
+            self._drain_input()
+            self.ser.reset_input_buffer()
+            
 
             # start reader
             self._reader_stop.clear()
@@ -91,10 +101,6 @@ class Printer:
             self._reader_thread.start()
 
             self.connected = True
-
-            # Marlin resets on connect; wait a moment and clear buffer
-            time.sleep(1.5)
-            self._drain_input()
 
             # Relative moves and units
             self.send_gcode('G21')  # mm
@@ -145,27 +151,11 @@ class Printer:
         data = (line.strip() + "\r\n").encode('ascii', errors='ignore')
         with self._io_lock:
             self.ser.write(data)
-            self.ser.flush()
+            # self.ser.flush()
         print(f"DEBUG_CB: Serial Buffer written and flushed: {line.strip()}")
 
     def _read_until_ok(self, timeout: float = 2.0) -> bool:
-        if not self.ser:
-            return False
-        end = time.time() + max(0.01, timeout)
-        ok = False
-        while time.time() < end:
-            try:
-                line = self.ser.readline().decode('utf-8', errors='ignore').strip()
-            except Exception:
-                line = ''
-            if not line:
-                continue
-            if line.lower().startswith('error'):
-                self.last_error = line
-            if line.lower() == 'ok' or line.endswith('ok'):
-                ok = True
-                break
-        return ok
+        return self._ok_event.wait(timeout)
     
     def _reader_loop(self):
         """Continuously drains lines from Marlin, never blocking the writer."""
@@ -215,6 +205,7 @@ class Printer:
         # Recognize common Marlin tokens to aid pacing if you want.
         if line == 'ok':
             self._last_ok_ts = time.monotonic()
+            self._ok_event.set()
         # You can parse 'busy:' to detect planner saturation, etc.
 
         # Push to a queue for the UI/logger (drop if full to avoid back-pressure)
@@ -227,24 +218,21 @@ class Printer:
     # print(f"<< {line}")
 
     # ---- Public API ----
-    def send_gcode(self, gcode: str, wait_ok: bool = True, timeout: float = 2.0) -> bool:
+    def send_gcode(self, gcode: str, wait_ok: bool = True, timeout: float = 5.0) -> bool:
         try:
+            if wait_ok:
+                self._ok_event.clear()
             with self._io_lock:
                 for line in gcode.splitlines():
-                    if not line.strip():
+                    line = line.strip()
+                    if not line:
                         continue
                     self._write_line(line)
-                    
-                return self._read_until_ok(timeout) if wait_ok else True
+            return self._wait_ok(timeout) if wait_ok else True
         except Exception as e:
             self.last_error = str(e)
             return False
 
-    def emergency_stop(self):
-        try:
-            self.send_gcode('M112', wait_ok=False)
-        except Exception as e:
-            self.last_error = str(e)
 
     def home_xy(self) -> bool:
         return self.send_gcode('G28')
