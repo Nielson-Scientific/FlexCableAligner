@@ -247,11 +247,12 @@ class FlexAlignerGUI:
         dt = now - self.last_update_time
         self.last_update_time = now
 
-        if self.loops_since_update > 5:
+        if self.loops_since_update > 5 and self.connected:
             pos = self.printer.get_position()
-            self.positions = pos
-            self._update_displays()
-            self.loops_since_update = 0
+            if pos is not None:
+                self.positions = pos
+                self._update_displays()
+                self.loops_since_update = 0
 
         # Input handling
         if self.input_mode == 'keyboard':
