@@ -260,7 +260,7 @@ class Printer:
                 if s:
                     line = s
                     if 'ok' in s.lower():
-                        break
+                        continue
             # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
             print(line)
             vals: dict[str, float] = {}
