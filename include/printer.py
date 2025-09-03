@@ -154,8 +154,10 @@ class Printer:
             # self.ser.flush()
         print(f"DEBUG_CB: Serial Buffer written and flushed: {line.strip()}")
 
-    def _read_until_ok(self, timeout: float = 2.0) -> bool:
+    # add this helper (you currently don't have it)
+    def _wait_ok(self, timeout: float) -> bool:
         return self._ok_event.wait(timeout)
+
     
     def _reader_loop(self):
         """Continuously drains lines from Marlin, never blocking the writer."""
