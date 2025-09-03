@@ -543,7 +543,7 @@ class FlexAlignerGUI:
         except Exception:
             ax3 = 0.0
         norm = (ax3 + 1.0) / 2.0
-        new_speed = self.config.base_speed + norm * (20000 - self.config.base_speed)
+        new_speed = self.config.base_speed + norm * (1000 - self.config.base_speed)
         if hasattr(self, 'speed_var'):
             try:
                 if abs(float(self.speed_var.get()) - new_speed) > 25.0:
