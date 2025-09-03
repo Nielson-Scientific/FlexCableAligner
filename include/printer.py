@@ -220,9 +220,9 @@ class Printer:
         self.is_moving = True
         return ok
 
-    def stop_jog(self) -> bool:
+    def stop_jog(self, block=True) -> bool:
         # Immediate stop of planner queue
-        ok = self.send_gcode('M410')
+        ok = self.send_gcode('M410', wait_ok=block)
         self.is_moving = False
         self._last_dir[self._carriage] = (0.0, 0.0, 0.0)
         self._last_feed = 0.0
@@ -238,7 +238,7 @@ class Printer:
         parts = [f"{a}{v:.4f}" for a, v in axes if abs(v) > 1e-6]
         if not parts:
             return True
-        return self.send_gcode(f"G91\nG1 {' '.join(parts)} F{max(1,int(feedrate))}")
+        return self.send_gcode(f"G1 {' '.join(parts)} F{max(1,int(feedrate))}")
 
     # Basic position query (Marlin M114 parsing is heuristic)
     def get_position(self) -> Optional[dict[str, float]]:

@@ -264,7 +264,7 @@ class FlexAlignerGUI:
 
         # If there is no direction, stop the jog
         if dir_tuple == (0, 0, 0) and self.printer.is_moving:
-            self.printer.stop_jog()
+            self.printer.stop_jog(block=False)
 
         self._schedule_loop()
 
@@ -817,7 +817,8 @@ class FlexAlignerGUI:
 
         # Ensure we're issuing a discrete move (stop any jogging first)
         try:
-            self.printer.stop_jog()
+            if self.printer.is_moving:
+                self.printer.stop_jog()
         except Exception:
             pass
 
