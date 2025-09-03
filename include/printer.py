@@ -328,6 +328,7 @@ class Printer:
 
     # Basic position query (Marlin M114 parsing is heuristic)
     def get_position(self) -> Optional[dict[str, float]]:
+        return None #Cael thing for a second, making another call to readline is causing problems?
         if not self.connected:
             return None
         # Try non-blocking to avoid interfering with motion commands
