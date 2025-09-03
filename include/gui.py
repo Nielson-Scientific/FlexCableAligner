@@ -187,12 +187,6 @@ class FlexAlignerGUI:
         self.speed_scale.grid(row=1, column=1, sticky='ew')
         self.speed_label = ttk.Label(settings, text=f"{self.config.max_speed:.0f} mm/min")
         self.speed_label.grid(row=1, column=2)
-        ttk.Label(settings, text="Scale:").grid(row=2, column=0, sticky='w')
-        self.scale_var = tk.DoubleVar(value=self.config.movement_scale)
-        self.scale_scale = ttk.Scale(settings, from_=0.01, to=1.0, variable=self.scale_var, command=self._update_scale)
-        self.scale_scale.grid(row=2, column=1, sticky='ew')
-        self.scale_label = ttk.Label(settings, text=f"{self.config.movement_scale:.2f}x")
-        self.scale_label.grid(row=2, column=2)
 
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
@@ -249,14 +243,19 @@ class FlexAlignerGUI:
             self._handle_joystick_buttons()
 
         # Execute continuous jog only on changes; integrate display positions
+        print(dir_tuple)
         if self.connected:
             self._execute_jog(dt, dir_tuple, feed)
+
+        # If there is no direction, stop the jog
+        if dir_tuple == (0, 0, 0):
+            self.printer.stop_jog()
 
         self._schedule_loop()
 
     def _execute_jog(self, dt, dir_tuple: tuple[int, int, int], feed: float):
         # Apply global scaling once to feed
-        feed = max(0.0, float(feed)) * float(self.config.movement_scale)
+        feed = max(0.0, float(feed))
         self.printer.set_carriage(self.selected_carriage)
 
         # Decide if we need to send/stop
@@ -624,14 +623,6 @@ class FlexAlignerGUI:
         self.config.max_speed = float(val)
         self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
 
-    def _update_scale(self, val):
-        self.config.movement_scale = float(val)
-        self.scale_label.config(text=f"{self.config.movement_scale:.2f}x")
-
-    def _set_preset(self, v):
-        self.config.movement_scale = v
-        self.scale_var.set(v)
-        self.scale_label.config(text=f"{v:.2f}x")
 
     def reset_velocities(self):
         # Zero display velocities

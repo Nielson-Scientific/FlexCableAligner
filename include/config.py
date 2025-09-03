@@ -6,20 +6,17 @@ class JogConfig:
 
     def __init__(self):
         # Base speeds (mm/min)
-        self.base_speed = 5000
-        self.max_speed = 20000
+        self.base_speed = 100
+        self.max_speed = 3000
 
         # Joystick feel
-        self.deadzone = 0.12
+        self.deadzone = 0.2
         self.acceleration_curve = 2.0  # exponential shaping
 
         # Smoothing / thresholds
         self.velocity_smoothing = 0.10  # seconds time constant for low‑pass
         self.min_move_threshold = 0.001  # mm – below this we ignore
         self.velocity_stop_threshold = 5.0  # mm/min – treat as zero
-
-        # Global scaling (one slider now)
-        self.movement_scale = 0.15
 
         # Fine mode multiplier (neutral so fine mode only affects max_speed via GUI)
         self.fine_velocity_factor = 1.0

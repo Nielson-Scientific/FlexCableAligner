@@ -28,6 +28,9 @@ class JoyStickController(ControllerAbstract):
             self.label = f"Controller: {self.joystick.get_name()}"
         except Exception as e:
             self.label = f"Controller error: {e}"
+
+    def update_pygame(self):
+        pygame.event.pump()
         
     def get_label(self) -> str:
         return self.label
