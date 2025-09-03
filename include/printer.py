@@ -4,6 +4,7 @@ import time
 from typing import Optional
 
 import serial  # pyserial
+import queue
 
 
 class Printer:
@@ -27,6 +28,13 @@ class Printer:
         self.ser: Optional[serial.Serial] = None
         self.connected = False
         self.last_error: Optional[str] = None
+
+        # Serial Reader - (keeps the octopus's serial buffer clean)
+        self._reader_thread: Optional[threading.Thread] = None
+        self._reader_stop = threading.Event()
+        self._inbound_queue = queue.Queue(maxsize=1000)
+        self._last_ok_ts = 0.0
+
 
         # Jog state: track last commanded long move per carriage to avoid spam
         self._carriage = 1  # 1 or 2
@@ -60,7 +68,28 @@ class Printer:
                 self.last_error = 'No serial port found. Please set Printer.port before connect().'
                 return False
 
-            self.ser = serial.Serial(self.port, self.baud, timeout=self.read_timeout)
+            self.ser = serial.Serial(
+                self.port, 
+                self.baud, 
+                timeout=0,
+                write_timeout=0,
+                xonxoff = False,
+                rtscts=False,
+                dsrdtr=False,
+                exclusive=True
+            )
+            self.ser.reset_input_buffer()
+            self.ser.reset_output_buffer()
+
+            # start reader
+            self._reader_stop.clear()
+            self.reader_thread = threading.Thread(
+                target=self._reader_loop,
+                name="MarlinReader",
+                daemon=True
+            )
+            self._reader_thread.start()
+
             self.connected = True
 
             # Marlin resets on connect; wait a moment and clear buffer
@@ -85,13 +114,15 @@ class Printer:
 
     def disconnect(self):
         try:
+            self._reader_stop.set()
+            if self._reader_thread and self._reader_thread.is_alive():
+                self._reader_thread.join(timeout=1.0)
+        finally:
             if self.ser:
                 try:
                     self.ser.close()
                 except Exception:
                     pass
-        finally:
-            self.ser = None
             self.connected = False
 
     # ---- I/O helpers ----
@@ -111,7 +142,7 @@ class Printer:
     def _write_line(self, line: str):
         if not self.connected or not self.ser:
             raise RuntimeError('Not connected')
-        data = (line.strip() + "\n").encode('ascii', errors='ignore')
+        data = (line.strip() + "\r\n").encode('ascii', errors='ignore')
         with self._io_lock:
             self.ser.write(data)
             self.ser.flush()
@@ -135,6 +166,64 @@ class Printer:
                 ok = True
                 break
         return ok
+    
+    def _reader_loop(self):
+        """Continuously drains lines from Marlin, never blocking the writer."""
+        buf = bytearray()
+        read = self.ser.read
+        while not self._reader_stop.is_set():
+            try:
+                chunk = read(1024)  # returns b'' immediately when nothing available
+                if chunk:
+                    buf.extend(chunk)
+                    # split on LF; keep remainder in buf
+                    while True:
+                        i = buf.find(b'\n')
+                        if i < 0:
+                            break
+                        line = buf[:i].rstrip(b'\r')  # strip CR if CRLF
+                        del buf[:i+1]
+                        try:
+                            text = line.decode('ascii', errors='ignore').strip()
+                        except Exception:
+                            text = ''
+                        if text:
+                            self._handle_line(text)
+                else:
+                    # tiny sleep to avoid busy-spin
+                    time.sleep(0.001)
+            except serial.SerialException:
+                # port was unplugged or closed
+                break
+            except Exception as e:
+                # log and continue; don’t let reader die
+                print(f"[reader] error: {e}")
+                time.sleep(0.01)
+
+        # optional: flush any remainder on exit
+        if buf:
+            try:
+                text = buf.decode('ascii', errors='ignore').strip()
+                if text:
+                    self._handle_line(text)
+            except Exception:
+                pass
+
+    def _handle_line(self, line: str):
+        # Keep pipe empty: enqueue or just log.
+        # Recognize common Marlin tokens to aid pacing if you want.
+        if line == 'ok':
+            self._last_ok_ts = time.monotonic()
+        # You can parse 'busy:' to detect planner saturation, etc.
+
+        # Push to a queue for the UI/logger (drop if full to avoid back-pressure)
+        try:
+            self._inbound_q.put_nowait(line)
+        except queue.Full:
+            pass
+
+    # Also print for debug
+    # print(f"<< {line}")
 
     # ---- Public API ----
     def send_gcode(self, gcode: str, wait_ok: bool = True, timeout: float = 2.0) -> bool:
