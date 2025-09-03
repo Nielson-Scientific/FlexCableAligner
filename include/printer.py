@@ -249,33 +249,63 @@ class Printer:
         if not acquired:
             return None
         try:
+            # Clear any pending data so we don't read a stale 'ok'
+            try:
+                self.ser.reset_input_buffer()
+            except Exception:
+                pass
+
             self._write_line('M114')
-            end = time.time() + 1.0
-            line = ''
+            end = time.time() + 0.6
+            lines: list[str] = []
             while time.time() < end:
                 try:
                     s = self.ser.readline().decode('utf-8', errors='ignore').strip()
                 except Exception:
                     s = ''
-                if s:
-                    line = s
-                    if 'ok' in s.lower():
-                        continue
+                if not s:
+                    continue
+                lines.append(s)
+                if s.lower() == 'ok' or s.lower().endswith('ok'):
+                    break
+
+            # Choose the most plausible position line (contains X: and Y:)
+            pos_line: Optional[str] = None
+            for s in lines:
+                low = s.lower()
+                if 'x:' in low and 'y:' in low:
+                    pos_line = s
+            if pos_line is None:
+                # Fallback: last non-ok line
+                for s in reversed(lines):
+                    if s and s.lower() != 'ok':
+                        pos_line = s
+                        break
+            if pos_line is None:
+                return None
+
             # Example: "X:0.00 Y:0.00 Z:0.00 E:0.00 Count X:0 Y:0 Z:0"
-            print(line)
             vals: dict[str, float] = {}
-            for token in line.replace(',', ' ').split():
-                if ':' in token:
-                    k, v = token.split(':', 1)
-                    try:
-                        vals[k.lower()] = float(v)
-                    except Exception:
-                        pass
-            # Map to our axes; Marlin won't report A/B/C; return current XYZ only
+            for token in pos_line.replace(',', ' ').split():
+                if ':' not in token:
+                    continue
+                k, v = token.split(':', 1)
+                k = k.strip().lower()
+                # Clean numeric value (strip trailing non-number chars)
+                vnum = ''
+                for ch in v:
+                    if ch in '+-0123456789.eE':
+                        vnum += ch
+                    else:
+                        break
+                try:
+                    vals[k] = float(vnum)
+                except Exception:
+                    pass
             return {
-                'x': vals.get('x', 0.0),
-                'y': vals.get('y', 0.0),
-                'z': vals.get('z', 0.0),
+                'x': float(vals.get('x', 0.0)),
+                'y': float(vals.get('y', 0.0)),
+                'z': float(vals.get('z', 0.0)),
             }
         except Exception as e:
             self.last_error = str(e)
