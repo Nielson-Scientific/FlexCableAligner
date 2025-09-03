@@ -49,6 +49,7 @@ class FlexAlignerGUI:
         self.row_list = []
         self.selected_row_index = None
         self.current_row_index = 0
+        self.loops_since_update = 0
 
         # Performance log
         self.movement_history = deque(maxlen=100)
@@ -246,6 +247,12 @@ class FlexAlignerGUI:
         dt = now - self.last_update_time
         self.last_update_time = now
 
+        if self.loops_since_update > 5:
+            pos = self.printer.get_position()
+            self.positions = pos
+            self._update_displays()
+            self.loops_since_update = 0
+
         # Input handling
         if self.input_mode == 'keyboard':
             self._process_actions()
@@ -264,6 +271,7 @@ class FlexAlignerGUI:
         if dir_tuple == (0, 0, 0) and self.printer.is_moving:
             self.printer.stop_jog(block=False)
 
+        self.loops_since_update += 1
         self._schedule_loop()
 
     def _execute_jog(self, dt, dir_tuple: tuple[int, int, int], feed: float):
