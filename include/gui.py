@@ -23,8 +23,10 @@ TABLE_POS_COL_W = 42
 TITLE_ROW_COLOR = '#e6e6e6'
 SELECTED_ROW_COLOR = '#b3d9ff'
 
-#TODO: brad says slow needs to be slower still
+#TODO: brad says slow needs to be slower still (factor of 10?)
 #TODO: invert placement of y+ and y- buttons to match vimba display
+#TODO: button on gui to switch
+#TODO: have another fine adjust button group for other carriage
 
 
 class FlexAlignerGUI:
