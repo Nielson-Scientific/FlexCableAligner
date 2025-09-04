@@ -244,10 +244,11 @@ class FlexAlignerGUI:
         if not self.running:
             return
         now = time.time()
+        self.root.update()
         dt = now - self.last_update_time
         self.last_update_time = now
 
-        if self.loops_since_update > 5 and self.connected:
+        if self.loops_since_update > 20 and self.connected:
             pos = self.printer.get_position()
             if pos is not None:
                 self.positions = pos
