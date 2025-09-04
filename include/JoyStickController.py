@@ -58,8 +58,16 @@ class JoyStickController(ControllerAbstract):
             ax0 = 0.0
             ax1 = 0.0
         dead = float(self.deadzone)
+        
+        dead = float(self.config.deadzone)
         dx = 1 if ax0 > dead else (-1 if ax0 < -dead else 0)
         dy = 1 if ax1 > dead else (-1 if ax1 < -dead else 0)
+
+        # Only keep the largest axis movement
+        if abs(ax0) > abs(ax1):
+            dy = 0
+        else:
+            dx = 0
 
         # Hat Vertical for Z/C axis
         try:
