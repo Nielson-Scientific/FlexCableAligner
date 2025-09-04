@@ -1,5 +1,5 @@
 from ControllerAbstract import ButtonInventory, ControllerAbstract
-from threading import Thread
+from threading import Thread #right now, rather than using a thread, we just call pygame.event.pump() everytime we read from the joystick
 import time
 try:
     import pygame
@@ -44,12 +44,13 @@ class JoyStickController(ControllerAbstract):
             pass
         try:
             if pygame:
-                pygame.joystick.quit()
+                pygame.quit()
         except Exception:
             pass
         self.joystick = None
 
     def get_dir_and_feed(self) -> tuple[tuple[int, int, int], float]:
+        pygame.event.pump()
         try:
             ax0 = float(self.joystick.get_axis(0))
             ax1 = float(self.joystick.get_axis(1))
@@ -75,6 +76,7 @@ class JoyStickController(ControllerAbstract):
         return (dx, dy, dz), float(feed)
 
     def get_button_states(self) -> ButtonInventory:
+        pygame.event.pump()
         t = time.time()
 
         def debounce(key, interval) -> bool:
