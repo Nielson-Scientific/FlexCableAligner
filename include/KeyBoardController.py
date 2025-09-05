@@ -17,7 +17,7 @@ class KeyBoardController(ControllerAbstract):
         
         
     def get_label(self) -> str:
-        return "Keyboard Controller"
+        return 
 
     def shutdown(self):
         pass
@@ -91,6 +91,10 @@ class KeyBoardController(ControllerAbstract):
         except Exception:
             return None
         return None
+    
+    def read_speed_knob(self):
+        return None
+
 
     def _on_key_press(self, key):
         token = self._key_to_token(key)

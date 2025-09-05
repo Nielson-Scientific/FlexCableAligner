@@ -48,7 +48,7 @@ class FlexAlignerGUI:
         self.running = True
 
         # Z/C movement is intentionally slower than planar
-        self.z_speed_scale = 0.33
+        self.z_speed_scale = 0.25
         # Saved positions (x,y,z,a,b,c)
         self.positions_list = []
         self.row_list = []
@@ -60,47 +60,20 @@ class FlexAlignerGUI:
         self.movement_history = deque(maxlen=100)
 
         # Input state
-        self._pressed_keys = set()
-        self._keys_lock = Lock()
-        self._action_queue = deque()  # (action_name, args)
         self._listener = None
         self._pos_lock = Lock()
         self._poller_thread = None
 
         # Controller / carriage state
-        self.input_mode = 'joystick' if pygame is not None else 'keyboard'
         self.joystick_controller = JoyStickController(deadzone=self.config.deadzone)
         self.keyboard_controller = KeyBoardController()
-        self.input_controller = self.joystick_controller if self.input_mode == 'joystick' else self.keyboard_controller
+        self.input_controller = self.joystick_controller if pygame else self.keyboard_controller
 
         self._last_button_times = {}
         self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
         # Track last jog command to avoid resends and latency
         self._last_dir_sent = {1: (0, 0, 0), 2: (0, 0, 0)}
         self._last_feed_sent = {1: 0.0, 2: 0.0}
-
-        # Key bindings (keyboard mode)
-        self._axis_bindings = {
-            # Carriage 1 XY with arrows
-            'left': ('x', -1),
-            'right': ('x', +1),
-            'down': ('y', -1),
-            'up': ('y', +1),
-            # Carriage 2 AB with IJKL
-            'j': ('a', -1),
-            'l': ('a', +1),
-            'k': ('b', -1),
-            'i': ('b', +1),
-        }
-        self._action_bindings = {
-            'f': ('toggle_fine', ()),
-            'p': ('save_position', ()),
-            'g': ('goto_saved', ()),
-            'h': ('home_xy', ()),
-            '-': ('speed_dec', ()),
-            '=': ('speed_inc', ()),
-            '+': ('speed_inc', ()),
-        }
 
         # Build GUI and start input
         self._build_gui()
@@ -180,12 +153,12 @@ class FlexAlignerGUI:
         self.mode_label = ttk.Label(settings, text="Fine Mode: OFF")
         self.mode_label.grid(row=0, column=0, sticky='w')
         ttk.Label(settings, text="Max Speed:").grid(row=1, column=0, sticky='w')
-        if self.input_mode == 'keyboard':
+        if self.input_controller.get_label() == "Keyboard Controller":
             self.speed_var = tk.DoubleVar(value=self.config.max_speed)
         else:
             # Map controller axis to speed on first render if available
             try:
-                norm = (input_controller.read_speed_knob() + 1.0) / 2.0
+                norm = (self.input_controller.read_speed_knob() + 1.0) / 2.0
                 guess = self.config.base_speed + norm * (self.config.max_speed - self.config.base_speed)
             except Exception:
                 guess = self.config.max_speed
@@ -204,10 +177,10 @@ class FlexAlignerGUI:
         self.increment_entry.grid(row=0, column=1, sticky='w')
         # Axis buttons laid out like arrows
         b_opts = {'width': 6}
-        ttk.Button(step, text="+Y", command=lambda: self._move_step('y', +1), **b_opts).grid(row=1, column=1, pady=4)
+        ttk.Button(step, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=1, column=1, pady=4)
         ttk.Button(step, text="-X", command=lambda: self._move_step('x', -1), **b_opts).grid(row=2, column=0, padx=4)
         ttk.Button(step, text="+X", command=lambda: self._move_step('x', +1), **b_opts).grid(row=2, column=2, padx=4)
-        ttk.Button(step, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=3, column=1, pady=4)
+        ttk.Button(step, text="+Y", command=lambda: self._move_step('y', +1), **b_opts).grid(row=3, column=1, pady=4)
 
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)
@@ -262,17 +235,13 @@ class FlexAlignerGUI:
                 self.loops_since_update = 0
 
         # Input handling
-        
+        self._handle_input_buttons()
+        self.process_actions_queue()
+        self._read_joystick_speed()
+        dir_tuple, feed = self.input_controller.get_dir_and_feed()
 
-
-        if self.input_mode == 'keyboard':
-            self._process_actions_queue()
-            dir_tuple, feed = self._dir_and_feed_from_keyboard()
-        else:
-            # update speed slider from axis 3 and read direction
-            self._read_joystick()
-            dir_tuple, feed = self._dir_and_feed_from_joystick()
-            self._handle_joystick_buttons()
+        # map feed to speed
+        feed = feed * self.config.max_speed
 
         # Execute continuous jog only on changes; integrate display positions
         if self.connected:
@@ -364,63 +333,19 @@ class FlexAlignerGUI:
         # No-op kept for compatibility; keyboard direction is computed per-loop
         return
 
-    def _enqueue_action(self, name: str, *args):
-        with self._keys_lock:
-            self._action_queue.append((name, args))
-
-    def _process_action_queue(self):
-        while True:
-            with self._keys_lock:
-                if not self._action_queue:
-                    break
-                name, args = self._action_queue.popleft()
-            try:
-                if name == 'toggle_fine':
-                    self.fine_mode = not self.fine_mode
-                    # In this simplified mode, fine toggles just clamp max speed for the slider
-                    self.config.max_speed = 1000 if self.fine_mode else 20000
-                    self.speed_var.set(self.config.max_speed)
-                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-                    self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
-                    with self._keys_lock:
-                        self._recompute_target_vel_locked()
-                elif name == 'save_position':
-                    self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['z'],
-                                                self.positions['a'], self.positions['b'], self.positions['c']))
-                    self._add_row()
-                elif name == 'goto_saved':
-                    if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
-                        self.goto_saved_position()
-                elif name == 'home_xy':
-                    self.printer.set_carriage(1)
-                    self.printer.stop_jog()
-                    self.printer.home_xy()
-                    for key in self.positions.keys():
-                        self.positions[key] = 0.0
-                elif name == 'speed_inc':
-                    self.config.max_speed = min(self.config.max_speed + 100, 20000)
-                    self.speed_var.set(self.config.max_speed)
-                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-                elif name == 'speed_dec':
-                    self.config.max_speed = max(100, self.config.max_speed - 100)
-                    self.speed_var.set(self.config.max_speed)
-                    self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-            except Exception as e:
-                print(f"Action '{name}' failed: {e}")
 
     # -------------- Controller handling --------------------
-    def _handle_joystick_buttons(self):
-        if not getattr(self, 'joystick', None):
-            return
-        # 0: home XY
-        if self.joystick.get_button(0) and debounce('home', 0.3):
+    def _handle_input_buttons(self):
+        button_states = self.input_controller.get_button_states()
+        # home XY
+        if button_states.home_xy:
             self.printer.set_carriage(1)
             self.printer.stop_jog()
             self.printer.home_xy()
             self.positions['x'] = self.positions['y'] = 0.0
 
-        # 1: toggle carriage 1 <-> 2
-        if self.joystick.get_button(1) and debounce('toggle_car', 0.2):
+        # toggle carriage 1 <-> 2
+        if button_states.toggle_carriages:
             self.selected_carriage = 2 if self.selected_carriage == 1 else 1
             if getattr(self, 'mapping_label', None):
                 text = 'Carriage: 1 (XYZ)' if self.selected_carriage == 1 else 'Carriage: 2 (ABC)'
@@ -428,33 +353,58 @@ class FlexAlignerGUI:
             self.reset_velocities()
             self.printer.stop_jog()
 
-        # 2: save position
-        if self.joystick.get_button(2) and debounce('save', 0.2):
+        # save position
+        if button_states.save_position:
             self.positions_list.append((self.positions['x'], self.positions['y'], self.positions['z'],
                                         self.positions['a'], self.positions['b'], self.positions['c']))
             self._add_row()
 
-        # 4: goto selected position
-        if self.joystick.get_button(4) and debounce('goto', 0.2):
+        # goto selected position
+        if button_states.goto_saved:
             if self.selected_row_index is not None and self.selected_row_index < len(self.positions_list):
                 self.goto_saved_position()
 
         # Get current position
-        if self.joystick.get_button(3) and debounce('get_pos', 0.2):
+        if button_states.get_current_pos:
             pos = self.printer.get_position()
             self.positions = pos
             self._update_displays()
 
+        # increase speed
+        if button_states.speed_inc:
+            self.config.max_speed = min(self.config.max_speed + 100, 20000)
+            self.speed_var.set(self.config.max_speed)
+            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+
+        # decrease speed
+        if button_states.speed_dec:
+            self.config.max_speed = max(100, self.config.max_speed - 100)
+            self.speed_var.set(self.config.max_speed)
+            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+
+        # toggle fine
+        if button_states.toggle_fine:
+            self.fine_mode = not self.fine_mode
+            # In this simplified mode, fine toggles just clamp max speed for the slider
+            self.config.max_speed = 1000 if self.fine_mode else 20000
+            self.speed_var.set(self.config.max_speed)
+            self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
+            self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
+            with self._keys_lock:
+                self._recompute_target_vel_locked()
+
     # -------------- Input Mode switching ------------------
-    def _on_input_mode_change(self, _event=None): #TODO fix
+    def _on_input_mode_change(self, _event=None):
         choice = self.input_var.get().lower()
         if choice.startswith('keyboard'):
-            self._switch_to_keyboard()
+            self.input_controller = self.keyboard_controller
         else:
-            self._switch_to_controller()
+            self.input_controller = self.joystick_controller
 
-    def _read_joystick_speed(self): # TODO finish implementing
-        norm = input_controller.read_speed_knob()
+    def _read_joystick_speed(self): 
+        norm = self.input_controller.read_speed_knob()
+        if norm is None:
+            return
         new_speed = self.config.base_speed + norm * (1000 - self.config.base_speed)
         if hasattr(self, 'speed_var'):
             try:
@@ -535,7 +485,6 @@ class FlexAlignerGUI:
     def _update_speed(self, val):
         self.config.max_speed = float(val)
         self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
-
 
     def reset_velocities(self):
         # Zero display velocities
