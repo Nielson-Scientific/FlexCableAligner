@@ -17,7 +17,7 @@ class KeyBoardController(ControllerAbstract):
         
         
     def get_label(self) -> str:
-        return 
+        return 'Keyboard (pynput)'
 
     def shutdown(self):
         pass
