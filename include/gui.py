@@ -104,11 +104,11 @@ class FlexAlignerGUI:
         ctrl = ttk.LabelFrame(main, text="Controller", padding=10)
         ctrl.grid(row=1, column=0, sticky='ew', pady=5)
         ttk.Label(ctrl, text="Input:").grid(row=0, column=0, padx=(0, 6))
-        self.input_var = tk.StringVar(value='Controller')
-        self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Controller'], state='readonly', width=12)
+        self.input_var = tk.StringVar(value='Joystick' if pygame else 'Keyboard')
+        self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Joystick'], state='readonly', width=12)
         self.input_combo.grid(row=0, column=1, padx=(0, 8))
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
-        self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
+        self.controller_label = ttk.Label(ctrl, text="Controller: Joystick" if pygame else "Controller: Keyboard")
         self.controller_label.grid(row=0, column=2, sticky='w')
 
         # Show current carriage selection
@@ -412,8 +412,10 @@ class FlexAlignerGUI:
         choice = self.input_var.get().lower()
         if choice.startswith('keyboard'):
             self.input_controller = self.keyboard_controller
+            print("Switched to keyboard input")
         else:
             self.input_controller = self.joystick_controller
+            print("Switched to joystick input")
 
     def _read_joystick_speed(self): 
         norm = self.input_controller.read_speed_knob()

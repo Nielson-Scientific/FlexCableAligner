@@ -10,11 +10,10 @@ class KeyBoardController(ControllerAbstract):
         self._pressed_keys = set()
         self._keys_lock = Lock()
         self._listener = None
-        self._start_keyboard_listener
+        self._start_keyboard_listener()
 
         self.bi = ButtonInventory()
 
-        
         
     def get_label(self) -> str:
         return 'Keyboard (pynput)'
