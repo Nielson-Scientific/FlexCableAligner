@@ -234,7 +234,6 @@ class FlexAlignerGUI:
 
         # Input handling
         self._handle_input_buttons()
-        self.process_actions_queue()
         self._read_joystick_speed()
         dir_tuple, feed = self.input_controller.get_dir_and_feed()
 
