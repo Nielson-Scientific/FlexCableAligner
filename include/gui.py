@@ -340,10 +340,6 @@ class FlexAlignerGUI:
             self.current_vel['y'] = 0.0
             self.current_vel['z'] = 0.0
 
-    def _recompute_target_vel_locked(self):
-        # No-op kept for compatibility; keyboard direction is computed per-loop
-        return
-
 
     # -------------- Controller handling --------------------
     def _handle_input_buttons(self):
@@ -396,8 +392,6 @@ class FlexAlignerGUI:
             self.speed_var.set(self.config.max_speed)
             self.speed_label.config(text=f"{self.config.max_speed:.0f} mm/min")
             self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
-            with self._keys_lock:
-                self._recompute_target_vel_locked()
 
     def _toggle_carriage(self):
         self.selected_carriage = 2 if self.selected_carriage == 1 else 1

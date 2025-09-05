@@ -104,7 +104,6 @@ class KeyBoardController(ControllerAbstract):
             if token not in self._pressed_keys:
                 self._pressed_keys.add(token)
                 first_press = True
-            self._recompute_target_vel_locked()
         if first_press and token in self._action_bindings:
             name, args = self._action_bindings[token]
             self._enqueue_action(name, *args)
@@ -116,4 +115,3 @@ class KeyBoardController(ControllerAbstract):
         with self._keys_lock:
             if token in self._pressed_keys:
                 self._pressed_keys.remove(token)
-            self._recompute_target_vel_locked()
