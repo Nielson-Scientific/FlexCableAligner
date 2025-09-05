@@ -25,10 +25,7 @@ TABLE_POS_COL_W = 42
 TITLE_ROW_COLOR = '#e6e6e6'
 SELECTED_ROW_COLOR = '#b3d9ff'
 
-#TODO: brad says slow needs to be slower still (factor of 10?)
-#TODO: invert placement of y+ and y- buttons to match vimba display
 #TODO: button on gui to switch
-#TODO: have another fine adjust button group for other carriage
 
 
 class FlexAlignerGUI:
@@ -113,9 +110,11 @@ class FlexAlignerGUI:
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
         self.controller_label = ttk.Label(ctrl, text="Controller: Keyboard (pynput)")
         self.controller_label.grid(row=0, column=2, sticky='w')
+
         # Show current carriage selection
-        self.mapping_label = ttk.Label(ctrl, text="Carriage: 1 (XYZ)")
-        self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6, 0))
+        self.carriage_toggle_button = ttk.Button(ctrl, text="Toggle Carriage", command=self._toggle_carriage)
+        self.carriage_label = ttk.Label(ctrl, text="Carriage: 1 (XYZ)")
+        self.carriage_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6, 0))
 
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
@@ -209,7 +208,7 @@ class FlexAlignerGUI:
         self.root.bind('<space>', lambda e: self.reset_velocities())
 
     # -------------- Connection -----------------
-    def connect(self):
+    def connect(self): # after a second press i can fake connection if there is nothing to connect to #TODO fix
         if not self.printer.connect():
             messagebox.showerror("Printer", f"Failed to connect: {self.printer.last_error}")
             return
@@ -358,12 +357,7 @@ class FlexAlignerGUI:
 
         # toggle carriage 1 <-> 2
         if button_states.toggle_carriages:
-            self.selected_carriage = 2 if self.selected_carriage == 1 else 1
-            if getattr(self, 'mapping_label', None):
-                text = 'Carriage: 1 (XYZ)' if self.selected_carriage == 1 else 'Carriage: 2 (ABC)'
-                self.mapping_label.config(text=text)
-            self.reset_velocities()
-            self.printer.stop_jog()
+            self._toggle_carriage()
 
         # save position
         if button_states.save_position:
@@ -404,6 +398,14 @@ class FlexAlignerGUI:
             self.mode_label.config(text=f"Fine Mode: {'ON' if self.fine_mode else 'OFF'}")
             with self._keys_lock:
                 self._recompute_target_vel_locked()
+
+    def _toggle_carriage(self):
+        self.selected_carriage = 2 if self.selected_carriage == 1 else 1
+        if getattr(self, 'carriage_label', None):
+            text = 'Carriage: 1 (XYZ)' if self.selected_carriage == 1 else 'Carriage: 2 (ABC)'
+            self.carriage_label.config(text=text)
+        self.reset_velocities()
+        self.printer.stop_jog()
 
     # -------------- Input Mode switching ------------------
     def _on_input_mode_change(self, _event=None):
