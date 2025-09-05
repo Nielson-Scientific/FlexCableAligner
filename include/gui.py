@@ -167,18 +167,33 @@ class FlexAlignerGUI:
         self.speed_label.grid(row=1, column=2)
 
         # Simple step move controls (increment + 4 buttons for X/Y)
-        step = ttk.LabelFrame(settings, text="Step Move", padding=8)
-        step.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(10, 0))
-        ttk.Label(step, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
+        step_xy = ttk.LabelFrame(settings, text="Step Move", padding=8)
+        step_xy.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(10, 0))
+        ttk.Label(step_xy, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
         self.increment_var = tk.DoubleVar(value=1.0)
-        self.increment_entry = ttk.Entry(step, textvariable=self.increment_var, width=8)
+        self.increment_entry = ttk.Entry(step_xy, textvariable=self.increment_var, width=8)
         self.increment_entry.grid(row=0, column=1, sticky='w')
         # Axis buttons laid out like arrows
         b_opts = {'width': 6}
-        ttk.Button(step, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=1, column=1, pady=4)
-        ttk.Button(step, text="-X", command=lambda: self._move_step('x', -1), **b_opts).grid(row=2, column=0, padx=4)
-        ttk.Button(step, text="+X", command=lambda: self._move_step('x', +1), **b_opts).grid(row=2, column=2, padx=4)
-        ttk.Button(step, text="+Y", command=lambda: self._move_step('y', +1), **b_opts).grid(row=3, column=1, pady=4)
+        ttk.Button(step_xy, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=1, column=1, pady=4)
+        ttk.Button(step_xy, text="-X", command=lambda: self._move_step('x', -1), **b_opts).grid(row=2, column=0, padx=4)
+        ttk.Button(step_xy, text="+X", command=lambda: self._move_step('x', +1), **b_opts).grid(row=2, column=2, padx=4)
+        ttk.Button(step_xy, text="+Y", command=lambda: self._move_step('y', +1), **b_opts).grid(row=3, column=1, pady=4)
+
+        # Simple step move controls (increment + 4 buttons for A/B)
+        step_ab = ttk.LabelFrame(settings, text="Step Move (A/B)", padding=8)
+        step_ab.grid(row=2, column=6, columnspan=3, sticky='ew', pady=(10, 0))
+        ttk.Label(step_ab, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
+        self.increment_var = tk.DoubleVar(value=1.0)
+        self.increment_entry = ttk.Entry(step_ab, textvariable=self.increment_var, width=8)
+        self.increment_entry.grid(row=0, column=1, sticky='w')
+        # Axis buttons laid out like arrows
+        b_opts = {'width': 6}
+        ttk.Button(step_ab, text="-B", command=lambda: self._move_step('b', -1), **b_opts).grid(row=1, column=1, pady=4)
+        ttk.Button(step_ab, text="-A", command=lambda: self._move_step('a', -1), **b_opts).grid(row=2, column=0, padx=4)
+        ttk.Button(step_ab, text="+A", command=lambda: self._move_step('a', +1), **b_opts).grid(row=2, column=2, padx=4)
+        ttk.Button(step_ab, text="+B", command=lambda: self._move_step('b', +1), **b_opts).grid(row=3, column=1, pady=4)
+
 
         # Position / velocity displays
         pos_frame = ttk.LabelFrame(main, text="Positions", padding=10)

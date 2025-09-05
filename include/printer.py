@@ -116,7 +116,6 @@ class Printer:
         with self._io_lock:
             self.ser.write(data)
             self.ser.flush()
-        # print(f"DEBUG_CB: Serial Buffer written and flushed: {line.strip()}")
 
     def _read_until_ok(self, timeout: float = 2.0) -> bool:
         if not self.ser:
@@ -211,9 +210,7 @@ class Printer:
             return True
         g1 = f"G1 {' '.join(parts)} F{max(1,int(feedrate))}"
         # For latency: don't wait for ok on long jog G1; M410 will stop immediately when needed
-        # print(f"DEBUG_CB: Sending G1 on {self._carriage}: {g1}")
         ok = self.send_gcode(g1, wait_ok=True)
-        # print(f"DEBUG_CB: sent")
         if ok:
             self._last_dir[self._carriage] = dir_tuple
             self._last_feed = feedrate
@@ -226,7 +223,6 @@ class Printer:
         self.is_moving = False
         self._last_dir[self._carriage] = (0.0, 0.0, 0.0)
         self._last_feed = 0.0
-        # print("DEBUG_CB: Stopped jogging")
         return ok
 
     # Direct small moves (optional)
@@ -311,7 +307,6 @@ class Printer:
                 'b': float(vals.get('b', 0.0)),
                 'c': float(vals.get('c', 0.0)),
             }
-            # print(return_dict)
             return return_dict
         except Exception as e:
             self.last_error = str(e)
