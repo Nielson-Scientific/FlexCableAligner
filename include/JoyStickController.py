@@ -59,7 +59,6 @@ class JoyStickController(ControllerAbstract):
             ax1 = 0.0
         dead = float(self.deadzone)
         
-        dead = float(self.config.deadzone)
         dx = 1 if ax0 > dead else (-1 if ax0 < -dead else 0)
         dy = 1 if ax1 > dead else (-1 if ax1 < -dead else 0)
 
