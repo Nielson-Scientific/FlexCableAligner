@@ -104,9 +104,6 @@ class KeyBoardController(ControllerAbstract):
             if token not in self._pressed_keys:
                 self._pressed_keys.add(token)
                 first_press = True
-        if first_press and token in self._action_bindings:
-            name, args = self._action_bindings[token]
-            self._enqueue_action(name, *args)
 
     def _on_key_release(self, key):
         token = self._key_to_token(key)
