@@ -105,7 +105,7 @@ class FlexAlignerGUI:
         self.input_combo = ttk.Combobox(ctrl, textvariable=self.input_var, values=['Keyboard', 'Joystick'], state='readonly', width=12)
         self.input_combo.grid(row=0, column=1, padx=(0, 8))
         self.input_combo.bind('<<ComboboxSelected>>', self._on_input_mode_change)
-        self.controller_label = ttk.Label(ctrl, text="Controller: Joystick" if pygame else "Controller: Keyboard")
+        # self.controller_label = ttk.Label(ctrl, text="Controller: Joystick" if pygame else "Controller: Keyboard")
         self.controller_label.grid(row=0, column=2, sticky='w')
 
         # Show current carriage selection
