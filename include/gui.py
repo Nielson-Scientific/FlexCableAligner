@@ -580,11 +580,16 @@ class FlexAlignerGUI:
         except Exception:
             pass
 
+        if axis.lower() == 'a' or axis.lower() == 'b':
+            self.selected_carriage = 2
+        else:
+            self.selected_carriage = 1
         self.printer.set_carriage(self.selected_carriage)
+
         dx = dy = 0.0
-        if axis.lower() == 'x':
+        if axis.lower() == 'x' or axis.lower() == 'a':
             dx = float(sign) * inc
-        elif axis.lower() == 'y':
+        elif axis.lower() == 'y' or axis.lower() == 'b':
             dy = float(sign) * inc
         else:
             return
