@@ -34,9 +34,9 @@ class KeyBoardController(ControllerAbstract):
         if 'right' in pressed:
             dx += 1
         if 'down' in pressed:
-            dy -= 1
-        if 'up' in pressed:
             dy += 1
+        if 'up' in pressed:
+            dy -= 1
         if 'pagedown' in pressed:
             dz -= 1
         if 'pageup' in pressed:
@@ -49,7 +49,7 @@ class KeyBoardController(ControllerAbstract):
         # Z/C slower
         if dz != 0:
             feed *= float(self.z_speed_scale)
-            if self.invert_z: dz *= -1
+            if self.invert_z: dz = -dz
         return (constrain(dx), constrain(dy), constrain(dz)), 1
 
     def get_button_states(self) -> ButtonInventory:
