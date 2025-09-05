@@ -10,7 +10,7 @@ class ButtonInventory():
         self.home_xy = False
         self.speed_dec = False
         self.speed_inc = False
-        self.gett_current_pos = False
+        self.get_current_pos = False
 
 class ControllerAbstract(ABC):
     @abstractmethod
