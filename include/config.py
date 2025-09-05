@@ -13,6 +13,9 @@ class JogConfig:
         self.deadzone = 0.2
         self.acceleration_curve = 2.0  # exponential shaping
 
+        # Z/C movement is intentionally slower than planar
+        self.z_speed_scale = 0.1
+
         # Smoothing / thresholds
         self.velocity_smoothing = 0.10  # seconds time constant for low‑pass
         self.min_move_threshold = 0.001  # mm – below this we ignore

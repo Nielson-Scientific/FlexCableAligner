@@ -9,7 +9,7 @@ except Exception:  # pygame is optional; keyboard mode still works
 
 
 class JoyStickController(ControllerAbstract):
-    def __init__(self, deadzone: float=0.12, invert_z: bool=True, z_speed_scale: float=0.33) -> tuple[bool, str]:
+    def __init__(self, deadzone: float=0.12, invert_z: bool=True, z_speed_scale: float=0.1) -> tuple[bool, str]:
         self.bi = ButtonInventory()
         self._last_button_times = {}
         self.deadzone = deadzone

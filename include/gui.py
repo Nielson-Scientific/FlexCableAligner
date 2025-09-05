@@ -43,8 +43,6 @@ class FlexAlignerGUI:
         self.last_update_time = time.time()
         self.running = True
 
-        # Z/C movement is intentionally slower than planar
-        self.z_speed_scale = 0.25
         # Saved positions (x,y,z,a,b,c)
         self.positions_list = []
         self.row_list = []
@@ -61,12 +59,11 @@ class FlexAlignerGUI:
         self._poller_thread = None
 
         # Controller / carriage state
-        self.joystick_controller = JoyStickController(deadzone=self.config.deadzone)
-        self.keyboard_controller = KeyBoardController()
+        self.joystick_controller = JoyStickController(deadzone=self.config.deadzone, z_speed_scale=self.config.z_speed_scale)
+        self.keyboard_controller = KeyBoardController(z_speed_scale=self.config.z_speed_scale)
         self.input_controller = self.joystick_controller if pygame else self.keyboard_controller
-
-        self._last_button_times = {}
         self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
+        
         # Track last jog command to avoid resends and latency
         self._last_dir_sent = {1: (0, 0, 0), 2: (0, 0, 0)}
         self._last_feed_sent = {1: 0.0, 2: 0.0}
