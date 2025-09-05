@@ -5,6 +5,7 @@ from typing import Optional
 
 import serial  # pyserial
 
+#TODO: top priority: solve connection bugs
 
 class Printer:
     """Marlin over USB serial with continuous jogging.

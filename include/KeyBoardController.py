@@ -49,6 +49,7 @@ class KeyBoardController(ControllerAbstract):
         # Z/C slower
         if dz != 0:
             feed *= float(self.z_speed_scale)
+            if self.invert_z: dz *= -1
         return (constrain(dx), constrain(dy), constrain(dz)), 1
 
     def get_button_states(self) -> ButtonInventory:
