@@ -1,4 +1,4 @@
-from ControllerAbstract import ButtonInventory, ControllerAbstract
+from .ControllerAbstract import ButtonInventory, ControllerAbstract
 from threading import Lock
 from pynput import keyboard
 

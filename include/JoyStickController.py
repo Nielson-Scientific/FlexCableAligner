@@ -1,4 +1,4 @@
-from ControllerAbstract import ButtonInventory, ControllerAbstract
+from .ControllerAbstract import ButtonInventory, ControllerAbstract
 from threading import Thread #right now, rather than using a thread, we just call pygame.event.pump() everytime we read from the joystick
 import time
 try:
