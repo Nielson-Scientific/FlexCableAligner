@@ -14,8 +14,8 @@ except Exception:  # pygame is optional; keyboard mode still works
 
 from .config import JogConfig
 from .printer import Printer
-from JoyStickController import JoyStickController
-from KeyBoardController import KeyBoardController
+from .JoyStickController import JoyStickController
+from .KeyBoardController import KeyBoardController
 
 
 # Simple UI constants
