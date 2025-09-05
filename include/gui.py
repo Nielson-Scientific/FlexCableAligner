@@ -63,7 +63,7 @@ class FlexAlignerGUI:
         self.keyboard_controller = KeyBoardController(z_speed_scale=self.config.z_speed_scale)
         self.input_controller = self.joystick_controller if pygame else self.keyboard_controller
         self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
-        
+
         # Track last jog command to avoid resends and latency
         self._last_dir_sent = {1: (0, 0, 0), 2: (0, 0, 0)}
         self._last_feed_sent = {1: 0.0, 2: 0.0}
@@ -110,8 +110,9 @@ class FlexAlignerGUI:
 
         # Show current carriage selection
         self.carriage_toggle_button = ttk.Button(ctrl, text="Toggle Carriage", command=self._toggle_carriage)
+        self.carriage_toggle_button.grid(row = 1, column = 0, sticky = 'w')
         self.carriage_label = ttk.Label(ctrl, text="Carriage: 1 (XYZ)")
-        self.carriage_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6, 0))
+        self.carriage_label.grid(row=1, column=1, columnspan=3, sticky='w', pady=(6, 0))
 
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
