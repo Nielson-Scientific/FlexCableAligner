@@ -167,9 +167,8 @@ class FlexAlignerGUI:
         step_xy = ttk.LabelFrame(settings, text="Step Move", padding=8)
         step_xy.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(10, 0))
         ttk.Label(step_xy, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
-        self.increment_var = tk.DoubleVar(value=1.0)
-        self.increment_entry = ttk.Entry(step_xy, textvariable=self.increment_var, width=8)
-        self.increment_entry.grid(row=0, column=1, sticky='w')
+        self.increment_var_xy = tk.DoubleVar(value=1.0)
+        ttk.Entry(step_xy, textvariable=self.increment_var_xy, width=8).grid(row=0, column=1, sticky='w')
         # Axis buttons laid out like arrows
         b_opts = {'width': 6}
         ttk.Button(step_xy, text="-Y", command=lambda: self._move_step('y', -1), **b_opts).grid(row=1, column=1, pady=4)
@@ -181,9 +180,8 @@ class FlexAlignerGUI:
         step_ab = ttk.LabelFrame(settings, text="Step Move (A/B)", padding=8)
         step_ab.grid(row=2, column=6, columnspan=3, sticky='ew', pady=(10, 0))
         ttk.Label(step_ab, text="Increment (mm):").grid(row=0, column=0, padx=(0, 6), sticky='w')
-        self.increment_var = tk.DoubleVar(value=1.0)
-        self.increment_entry = ttk.Entry(step_ab, textvariable=self.increment_var, width=8)
-        self.increment_entry.grid(row=0, column=1, sticky='w')
+        self.increment_var_ab = tk.DoubleVar(value=1.0)
+        ttk.Entry(step_ab, textvariable=self.increment_var_ab, width=8).grid(row=0, column=1, sticky='w')
         # Axis buttons laid out like arrows
         b_opts = {'width': 6}
         ttk.Button(step_ab, text="-B", command=lambda: self._move_step('b', -1), **b_opts).grid(row=1, column=1, pady=4)
@@ -551,7 +549,7 @@ class FlexAlignerGUI:
 
         def _run():
             pass # not sure what this is, but here it is
-
+        
         self._poller_thread = Thread(target=_run, daemon=True)
         self._poller_thread.start()    
 
@@ -559,7 +557,10 @@ class FlexAlignerGUI:
     def _move_step(self, axis: str, sign: int):
         """Move the active carriage by +/-increment along X/A or Y/B based on selection."""
         try:
-            inc = abs(float(self.increment_var.get()))
+            if axis.lower() == 'a' or axis.lower() == 'b':
+                inc = abs(float(self.increment_var_ab.get()))
+            elif axis.lower() == 'x' or axis.lower() == 'y':
+                inc = abs(float(self.increment_var_xy.get()))
         except Exception:
             messagebox.showerror("Step Move", "Please enter a valid numeric increment (mm)")
             return
