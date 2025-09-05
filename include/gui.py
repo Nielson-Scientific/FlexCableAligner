@@ -76,7 +76,6 @@ class FlexAlignerGUI:
 
         # Build GUI and start input
         self._build_gui()
-        self._start_keyboard_listener()
         self._update_displays()
         self._schedule_loop()
         self._start_position_poller()
