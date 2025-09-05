@@ -105,3 +105,20 @@ class JoyStickController(ControllerAbstract):
 
     def get_connection_status(self) -> tuple[bool, str]:
         return True, 'joystick'
+    
+    def read_speed_knob(self) -> float:
+        if pygame is None:
+            return 0.0
+        if not getattr(self, 'joystick', None):
+            return 0.0
+        try:
+            pygame.event.pump()
+        except Exception:
+            return 0.0
+        # Axis 3 controls overall max speed in UI (throttled updates)
+        try:
+            ax3 = -float(self.joystick.get_axis(3))
+        except Exception:
+            ax3 = 0.0
+        norm = (ax3 + 1.0) / 2.0
+        return norm

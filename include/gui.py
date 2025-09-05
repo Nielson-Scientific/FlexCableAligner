@@ -44,9 +44,6 @@ class FlexAlignerGUI:
         self.last_update_time = time.time()
         self.running = True
 
-        # Joystick handle (guarded everywhere)
-        self.joystick = None
-
         # Z/C movement is intentionally slower than planar
         self.z_speed_scale = 0.33
         # Saved positions (x,y,z,a,b,c)
@@ -141,7 +138,6 @@ class FlexAlignerGUI:
         # Show current carriage selection
         self.mapping_label = ttk.Label(ctrl, text="Carriage: 1 (XYZ)")
         self.mapping_label.grid(row=1, column=0, columnspan=3, sticky='w', pady=(6, 0))
-        self._init_joystick()
 
         # Saved positions
         saved = ttk.LabelFrame(main, text="Saved Positions", padding=10)
@@ -182,9 +178,7 @@ class FlexAlignerGUI:
         else:
             # Map controller axis to speed on first render if available
             try:
-                js = self.joystick
-                raw = -js.get_axis(3)
-                norm = (raw + 1.0) / 2.0
+                norm = (input_controller.read_speed_knob() + 1.0) / 2.0
                 guess = self.config.base_speed + norm * (self.config.max_speed - self.config.base_speed)
             except Exception:
                 guess = self.config.max_speed
@@ -356,56 +350,6 @@ class FlexAlignerGUI:
             self.current_vel['y'] = 0.0
             self.current_vel['z'] = 0.0
 
-    # -------------- Keyboard handling --------------------
-    def _start_keyboard_listener(self):
-        if self._listener:
-            return
-        self._listener = keyboard.Listener(on_press=self._on_key_press, on_release=self._on_key_release)
-        self._listener.start()
-
-    def _key_to_token(self, key) -> str | None:
-        try:
-            if isinstance(key, keyboard.Key):
-                special = {
-                    keyboard.Key.left: 'left',
-                    keyboard.Key.right: 'right',
-                    keyboard.Key.up: 'up',
-                    keyboard.Key.down: 'down',
-                    keyboard.Key.space: 'space',
-                    keyboard.Key.esc: 'esc',
-                }
-                return special.get(key)
-            if isinstance(key, keyboard.KeyCode):
-                if key.char is None:
-                    return None
-                return key.char.lower()
-        except Exception:
-            return None
-        return None
-
-    def _on_key_press(self, key):
-        token = self._key_to_token(key)
-        if token is None:
-            return
-        first_press = False
-        with self._keys_lock:
-            if token not in self._pressed_keys:
-                self._pressed_keys.add(token)
-                first_press = True
-            self._recompute_target_vel_locked()
-        if first_press and token in self._action_bindings:
-            name, args = self._action_bindings[token]
-            self._enqueue_action(name, *args)
-
-    def _on_key_release(self, key):
-        token = self._key_to_token(key)
-        if token is None:
-            return
-        with self._keys_lock:
-            if token in self._pressed_keys:
-                self._pressed_keys.remove(token)
-            self._recompute_target_vel_locked()
-
     def _recompute_target_vel_locked(self):
         # No-op kept for compatibility; keyboard direction is computed per-loop
         return
@@ -455,49 +399,9 @@ class FlexAlignerGUI:
                 print(f"Action '{name}' failed: {e}")
 
     # -------------- Controller handling --------------------
-    def _init_joystick(self) -> bool:
-        if pygame is None:
-            self.controller_label.config(text="Controller: pygame not available")
-            return False
-        try:
-            pygame.init()
-            pygame.joystick.init()
-            if pygame.joystick.get_count() == 0:
-                self.controller_label.config(text="Controller: Not detected")
-                return False
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-            self.controller_label.config(text=f"Controller: {self.joystick.get_name()}")
-            return True
-        except Exception as e:
-            self.controller_label.config(text=f"Controller error: {e}")
-            return False
-
-    def _shutdown_joystick(self):
-        try:
-            if self.joystick:
-                self.joystick.quit()
-        except Exception:
-            pass
-        try:
-            if pygame:
-                pygame.joystick.quit()
-        except Exception:
-            pass
-        self.joystick = None
-
     def _handle_joystick_buttons(self):
         if not getattr(self, 'joystick', None):
             return
-        t = time.time()
-
-        def debounce(key, interval):
-            last = self._last_button_times.get(key, 0)
-            if t - last > interval:
-                self._last_button_times[key] = t
-                return True
-            return False
-
         # 0: home XY
         if self.joystick.get_button(0) and debounce('home', 0.3):
             self.printer.set_carriage(1)
@@ -532,50 +436,15 @@ class FlexAlignerGUI:
             self._update_displays()
 
     # -------------- Input Mode switching ------------------
-    def _on_input_mode_change(self, _event=None):
+    def _on_input_mode_change(self, _event=None): #TODO fix
         choice = self.input_var.get().lower()
         if choice.startswith('keyboard'):
             self._switch_to_keyboard()
         else:
             self._switch_to_controller()
 
-    def _switch_to_keyboard(self):
-        self.input_mode = 'keyboard'
-        self._shutdown_joystick()
-        self._start_keyboard_listener()
-        self.controller_label.config(text="Controller: Keyboard (pynput)")
-        self._stop_current_motion()
-
-    def _switch_to_controller(self):
-        self.input_mode = 'controller'
-        try:
-            if self._listener:
-                self._listener.stop()
-        except Exception:
-            pass
-        ok = self._init_joystick()
-        if not ok:
-            messagebox.showerror("Controller", "No joystick detected; staying in Keyboard mode")
-            self.input_var.set('Keyboard')
-            self.input_mode = 'keyboard'
-            self._start_keyboard_listener()
-        self._stop_current_motion()
-
-    def _read_joystick(self):
-        if pygame is None:
-            return
-        if not getattr(self, 'joystick', None):
-            return
-        try:
-            pygame.event.pump()
-        except Exception:
-            return
-        # Axis 3 controls overall max speed in UI (throttled updates)
-        try:
-            ax3 = -float(self.joystick.get_axis(3))
-        except Exception:
-            ax3 = 0.0
-        norm = (ax3 + 1.0) / 2.0
+    def _read_joystick_speed(self): # TODO finish implementing
+        norm = input_controller.read_speed_knob()
         new_speed = self.config.base_speed + norm * (1000 - self.config.base_speed)
         if hasattr(self, 'speed_var'):
             try:
@@ -714,117 +583,10 @@ class FlexAlignerGUI:
             return
 
         def _run():
-            pass #cael debug test
-            # while True:
-            #     if not self.running:
-            #         break
-            #     if self.connected:
-            #         try:
-            #             pos = self.printer.get_position()
-            #             if pos:
-            #                 with self._pos_lock:
-            #                     pass # :)
-            #                     # Only XYZ are reported by Marlin; keep ABC as-is
-            #                     # self.positions['x'] = pos.get('x', self.positions['x']) what if we didn't - cael debug test
-            #                     # self.positions['y'] = pos.get('y', self.positions['y'])
-            #                     # self.positions['z'] = pos.get('z', self.positions['z'])
-            #         except Exception:
-            #             pass
-            #     time.sleep(0.25)
+            pass # not sure what this is, but here it is
 
         self._poller_thread = Thread(target=_run, daemon=True)
-        self._poller_thread.start()
-
-    # --------- New helpers for simplified jogging ---------
-    def _dir_and_feed_from_keyboard(self) -> tuple[tuple[int, int, int], float]:
-        # Aggregate pressed keys into a direction for the selected carriage
-        with self._keys_lock:
-            pressed = set(self._pressed_keys)
-        dx = 0
-        dy = 0
-        dz = 0
-        # planar
-        if self.selected_carriage == 1:
-            if 'left' in pressed:
-                dx -= 1
-            if 'right' in pressed:
-                dx += 1
-            if 'down' in pressed:
-                dy -= 1
-            if 'up' in pressed:
-                dy += 1
-            if 's' in pressed:
-                dz -= 1
-            if 'w' in pressed:
-                dz += 1
-        else:
-            if 'j' in pressed:
-                dx -= 1  # A
-            if 'l' in pressed:
-                dx += 1
-            if 'k' in pressed:
-                dy -= 1  # B
-            if 'i' in pressed:
-                dy += 1
-            if 's' in pressed:
-                dz -= 1  # C via W/S as well
-            if 'w' in pressed:
-                dz += 1
-
-        # Z/C slower
-        feed = float(self.config.max_speed)
-        if dz != 0:
-            feed *= float(self.z_speed_scale)
-        return (int(max(-1, min(1, dx))), int(max(-1, min(1, dy))), int(max(-1, min(1, dz)))), feed
-
-    def _dir_and_feed_from_joystick(self) -> tuple[tuple[int, int, int], float]:
-        # Default neutral
-        dir_tuple = (0, 0, 0)
-        feed = float(self.config.max_speed)
-        if pygame is None or not getattr(self, 'joystick', None):
-            return dir_tuple, feed
-        try:
-            pygame.event.pump()
-        except Exception:
-            return dir_tuple, feed
-        # axes 0/1 planar
-        try:
-            ax0 = float(self.joystick.get_axis(0))
-            ax1 = float(self.joystick.get_axis(1))
-        except Exception:
-            ax0 = 0.0
-            ax1 = 0.0
-        # Hat vertical for Z/C
-        try:
-            _hx, hy = self.joystick.get_hat(0)
-        except Exception:
-            hy = 0
-        hy = -int(hy)
-        dz = 1 if hy > 0 else (-1 if hy < 0 else 0)
-
-        dead = float(self.config.deadzone)
-        dx = 1 if ax0 > dead else (-1 if ax0 < -dead else 0)
-        dy = 1 if ax1 > dead else (-1 if ax1 < -dead else 0)
-
-        # Only keep the largest axis movement
-        if abs(ax0) > abs(ax1):
-            dy = 0
-        else:
-            dx = 0
-
-        # Z/C slower
-        if dz != 0:
-            feed *= float(self.z_speed_scale)
-        return (dx, dy, dz), feed
-
-    def _stop_current_motion(self):
-        self.reset_velocities()
-        self._last_dir_sent[self.selected_carriage] = (0, 0, 0)
-        self._last_feed_sent[self.selected_carriage] = 0.0
-        try:
-            self.printer.stop_jog()
-        except Exception:
-            pass
+        self._poller_thread.start()    
 
     # --------- Step move helpers (UI buttons) ---------
     def _move_step(self, axis: str, sign: int):
