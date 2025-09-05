@@ -14,6 +14,9 @@ except Exception:  # pygame is optional; keyboard mode still works
 
 from .config import JogConfig
 from .printer import Printer
+from ControllerAbstract import ControllerAbstract
+from JoyStickController import JoyStickController
+from KeyBoardController import KeyBoardController
 
 
 # Simple UI constants
@@ -65,8 +68,12 @@ class FlexAlignerGUI:
         self._poller_thread = None
 
         # Controller / carriage state
+        self.input_mode = 'joystick' if pygame is not None else 'keyboard'
+        self.joystick_controller = JoyStickController(deadzone=self.config.deadzone)
+        self.keyboard_controller = KeyBoardController()
+        self.input_controller = self.joystick_controller if self.input_mode == 'joystick' else self.keyboard_controller
+
         self._last_button_times = {}
-        self.input_mode = 'controller'  # 'keyboard' | 'controller'
         self.selected_carriage = 1  # 1 -> XYZ, 2 -> ABC
         # Track last jog command to avoid resends and latency
         self._last_dir_sent = {1: (0, 0, 0), 2: (0, 0, 0)}
@@ -255,8 +262,11 @@ class FlexAlignerGUI:
                 self.loops_since_update = 0
 
         # Input handling
+        
+
+
         if self.input_mode == 'keyboard':
-            self._process_actions()
+            self._process_actions_queue()
             dir_tuple, feed = self._dir_and_feed_from_keyboard()
         else:
             # update speed slider from axis 3 and read direction
@@ -358,7 +368,7 @@ class FlexAlignerGUI:
         with self._keys_lock:
             self._action_queue.append((name, args))
 
-    def _process_actions(self):
+    def _process_action_queue(self):
         while True:
             with self._keys_lock:
                 if not self._action_queue:
