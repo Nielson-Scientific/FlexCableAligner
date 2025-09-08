@@ -236,6 +236,22 @@ class Printer:
         if not parts:
             return True
         return self.send_gcode(f"G1 {' '.join(parts)} F{max(1,int(feedrate))}")
+    
+    def jog_2(self, vx:float, vy: float, vz: float, feedrate: float) -> bool:
+        if not self.connected:
+            return False
+        def constrain(v_input: float, v_limit: float = 1.0) -> float:
+            return v_limit if v_input > 0 else (v_limit if v_input < 0 else 0.0)
+        time_duration_s = 0.01
+        # Direction vector
+        d_tuple = (
+            constrain(vx) * time_duration_s,
+            constrain(vy) * time_duration_s,
+            constrain(vz) * time_duration_s,
+        )
+        return self.move_relative(d_tuple[0], d_tuple[1], d_tuple[2], feedrate)
+
+        
 
     # Basic position query (Marlin M114 parsing is heuristic)
     def get_position(self) -> Optional[dict[str, float]]:
