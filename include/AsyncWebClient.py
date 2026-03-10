@@ -182,3 +182,16 @@ class AsyncWebSocketClient:
         """Remove a message handler"""
         if handler in self.message_handlers:
             self.message_handlers.remove(handler)
+
+    async def get_toolhead_status(self):
+        """Get toolhead status including homed axes"""
+        try:
+            # According to Klipper API, toolhead object has homed_axes
+            response = await self.get_printer_objects({"toolhead": ["homed_axes"]})
+            # get_printer_objects returns the root object list, e.g. {'toolhead': {'homed_axes': 'xyz'}}
+            if response and "toolhead" in response:
+                return response["toolhead"]
+            return {}
+        except Exception as e:
+            print(f"Error getting toolhead status: {e}")
+            return {}
