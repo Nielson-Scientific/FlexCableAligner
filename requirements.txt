@@ -1,1 +1,4 @@
 websockets>=10.0
+ezdxf
+scipy
+matplotlib
