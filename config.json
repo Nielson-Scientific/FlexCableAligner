@@ -1,0 +1,10 @@
+{
+    "collision_distance": 25.0,
+    "default_feed_rate": 3000.0,
+    "park_position": {
+        "x": 200.0,
+        "y": 0.0
+    },
+    "default_step_size": 1.0,
+    "url": "ws://10.34.243.54/websocket?token=4deca56b67664a47bb4d59e4ee628d10"
+}

@@ -116,6 +116,24 @@ class CarriageController:
         self.positions[f'x{carriage_idx}'] = target_x
         self.positions[f'y{carriage_idx}'] = target_y
 
+    async def move_carriage(self, carriage_idx, x, y, speed=1000):
+        """
+        Moves a single carriage to absolute coordinates.
+        """
+        cx_name = 'x' if carriage_idx == 1 else 'x2'
+        cy_name = 'y' if carriage_idx == 1 else 'y2'
+        
+        await self.client.send_gcode("G90")
+        
+        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cx_name}")
+        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cy_name}")
+        
+        await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+        
+        self.positions[f'x{carriage_idx}'] = x
+        self.positions[f'y{carriage_idx}'] = y
+
+
     async def _send_batch(self, commands):
         # Deprecated / Unused now in favor of explicit sequencing
         for cmd in commands:
