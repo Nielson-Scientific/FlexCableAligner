@@ -414,14 +414,26 @@ class App(tk.Tk):
             x2 = c2_zero['x'] + float(row['x2'])
             y2 = c2_zero['y'] + float(row['y2'])
 
-            # Check for collision
-            dist = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+            # Check for collision using PCB coordinates (Normalized Units)
+            # We use the PCB distance because machine coordinate distances might be unreliable
+            # if the carriages have different datums or are uncalibrated relative to each other.
+            p1_x, p1_y = float(row['x1']), float(row['y1'])
+            p2_x, p2_y = float(row['x2']), float(row['y2'])
+            
+            dist = math.sqrt((p1_x - p2_x)**2 + (p1_y - p2_y)**2)
             collision_threshold = float(self.config.get("collision_distance", 25.0))
             
+            logging.info(f"Move Check (PCB Units): P1({p1_x:.2f}, {p1_y:.2f}) P2({p2_x:.2f}, {p2_y:.2f}) Dist={dist:.2f} Threshold={collision_threshold}")
+
             if dist < collision_threshold:
                 # Collision likely!
                 logging.warning(f"Collision detected (dist={dist:.2f} < {collision_threshold}). Park C2 and use single C1.")
-                await self.handle_collision_move(x1, y1, x2, y2)
+                
+                # Calculate Point B target for C1 (using C1 Zero + Point B Offset)
+                x2_c1 = c1_zero['x'] + float(row['x2'])
+                y2_c1 = c1_zero['y'] + float(row['y2'])
+                
+                await self.handle_collision_move(x1, y1, x2_c1, y2_c1)
             else:
                 await self.controller.move_to_coordinates(x1, y1, x2, y2, speed=self.jog_speed)
         except Exception as e:
@@ -432,6 +444,8 @@ class App(tk.Tk):
         # Park C2
         try:
             park_cfg = self.config.get("park_position", {"x": 200.0, "y": 0.0})
+            logging.info(f"Parking C2 at {park_cfg}")
+            
             # Ensure safe parking
             await self.controller.move_carriage(2, park_cfg['x'], park_cfg['y'], speed=self.jog_speed)
             
@@ -440,6 +454,7 @@ class App(tk.Tk):
             
         except Exception as e:
             messagebox.showerror("Collision Handling Error", f"Failed to park/init collision mode: {e}")
+            logging.error(f"Collision handling error: {e}")
 
     def show_collision_dialog(self, x1, y1, x2, y2):
         dialog = tk.Toplevel(self)

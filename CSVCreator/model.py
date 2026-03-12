@@ -49,9 +49,13 @@ class Model:
             
             # Helper function to write a row
             def write_pair(index_val, p1, p2):
-                x1 = (p1[0] - self.origin[0]) / 1000.0
-                y1 = (p1[1] - self.origin[1]) / 1000.0
-                # If p2 is None (landmark case), set x2/y2 to 0
+                if p1 is None:
+                    x1 = 0.0
+                    y1 = 0.0
+                else:
+                    x1 = (p1[0] - self.origin[0]) / 1000.0
+                    y1 = (p1[1] - self.origin[1]) / 1000.0
+                
                 if p2 is None:
                     x2 = 0.0
                     y2 = 0.0
@@ -71,7 +75,7 @@ class Model:
             if self.landmark_1:
                 write_pair("Landmark1", self.landmark_1, None)
             if self.landmark_2:
-                write_pair("Landmark2", self.landmark_2, None)
+                write_pair("Landmark2", None, self.landmark_2)
 
             for i, (p1, p2) in enumerate(self.current_pairs):
                 write_pair(i, p1, p2)
