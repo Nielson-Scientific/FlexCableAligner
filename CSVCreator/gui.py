@@ -193,7 +193,16 @@ class GUI:
     def draw_static_background(self):
         """Draws non-animated elements and saves the buffer."""
         try:
+            # Save current view limits
+            xlim = self.ax.get_xlim()
+            ylim = self.ax.get_ylim()
+            
             self.ax.clear()
+            
+            # Restore view limits and aspect ratio
+            self.ax.set_xlim(xlim)
+            self.ax.set_ylim(ylim)
+            self.ax.set_aspect('equal')
             
             if self.dxf_collection:
                 self.ax.add_collection(self.dxf_collection)
