@@ -33,6 +33,8 @@ class GUI:
         tk.Button(toolbar_frame, text="Load DXF", command=self.load_dxf).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Save CSV", command=self.save_csv).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Set Origin", command=self.start_set_origin).pack(side=tk.LEFT)
+        tk.Button(toolbar_frame, text="Set Landmark 1", command=self.start_set_landmark_1).pack(side=tk.LEFT)
+        tk.Button(toolbar_frame, text="Set Landmark 2", command=self.start_set_landmark_2).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Add Pair", command=self.start_add_pair).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Undo", command=self.undo).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Clear", command=self.clear).pack(side=tk.LEFT)
@@ -106,6 +108,16 @@ class GUI:
         self.state = "SET_ORIGIN"
         self.status_label.config(text="Click to set Origin")
         self.draw_static_background()
+
+    def start_set_landmark_1(self):
+        self.state = "SET_LANDMARK_1"
+        self.status_label.config(text="Click point for Landmark 1")
+        self.draw_static_background()
+
+    def start_set_landmark_2(self):
+        self.state = "SET_LANDMARK_2"
+        self.status_label.config(text="Click point for Landmark 2")
+        self.draw_static_background()
         
     def start_add_pair(self):
         self.state = "ADD_PAIR_1"
@@ -135,53 +147,85 @@ class GUI:
         self.draw_dynamic_cursor()
 
     def on_click(self, event):
-        if self.mpl_toolbar.mode != "":
-            return     
-        if not event.inaxes or event.button != 1:
-            return
+        try:
+            if self.mpl_toolbar.mode != "":
+                return     
+            if not event.inaxes or event.button != 1:
+                return
 
-        target_point = self.snap_point if self.snap_point else (event.xdata, event.ydata)
-        
-        if self.state == "SET_ORIGIN":
-            self.model.set_origin(target_point)
-            self.state = "IDLE"
-            self.status_label.config(text="Origin Set")
-            self.draw_static_background()
+            target_point = self.snap_point if self.snap_point else (event.xdata, event.ydata)
             
-        elif self.state == "ADD_PAIR_1":
-            self.current_pair_p1 = target_point
-            self.state = "ADD_PAIR_2"
-            self.status_label.config(text="Click second point")
-            self.draw_static_background()
-            
-        elif self.state == "ADD_PAIR_2":
-            self.model.add_pair(self.current_pair_p1, target_point)
-            self.current_pair_p1 = None
-            self.state = "ADD_PAIR_1"
-            self.status_label.config(text="Pair added. Click first point of next pair")
-            self.draw_static_background()
+            if self.state == "SET_ORIGIN":
+                self.model.set_origin(target_point)
+                self.state = "IDLE"
+                self.status_label.config(text="Origin Set")
+                self.draw_static_background()
+
+            elif self.state == "SET_LANDMARK_1":
+                self.model.set_landmark_1(target_point)
+                self.state = "IDLE"
+                self.status_label.config(text="Landmark 1 set")
+                self.draw_static_background()
+
+            elif self.state == "SET_LANDMARK_2":
+                self.model.set_landmark_2(target_point)
+                self.state = "IDLE"
+                self.status_label.config(text="Landmark 2 set")
+                self.draw_static_background()
+                
+            elif self.state == "ADD_PAIR_1":
+                self.current_pair_p1 = target_point
+                self.state = "ADD_PAIR_2"
+                self.status_label.config(text="Click second point")
+                self.draw_static_background()
+                
+            elif self.state == "ADD_PAIR_2":
+                self.model.add_pair(self.current_pair_p1, target_point)
+                self.current_pair_p1 = None
+                self.state = "ADD_PAIR_1"
+                self.status_label.config(text="Pair added. Click first point of next pair")
+                self.draw_static_background()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("Error", f"An error occurred: {e}")
 
     def draw_static_background(self):
         """Draws non-animated elements and saves the buffer."""
-        self.ax.clear()
-        
-        if self.dxf_collection:
-            self.ax.add_collection(self.dxf_collection)
-        
-        if self.model.origin:
-             self.ax.plot(self.model.origin[0], self.model.origin[1], 'g+', ms=15, mew=2)
-             
-        for p1, p2 in self.model.current_pairs:
-            self.ax.plot([p1[0], p2[0]], [p1[1], p2[1]], 'b-', lw=1.5)
+        try:
+            self.ax.clear()
             
-        self.cursor_highlight, = self.ax.plot([], [], 'ro', ms=5, animated=True, zorder=10)
-        self.rubberband_line, = self.ax.plot([], [], 'b--', lw=1, animated=True, zorder=10)
-        
-        self.canvas.draw()
-        
-        self.background = self.canvas.copy_from_bbox(self.ax.bbox)
-        
-        self.draw_dynamic_cursor()
+            if self.dxf_collection:
+                self.ax.add_collection(self.dxf_collection)
+            
+            if self.model.origin:
+                 self.ax.plot(self.model.origin[0], self.model.origin[1], 'g+', ms=15, mew=2)
+
+            if self.model.landmark_1:
+                 p1 = self.model.landmark_1
+                 self.ax.plot(p1[0], p1[1], 'mX', ms=10, label="Landmark 1")
+                 self.ax.text(p1[0], p1[1], " L1", color='m')
+
+            if self.model.landmark_2:
+                 p1 = self.model.landmark_2
+                 self.ax.plot(p1[0], p1[1], 'cX', ms=10, label="Landmark 2")
+                 self.ax.text(p1[0], p1[1], " L2", color='c')
+                 
+            for p1, p2 in self.model.current_pairs:
+                self.ax.plot([p1[0], p2[0]], [p1[1], p2[1]], 'b-', lw=1.5)
+                
+            self.cursor_highlight, = self.ax.plot([], [], 'ro', ms=5, animated=True, zorder=10)
+            self.rubberband_line, = self.ax.plot([], [], 'b--', lw=1, animated=True, zorder=10)
+            
+            self.canvas.draw()
+            
+            self.background = self.canvas.copy_from_bbox(self.ax.bbox)
+            
+            self.draw_dynamic_cursor()
+        except Exception as e:
+            print(f"Error in draw_static_background: {e}")
+            import traceback
+            traceback.print_exc()
 
     def draw_dynamic_cursor(self):
         """Fast redraw of cursor only."""
@@ -197,7 +241,12 @@ class GUI:
             self.cursor_highlight.set_data([target[0]], [target[1]])
             self.ax.draw_artist(self.cursor_highlight)
 
-            if self.state == "ADD_PAIR_2" and self.current_pair_p1 is not None:
+            should_draw_rubberband = (
+                self.state == "ADD_PAIR_2" and 
+                self.current_pair_p1 is not None
+            )
+
+            if should_draw_rubberband:
                 self.rubberband_line.set_data(
                     [self.current_pair_p1[0], target[0]], 
                     [self.current_pair_p1[1], target[1]]
