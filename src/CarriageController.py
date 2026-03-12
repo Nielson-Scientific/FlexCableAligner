@@ -7,7 +7,8 @@ class CarriageController:
         :param client: An instance of AsyncWebSocketClient
         """
         self.client = client
-        self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 0.0, 'y2': 0.0}
+        # Default positions: C1 at 0,0 (traditional), C2 at 1000,0 (Park/Home)
+        self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 1000.0, 'y2': 0.0}
         
     async def initialize(self):
         """
@@ -32,6 +33,12 @@ class CarriageController:
                 logging.info(f"Axes not fully homed ({homed_axes}). Homing X and Y now...")
                 # Using G28 X Y only (leaving Z alone as requested Z is not used)
                 await self.client.send_gcode_and_wait("G28 X Y")
+                
+                # Update positions just in case
+                self.positions['x1'] = 0.0
+                self.positions['y1'] = 0.0
+                self.positions['x2'] = 1000.0
+                self.positions['y2'] = 0.0
             else:
                 logging.info(f"Axes already homed: {homed_axes}")
 
@@ -102,19 +109,45 @@ class CarriageController:
         elif axis.upper() == 'Y':
             target_y += distance
             
-        # Ensure correct carriage is active - Must be synchronous
-        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cx_name}")
-        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cy_name}")
-        
-        # Relative vs Absolute Jogging? 
-        # Since we track absolute position, sending G1 to absolute target is safer/easier
-        # if we are sure our state is synced. If state desyncs, G91 (relative) might be safer for jogging?
-        # Let's stick to absolute G90 since that's what move_to_coordinates uses.
+        await self.move_carriage(carriage_idx, target_x, target_y, speed)
+
+    async def move_carriage(self, carriage_idx, x, y, speed=1000):
+        """
+        Moves a single carriage to absolute coordinates.
+        Updates internal position state.
+        :param carriage_idx: 1 or 2
+        :param x: Target X
+        :param y: Target Y
+        :param speed: Feed rate
+        """
+        # Ensure Absolute Mode is active before sending coordinates
         await self.client.send_gcode("G90")
-        await self.client.send_gcode(f"G1 X{target_x} Y{target_y} F{speed}")
-        
-        self.positions[f'x{carriage_idx}'] = target_x
-        self.positions[f'y{carriage_idx}'] = target_y
+
+        if carriage_idx == 1:
+            # Activate Carriage 1
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
+            
+            # Move
+            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+            
+            # Update State
+            self.positions['x1'] = x
+            self.positions['y1'] = y
+            
+        elif carriage_idx == 2:
+            # Activate Carriage 2
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
+            
+            # Move
+            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+            
+            # Update State
+            self.positions['x2'] = x
+            self.positions['y2'] = y
+        else:
+            logging.error(f"Invalid carriage index: {carriage_idx}")
 
     async def move_carriage(self, carriage_idx, x, y, speed=1000):
         """

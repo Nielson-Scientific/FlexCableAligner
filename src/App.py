@@ -25,9 +25,11 @@ class App(tk.Tk):
         self.step_size = self.config.get("default_step_size", 1.0)
         self.jog_speed = self.config.get("default_feed_rate", 3000.0)
         
-        # Origin state
-        self.origin = {'x': 0.0, 'y': 0.0}
-        self.is_origin_set = False
+        # Origin state (Replaced by Machine Zeros for Landmarks)
+        self.machine_zeros = {'c1': None, 'c2': None} # {'x': float, 'y': float}
+        self.landmark_offsets = {} # Loaded from CSV
+        self.rows = []
+        self.current_row_index = -1
 
         # UI Setup
         self.build_ui()
@@ -64,12 +66,13 @@ class App(tk.Tk):
         self.btn_connect = ttk.Button(toolbar, text="Connect", command=self.connect_to_printer)
         self.btn_connect.pack(side=tk.LEFT, padx=5)
         
-        # Origin Button
-        self.btn_origin = ttk.Button(toolbar, text="Set Origin", command=self.set_origin, state=tk.DISABLED)
-        self.btn_origin.pack(side=tk.LEFT, padx=5)
-
+        # CSV Load First
         self.btn_load = ttk.Button(toolbar, text="Load CSV", command=self.load_csv, state=tk.DISABLED)
         self.btn_load.pack(side=tk.LEFT, padx=5)
+
+        # Then Set Landmarks
+        self.btn_origin = ttk.Button(toolbar, text="Set Landmarks", command=self.start_landmark_sequence, state=tk.DISABLED)
+        self.btn_origin.pack(side=tk.LEFT, padx=5)
         
         self.lbl_file = ttk.Label(toolbar, text="No file loaded")
         self.lbl_file.pack(side=tk.LEFT, padx=5)
@@ -199,7 +202,8 @@ class App(tk.Tk):
             connected = await self.client.connect()
             if connected:
                 self.lbl_status.config(text="Connected", foreground="green")
-                self.btn_origin.config(state=tk.NORMAL)
+                # Enable Load CSV immediately upon connection
+                self.btn_load.config(state=tk.NORMAL)
                 
                 # Show Homing Dialog
                 homing_win = tk.Toplevel(self)
@@ -224,41 +228,96 @@ class App(tk.Tk):
             logging.error(f"Connection error: {e}")
 
     def set_origin(self):
-        # We assume initialized and current position is valid
-        # We want to use Carriage 1 (X, Y) as origin.
-        x1 = self.controller.positions.get('x1', 0.0)
-        y1 = self.controller.positions.get('y1', 0.0)
-        
-        self.origin = {'x': x1, 'y': y1}
-        self.is_origin_set = True
-        
-        # Disable manual jogging until CSV is loaded
-        messagebox.showinfo("Origin Set", f"Origin set to ({x1}, {y1}).\nManual jogging disabled until CSV is loaded.")
-        self.btn_load.config(state=tk.NORMAL)
+        # Deprecated
+        pass
 
-    def load_csv(self):
-        if not self.is_origin_set:
-            messagebox.showwarning("Origin Required", "Please set the origin before loading a CSV.")
+    def start_landmark_sequence(self):
+        if not self.landmark_offsets:
+            messagebox.showerror("Error", "No landmarks loaded from CSV.")
             return
 
+        # Start with C1
+        self.message_landmark(1)
+
+    def message_landmark(self, carriage_num):
+        landmark_key = f"Landmark{carriage_num}"
+        if landmark_key not in self.landmark_offsets:
+            messagebox.showerror("Error", f"Missing {landmark_key} in CSV.")
+            return
+
+        offset = self.landmark_offsets[landmark_key]
+        
+        dialog = tk.Toplevel(self)
+        dialog.title(f"Set Landmark {carriage_num}")
+        dialog.geometry("400x200")
+        
+        ttk.Label(dialog, text=f"Jog Carriage {carriage_num} to Physical Landmark Position.", font=("Arial", 12)).pack(pady=10)
+        ttk.Label(dialog, text=f"Target Offset (from CSV): X={offset['x1' if carriage_num==1 else 'x2']}, Y={offset['y1' if carriage_num==1 else 'y2']}", font=("Arial", 10)).pack(pady=5)
+        
+        def confirm():
+            self.capture_landmark(carriage_num, offset, dialog)
+
+        ttk.Button(dialog, text=f"Confirm Landmark {carriage_num}", command=confirm).pack(pady=20)
+        
+    def capture_landmark(self, carriage_num, offset, dialog):
+        # Calc Machine Zero
+        # Machine_Zero = Current_Pos - Landmark_Offset
+        # So if I am at 100, and Landmark is at 10, Zero is at 90.
+        
+        try:
+            curr_x = self.controller.positions.get(f'x{carriage_num}', 0.0)
+            curr_y = self.controller.positions.get(f'y{carriage_num}', 0.0)
+            
+            # Use appropriate offset from CSV row (assuming x1/y1 for L1 and x2/y2 for L2)
+            off_x = offset.get('x1') if carriage_num == 1 else offset.get('x2')
+            off_y = offset.get('y1') if carriage_num == 1 else offset.get('y2')
+
+            machine_zero = {
+                'x': curr_x - off_x,
+                'y': curr_y - off_y
+            }
+            
+            key = 'c1' if carriage_num == 1 else 'c2'
+            self.machine_zeros[key] = machine_zero
+            
+            dialog.destroy()
+            logging.info(f"Captured {key} Machine Zero: {machine_zero}")
+            
+            if carriage_num == 1:
+                # Next step: C2
+                self.after(500, lambda: self.message_landmark(2))
+            else:
+                # Done
+                messagebox.showinfo("Setup Complete", "Landmarks set! You can now run the sequence.")
+                self.btn_next.config(state=tk.NORMAL)
+                self.btn_start_move.config(state=tk.NORMAL)
+                self.update_current_row()
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to capture landmark: {e}")
+            logging.error(f"Landmark capture error: {e}")
+
+    def load_csv(self):
         filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
 
         if filename:
             try:
-                self.rows = self.csv_handler.load_file(filename)
+                self.rows, self.landmark_offsets = self.csv_handler.load_file(filename)
                 self.lbl_file.config(text=filename)
                 self.current_row_index = -1
+                
+                # Check validation
+                if not self.landmark_offsets:
+                    messagebox.showerror("Error", "No Landmark rows found in CSV (Index=Landmark1/Landmark2).")
+                    return
+
+                # Enable Landmark setting
+                self.btn_origin.config(state=tk.NORMAL, text="Set Landmarks")
                 self.draw_preview()
-                self.btn_next.config(state=tk.NORMAL)
-                
-                # Re-enable controls
-                self.btn_start_move.config(state=tk.NORMAL)
-                
-                # Auto-select next row?
-                self.next_row() 
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load CSV: {e}")
+
 
 
     def draw_preview(self):
@@ -338,15 +397,22 @@ class App(tk.Tk):
         self.loop.create_task(self._safe_move(row))
 
     async def _safe_move(self, row):
+        if not self.machine_zeros['c1'] or not self.machine_zeros['c2']:
+            messagebox.showerror("Error", "Landmarks not set yet!")
+            return
+
         try:
-            # Apply origin offset
-            ox = self.origin.get('x', 0.0)
-            oy = self.origin.get('y', 0.0)
+            # Calculate absolute machine coordinates
+            # Target = Machine_Zero + CSV_Offset
             
-            x1 = float(row['x1']) + ox
-            y1 = float(row['y1']) + oy
-            x2 = float(row['x2']) + ox
-            y2 = float(row['y2']) + oy
+            c1_zero = self.machine_zeros['c1']
+            c2_zero = self.machine_zeros['c2']
+            
+            x1 = c1_zero['x'] + float(row['x1'])
+            y1 = c1_zero['y'] + float(row['y1'])
+            
+            x2 = c2_zero['x'] + float(row['x2'])
+            y2 = c2_zero['y'] + float(row['y2'])
 
             # Check for collision
             dist = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
@@ -428,26 +494,12 @@ class App(tk.Tk):
         dialog.focus_set()
 
     def jog(self, carriage, axis, direction):
-        # State Logic:
-        # 1. Start: Origin Not Set. 
-        #    - Carriage 1 MUST stick to user request "carriage 1 only has keyboard".
-        #    - Carriage 2 should be disabled?
-        # 2. Origin Set, No CSV.
-        #    - "disable keyboard input"
-        # 3. CSV Loaded.
-        #    - "keyboard control should proceed as normal"
-        
-        if not self.is_origin_set:
-            # Phase 1: Only Carriage 1 allowed
-            if carriage == 2:
-                logging.warning("Carriage 2 disabled before Origin is set.")
-                return 
-        elif not self.rows:
-             # Phase 2: Origin set, no CSV. All disabled.
-             return
+        # Allow jogging strictly if we are not currently running a sequence?
+        # Actually, user wants to jog to set landmarks.
+        # So effective immediately.
         
         dist = self.step_size * direction
-        self.loop.create_task(self._safe_jog(carriage, axis, dist))
+        self.loop.create_task(self._safe_jog(carriage, axis, dist)) 
 
     async def _safe_jog(self, carriage, axis, dist):
         try:
