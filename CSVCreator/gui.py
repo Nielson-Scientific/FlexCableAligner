@@ -15,6 +15,8 @@ class GUI:
         self.current_pair_p1 = None
         
         self.snap_point = None
+        # Flag for free-coordinate selection mode (no snapping)
+        self.free_mode = False
         self.mouse_pos = None
 
         # Optimization: Blitting variables
@@ -38,6 +40,14 @@ class GUI:
         tk.Button(toolbar_frame, text="Add Pair", command=self.start_add_pair).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Undo", command=self.undo).pack(side=tk.LEFT)
         tk.Button(toolbar_frame, text="Clear", command=self.clear).pack(side=tk.LEFT)
+        # Checkbox to enable free-coordinate selection (no snapping)
+        self.free_mode_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(
+            toolbar_frame,
+            text="Free Mode",
+            variable=self.free_mode_var,
+            command=self.toggle_free_mode
+        ).pack(side=tk.LEFT)
         
         self.status_label = tk.Label(toolbar_frame, text="Status: Idle")
         self.status_label.pack(side=tk.RIGHT, padx=10)
@@ -64,6 +74,11 @@ class GUI:
         self.canvas.mpl_connect("motion_notify_event", self.on_mouse_move)
         self.canvas.mpl_connect("button_press_event", self.on_click)
         self.canvas.mpl_connect("draw_event", self.on_draw)
+
+    def toggle_free_mode(self):
+        """Callback for the Free Mode checkbox to update internal flag and redraw cursor."""
+        self.free_mode = bool(self.free_mode_var.get())
+        self.draw_dynamic_cursor()
 
     def on_draw(self, event):
         """Called upon resize or zoom. We must invalidate the background."""
@@ -138,7 +153,7 @@ class GUI:
             
         self.mouse_pos = (event.xdata, event.ydata)
         
-        if self.model.dxf_kdtree:
+        if not getattr(self, 'free_mode', False) and self.model.dxf_kdtree:
             dist, idx = self.model.dxf_kdtree.query(self.mouse_pos)
             self.snap_point = self.model.dxf_points[idx]
         else:
@@ -153,7 +168,11 @@ class GUI:
             if not event.inaxes or event.button != 1:
                 return
 
-            target_point = self.snap_point if self.snap_point else (event.xdata, event.ydata)
+            # Use raw coordinates when free mode is active; otherwise snap to nearest point
+            if getattr(self, 'free_mode', False):
+                target_point = (event.xdata, event.ydata)
+            else:
+                target_point = self.snap_point if self.snap_point else (event.xdata, event.ydata)
             
             if self.state == "SET_ORIGIN":
                 self.model.set_origin(target_point)
@@ -244,7 +263,11 @@ class GUI:
 
         self.canvas.restore_region(self.background)
         
-        target = self.snap_point if self.snap_point is not None else self.mouse_pos
+        # Show raw mouse position in free mode; otherwise show snapped point if available
+        if getattr(self, 'free_mode', False):
+            target = self.mouse_pos
+        else:
+            target = self.snap_point if self.snap_point is not None else self.mouse_pos
         
         if target is not None:
             self.cursor_highlight.set_data([target[0]], [target[1]])
