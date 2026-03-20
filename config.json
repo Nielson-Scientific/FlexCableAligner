@@ -2,7 +2,7 @@
     "collision_distance": 25.0,
     "default_feed_rate": 3000.0,
     "park_position": {
-        "x": 1000.0,
+        "x": 750.0,
         "y": 0.0
     },
     "default_step_size": 1.0,

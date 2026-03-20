@@ -7,8 +7,8 @@ class CarriageController:
         :param client: An instance of AsyncWebSocketClient
         """
         self.client = client
-        # Default positions: C1 at 0,0 (traditional), C2 at 1000,0 (Park/Home)
-        self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 1000.0, 'y2': 0.0}
+        # Default positions: C1 at 0,0 (traditional), C2 at 792.79,0 (Park/Home)
+        self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 792.79, 'y2': -27.15}
         
     async def initialize(self):
         """
