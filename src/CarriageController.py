@@ -37,8 +37,8 @@ class CarriageController:
                 # Update positions just in case
                 self.positions['x1'] = 0.0
                 self.positions['y1'] = 0.0
-                self.positions['x2'] = 1000.0
-                self.positions['y2'] = 0.0
+                self.positions['x2'] = 792.79
+                self.positions['y2'] = -27.15
             else:
                 logging.info(f"Axes already homed: {homed_axes}")
 
