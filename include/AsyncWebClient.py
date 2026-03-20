@@ -195,3 +195,14 @@ class AsyncWebSocketClient:
         except Exception as e:
             print(f"Error getting toolhead status: {e}")
             return {}
+
+    async def get_current_position(self):
+        """Get current toolhead position [X, Y, Z, E]"""
+        try:
+            response = await self.get_printer_objects({"toolhead": ["position"]})
+            if response and "toolhead" in response:
+                return response["toolhead"].get("position", [0.0, 0.0, 0.0, 0.0])
+            return [0.0, 0.0, 0.0, 0.0]
+        except Exception as e:
+            print(f"Error getting current position: {e}")
+            return [0.0, 0.0, 0.0, 0.0]

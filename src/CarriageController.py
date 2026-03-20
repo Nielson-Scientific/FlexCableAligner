@@ -10,6 +10,33 @@ class CarriageController:
         # Default positions: C1 at 0,0 (traditional), C2 at 792.79,0 (Park/Home)
         self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 792.79, 'y2': -27.15}
         
+    async def _sync_positions_from_klipper(self):
+        """
+        Polls Klipper for the actual current positions of both carriages
+        by activating each sequentially and querying the toolhead position.
+        This ensures UI matches actual Klipper state, even after boundary clamping.
+        """
+        try:
+            # Sync Carriage 1
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
+            pos1 = await self.client.get_current_position()
+            if pos1:
+                self.positions['x1'] = pos1[0]
+                self.positions['y1'] = pos1[1]
+
+            # Sync Carriage 2
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
+            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
+            pos2 = await self.client.get_current_position()
+            if pos2:
+                self.positions['x2'] = pos2[0]
+                self.positions['y2'] = pos2[1]
+                
+            logging.info(f"Synced positions from Klipper: {self.positions}")
+        except Exception as e:
+            logging.error(f"Failed to sync positions from Klipper: {e}")
+        
     async def initialize(self):
         """
         Prepare printer:
@@ -33,14 +60,11 @@ class CarriageController:
                 logging.info(f"Axes not fully homed ({homed_axes}). Homing X and Y now...")
                 # Using G28 X Y only (leaving Z alone as requested Z is not used)
                 await self.client.send_gcode_and_wait("G28 X Y")
-                
-                # Update positions just in case
-                self.positions['x1'] = 0.0
-                self.positions['y1'] = 0.0
-                self.positions['x2'] = 792.79
-                self.positions['y2'] = -27.15
             else:
                 logging.info(f"Axes already homed: {homed_axes}")
+
+            # Sync actual positions from Klipper
+            await self._sync_positions_from_klipper()
 
         except Exception as e:
             logging.error(f"Failed to check/home axes: {e}")
@@ -81,11 +105,11 @@ class CarriageController:
         # Move C2
         await self.client.send_gcode(f"G1 X{x2} Y{y2} F{speed}")
         
-        # Update internal state
-        self.positions['x1'] = x1
-        self.positions['y1'] = y1
-        self.positions['x2'] = x2
-        self.positions['y2'] = y2
+        # Ensure commands finish before we sync positions
+        await self.client.send_gcode_and_wait("M400")
+        
+        # Update internal state from Klipper's actual post-move values
+        await self._sync_positions_from_klipper()
 
     async def jog_axis(self, carriage_idx, axis, distance, speed=1000):
         """
@@ -114,44 +138,7 @@ class CarriageController:
     async def move_carriage(self, carriage_idx, x, y, speed=1000):
         """
         Moves a single carriage to absolute coordinates.
-        Updates internal position state.
-        :param carriage_idx: 1 or 2
-        :param x: Target X
-        :param y: Target Y
-        :param speed: Feed rate
-        """
-        # Ensure Absolute Mode is active before sending coordinates
-        await self.client.send_gcode("G90")
-
-        if carriage_idx == 1:
-            # Activate Carriage 1
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
-            
-            # Move
-            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
-            
-            # Update State
-            self.positions['x1'] = x
-            self.positions['y1'] = y
-            
-        elif carriage_idx == 2:
-            # Activate Carriage 2
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
-            
-            # Move
-            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
-            
-            # Update State
-            self.positions['x2'] = x
-            self.positions['y2'] = y
-        else:
-            logging.error(f"Invalid carriage index: {carriage_idx}")
-
-    async def move_carriage(self, carriage_idx, x, y, speed=1000):
-        """
-        Moves a single carriage to absolute coordinates.
+        Updates internal position state from Klipper's actual post-move values.
         """
         cx_name = 'x' if carriage_idx == 1 else 'x2'
         cy_name = 'y' if carriage_idx == 1 else 'y2'
@@ -163,8 +150,9 @@ class CarriageController:
         
         await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
         
-        self.positions[f'x{carriage_idx}'] = x
-        self.positions[f'y{carriage_idx}'] = y
+        # Ensure commands finish before we sync positions
+        await self.client.send_gcode_and_wait("M400")
+        await self._sync_positions_from_klipper()
 
 
     async def _send_batch(self, commands):
