@@ -414,6 +414,21 @@ class App(tk.Tk):
             x2 = c2_zero['x'] + float(row['x2'])
             y2 = c2_zero['y'] + float(row['y2'])
 
+            # Validate and clip coordinates against machine bounds
+            validated = self.controller.validator.validate_position(x1, y1, x2, y2)
+            
+            if any([validated['x1'][1], validated['y1'][1], validated['x2'][1], validated['y2'][1]]):
+                logging.warning(
+                    f"CSV move coordinates were clipped. Original: C1({x1}, {y1}) C2({x2}, {y2}) -> "
+                    f"Validated: C1({validated['x1'][0]}, {validated['y1'][0]}) C2({validated['x2'][0]}, {validated['y2'][0]})"
+                )
+            
+            # Extract validated (possibly clipped) coordinates
+            x1, _ = validated['x1']
+            y1, _ = validated['y1']
+            x2, _ = validated['x2']
+            y2, _ = validated['y2']
+
             # Check for collision using PCB coordinates (Normalized Units)
             # We use the PCB distance because machine coordinate distances might be unreliable
             # if the carriages have different datums or are uncalibrated relative to each other.

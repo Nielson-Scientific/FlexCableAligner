@@ -1,6 +1,9 @@
 import asyncio
 import logging
 
+from src.PositionValidator import PositionValidator
+
+
 class CarriageController:
     def __init__(self, client):
         """
@@ -9,6 +12,8 @@ class CarriageController:
         self.client = client
         # Default positions: C1 at 0,0 (traditional), C2 at 792.79,0 (Park/Home)
         self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 792.79, 'y2': -27.15}
+        # Initialize position validator for bounds checking
+        self.validator = PositionValidator()
         
     async def initialize(self):
         """
@@ -61,7 +66,26 @@ class CarriageController:
         Klipper Dual Carriage usually mapping:
         SET_DUAL_CARRIAGE CARRIAGE=x  -> G1 X.. moves X1
         SET_DUAL_CARRIAGE CARRIAGE=x2 -> G1 X.. moves X2
+        
+        Bounds checking is performed before movement; positions are clipped to
+        valid limits if they exceed the machine bounds.
         """
+        # Validate and clip coordinates against machine bounds
+        validated = self.validator.validate_position(x1, y1, x2, y2)
+        
+        # Extract validated (possibly clipped) coordinates
+        x1_clipped, clipped_x1 = validated['x1']
+        y1_clipped, clipped_y1 = validated['y1']
+        x2_clipped, clipped_x2 = validated['x2']
+        y2_clipped, clipped_y2 = validated['y2']
+        
+        # Log if any clipping occurred
+        if any([clipped_x1, clipped_y1, clipped_x2, clipped_y2]):
+            logging.warning(
+                f"Move coordinates were clipped. Original: C1({x1}, {y1}) C2({x2}, {y2}) -> "
+                f"Validated: C1({x1_clipped}, {y1_clipped}) C2({x2_clipped}, {y2_clipped})"
+            )
+        
         # Ensure Absolute Mode is active before sending coordinates
         await self.client.send_gcode("G90")
 
@@ -70,22 +94,22 @@ class CarriageController:
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y") 
         
-        # Move C1
-        await self.client.send_gcode(f"G1 X{x1} Y{y1} F{speed}")
+        # Move C1 with validated coordinates
+        await self.client.send_gcode(f"G1 X{x1_clipped} Y{y1_clipped} F{speed}")
         
         # Move Carriage 2 (x2, y2)
         # Activate Carriage 2 - MUST WAIT for this to complete
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
         
-        # Move C2
-        await self.client.send_gcode(f"G1 X{x2} Y{y2} F{speed}")
+        # Move C2 with validated coordinates
+        await self.client.send_gcode(f"G1 X{x2_clipped} Y{y2_clipped} F{speed}")
         
-        # Update internal state
-        self.positions['x1'] = x1
-        self.positions['y1'] = y1
-        self.positions['x2'] = x2
-        self.positions['y2'] = y2
+        # Update internal state with validated (clipped) positions
+        self.positions['x1'] = x1_clipped
+        self.positions['y1'] = y1_clipped
+        self.positions['x2'] = x2_clipped
+        self.positions['y2'] = y2_clipped
 
     async def jog_axis(self, carriage_idx, axis, distance, speed=1000):
         """
@@ -93,6 +117,8 @@ class CarriageController:
         :param carriage_idx: 1 or 2
         :param axis: 'X' or 'Y'
         :param distance: float (+ or -)
+        
+        The target position is validated against machine bounds and clipped if necessary.
         """
         # Determine carriage name
         cx_name = 'x' if carriage_idx == 1 else 'x2'
@@ -108,8 +134,18 @@ class CarriageController:
             target_x += distance
         elif axis.upper() == 'Y':
             target_y += distance
+        
+        # Validate and clip the target position against machine bounds
+        validated_x, clipped_x = self.validator.validate_and_clip(cx_name, target_x)
+        validated_y, clipped_y = self.validator.validate_and_clip(cy_name, target_y)
+        
+        if clipped_x or clipped_y:
+            logging.warning(
+                f"Jog target for carriage {carriage_idx} from ({target_x}, {target_y}) "
+                f"clipped to ({validated_x}, {validated_y}) due to bounds."
+            )
             
-        await self.move_carriage(carriage_idx, target_x, target_y, speed)
+        await self.move_carriage(carriage_idx, validated_x, validated_y, speed)
 
     async def move_carriage(self, carriage_idx, x, y, speed=1000):
         """
@@ -119,7 +155,23 @@ class CarriageController:
         :param x: Target X
         :param y: Target Y
         :param speed: Feed rate
+        
+        The target position is validated against machine bounds and clipped if necessary.
         """
+        # Determine axis names for validation
+        cx_name = 'x' if carriage_idx == 1 else 'x2'
+        cy_name = 'y' if carriage_idx == 1 else 'y2'
+        
+        # Validate and clip the target position against machine bounds
+        validated_x, clipped_x = self.validator.validate_and_clip(cx_name, x)
+        validated_y, clipped_y = self.validator.validate_and_clip(cy_name, y)
+        
+        if clipped_x or clipped_y:
+            logging.warning(
+                f"Carriage {carriage_idx} move from ({x}, {y}) clipped to "
+                f"({validated_x}, {validated_y}) due to bounds."
+            )
+        
         # Ensure Absolute Mode is active before sending coordinates
         await self.client.send_gcode("G90")
 
@@ -128,43 +180,26 @@ class CarriageController:
             await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
             await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
             
-            # Move
-            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+            # Move with validated coordinates
+            await self.client.send_gcode(f"G1 X{validated_x} Y{validated_y} F{speed}")
             
             # Update State
-            self.positions['x1'] = x
-            self.positions['y1'] = y
+            self.positions['x1'] = validated_x
+            self.positions['y1'] = validated_y
             
         elif carriage_idx == 2:
             # Activate Carriage 2
             await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
             await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
             
-            # Move
-            await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+            # Move with validated coordinates
+            await self.client.send_gcode(f"G1 X{validated_x} Y{validated_y} F{speed}")
             
             # Update State
-            self.positions['x2'] = x
-            self.positions['y2'] = y
+            self.positions['x2'] = validated_x
+            self.positions['y2'] = validated_y
         else:
             logging.error(f"Invalid carriage index: {carriage_idx}")
-
-    async def move_carriage(self, carriage_idx, x, y, speed=1000):
-        """
-        Moves a single carriage to absolute coordinates.
-        """
-        cx_name = 'x' if carriage_idx == 1 else 'x2'
-        cy_name = 'y' if carriage_idx == 1 else 'y2'
-        
-        await self.client.send_gcode("G90")
-        
-        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cx_name}")
-        await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cy_name}")
-        
-        await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
-        
-        self.positions[f'x{carriage_idx}'] = x
-        self.positions[f'y{carriage_idx}'] = y
 
 
     async def _send_batch(self, commands):
