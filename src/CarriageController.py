@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import json
+import os
 
 class CarriageController:
     def __init__(self, client):
@@ -7,35 +9,39 @@ class CarriageController:
         :param client: An instance of AsyncWebSocketClient
         """
         self.client = client
-        # Default positions: C1 at 0,0 (traditional), C2 at 792.79,0 (Park/Home)
-        self.positions = {'x1': 0.0, 'y1': 0.0, 'x2': 792.79, 'y2': -27.15}
         
-    async def _sync_positions_from_klipper(self):
-        """
-        Polls Klipper for the actual current positions of both carriages
-        by activating each sequentially and querying the toolhead position.
-        This ensures UI matches actual Klipper state, even after boundary clamping.
-        """
+        # Load bounds from config
+        self.bounds = {}
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'carriage_bounds.json')
         try:
-            # Sync Carriage 1
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
-            pos1 = await self.client.get_current_position()
-            if pos1:
-                self.positions['x1'] = pos1[0]
-                self.positions['y1'] = pos1[1]
-
-            # Sync Carriage 2
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
-            await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
-            pos2 = await self.client.get_current_position()
-            if pos2:
-                self.positions['x2'] = pos2[0]
-                self.positions['y2'] = pos2[1]
-                
-            logging.info(f"Synced positions from Klipper: {self.positions}")
+            with open(config_path, 'r') as f:
+                self.bounds = json.load(f)
+            logging.info(f"Loaded carriage bounds from {config_path}")
         except Exception as e:
-            logging.error(f"Failed to sync positions from Klipper: {e}")
+            logging.error(f"Failed to load carriage bounds: {e}")
+            # Fallback to defaults
+            self.bounds = {
+                'x1': {'home': 0.0, 'min': 0.0, 'max': 800.0},
+                'y1': {'home': 0.0, 'min': -50.0, 'max': 300.0},
+                'x2': {'home': 792.79, 'min': 0.0, 'max': 800.0},
+                'y2': {'home': -27.15, 'min': -50.0, 'max': 300.0}
+            }
+
+        # Initialize positions based on home bounds
+        self.positions = {
+            'x1': self.bounds['x1']['home'],
+            'y1': self.bounds['y1']['home'],
+            'x2': self.bounds['x2']['home'],
+            'y2': self.bounds['y2']['home']
+        }
+
+    def _clamp_position(self, axis, value):
+        min_val = self.bounds[axis]['min']
+        max_val = self.bounds[axis]['max']
+        clamped = max(min_val, min(max_val, value))
+        if clamped != value:
+            logging.warning(f"Clamping {axis} command from {value} to bounds [{min_val}, {max_val}] -> {clamped}")
+        return clamped
         
     async def initialize(self):
         """
@@ -60,11 +66,14 @@ class CarriageController:
                 logging.info(f"Axes not fully homed ({homed_axes}). Homing X and Y now...")
                 # Using G28 X Y only (leaving Z alone as requested Z is not used)
                 await self.client.send_gcode_and_wait("G28 X Y")
+                
+                # Update positions to home coordinates
+                self.positions['x1'] = self.bounds['x1']['home']
+                self.positions['y1'] = self.bounds['y1']['home']
+                self.positions['x2'] = self.bounds['x2']['home']
+                self.positions['y2'] = self.bounds['y2']['home']
             else:
                 logging.info(f"Axes already homed: {homed_axes}")
-
-            # Sync actual positions from Klipper
-            await self._sync_positions_from_klipper()
 
         except Exception as e:
             logging.error(f"Failed to check/home axes: {e}")
@@ -86,30 +95,36 @@ class CarriageController:
         SET_DUAL_CARRIAGE CARRIAGE=x  -> G1 X.. moves X1
         SET_DUAL_CARRIAGE CARRIAGE=x2 -> G1 X.. moves X2
         """
+        # Clamp positions before sending
+        cx1 = self._clamp_position('x1', x1)
+        cy1 = self._clamp_position('y1', y1)
+        cx2 = self._clamp_position('x2', x2)
+        cy2 = self._clamp_position('y2', y2)
+
         # Ensure Absolute Mode is active before sending coordinates
         await self.client.send_gcode("G90")
 
-        # Move Carriage 1 (x1, y1)
+        # Move Carriage 1 (cx1, cy1)
         # Activate Carriage 1 - MUST WAIT for this to complete
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y") 
         
         # Move C1
-        await self.client.send_gcode(f"G1 X{x1} Y{y1} F{speed}")
+        await self.client.send_gcode(f"G1 X{cx1} Y{cy1} F{speed}")
         
-        # Move Carriage 2 (x2, y2)
+        # Move Carriage 2 (cx2, cy2)
         # Activate Carriage 2 - MUST WAIT for this to complete
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
         
         # Move C2
-        await self.client.send_gcode(f"G1 X{x2} Y{y2} F{speed}")
+        await self.client.send_gcode(f"G1 X{cx2} Y{cy2} F{speed}")
         
-        # Ensure commands finish before we sync positions
-        await self.client.send_gcode_and_wait("M400")
-        
-        # Update internal state from Klipper's actual post-move values
-        await self._sync_positions_from_klipper()
+        # Update internal state with clamped values
+        self.positions['x1'] = cx1
+        self.positions['y1'] = cy1
+        self.positions['x2'] = cx2
+        self.positions['y2'] = cy2
 
     async def jog_axis(self, carriage_idx, axis, distance, speed=1000):
         """
@@ -138,21 +153,39 @@ class CarriageController:
     async def move_carriage(self, carriage_idx, x, y, speed=1000):
         """
         Moves a single carriage to absolute coordinates.
-        Updates internal position state from Klipper's actual post-move values.
+        Updates internal position state.
+        :param carriage_idx: 1 or 2
+        :param x: Target X
+        :param y: Target Y
+        :param speed: Feed rate
         """
+        if carriage_idx not in (1, 2):
+            logging.error(f"Invalid carriage index: {carriage_idx}")
+            return
+
+        cx_key = f'x{carriage_idx}'
+        cy_key = f'y{carriage_idx}'
+
+        # Clamp positions before sending
+        clamped_x = self._clamp_position(cx_key, x)
+        clamped_y = self._clamp_position(cy_key, y)
+
         cx_name = 'x' if carriage_idx == 1 else 'x2'
         cy_name = 'y' if carriage_idx == 1 else 'y2'
-        
+
+        # Ensure Absolute Mode is active before sending coordinates
         await self.client.send_gcode("G90")
-        
+
+        # Activate Carriage
         await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cx_name}")
         await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cy_name}")
         
-        await self.client.send_gcode(f"G1 X{x} Y{y} F{speed}")
+        # Move
+        await self.client.send_gcode(f"G1 X{clamped_x} Y{clamped_y} F{speed}")
         
-        # Ensure commands finish before we sync positions
-        await self.client.send_gcode_and_wait("M400")
-        await self._sync_positions_from_klipper()
+        # Update State
+        self.positions[cx_key] = clamped_x
+        self.positions[cy_key] = clamped_y
 
 
     async def _send_batch(self, commands):
