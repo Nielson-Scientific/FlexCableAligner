@@ -27,6 +27,7 @@ class App(tk.Tk):
         
         # Origin state (Replaced by Machine Zeros for Landmarks)
         self.machine_zeros = {'c1': None, 'c2': None} # {'x': float, 'y': float}
+        self.rotation_angle = 0.0  # PCB rotation in radians, computed from landmarks
         self.landmark_offsets = {} # Loaded from CSV
         self.rows = []
         self.current_row_index = -1
@@ -235,67 +236,138 @@ class App(tk.Tk):
         if not self.landmark_offsets:
             messagebox.showerror("Error", "No landmarks loaded from CSV.")
             return
-
-        # Start with C1
-        self.message_landmark(1)
-
-    def message_landmark(self, carriage_num):
-        landmark_key = f"Landmark{carriage_num}"
-        if landmark_key not in self.landmark_offsets:
-            messagebox.showerror("Error", f"Missing {landmark_key} in CSV.")
+        if 'Landmark1' not in self.landmark_offsets or 'Landmark2' not in self.landmark_offsets:
+            messagebox.showerror("Error", "CSV must contain both Landmark1 and Landmark2 rows.")
             return
+        self.message_landmark1_c1()
 
-        offset = self.landmark_offsets[landmark_key]
-        
+    # --- Step 1: Carriage 1 to Landmark 1 ---
+
+    def message_landmark1_c1(self):
+        l1 = self.landmark_offsets['Landmark1']
         dialog = tk.Toplevel(self)
-        dialog.title(f"Set Landmark {carriage_num}")
-        dialog.geometry("400x200")
-        
-        ttk.Label(dialog, text=f"Jog Carriage {carriage_num} to Physical Landmark Position.", font=("Arial", 12)).pack(pady=10)
-        ttk.Label(dialog, text=f"Target Offset (from CSV): X={offset['x1' if carriage_num==1 else 'x2']}, Y={offset['y1' if carriage_num==1 else 'y2']}", font=("Arial", 10)).pack(pady=5)
-        
-        def confirm():
-            self.capture_landmark(carriage_num, offset, dialog)
+        dialog.title("Step 1 of 3: Carriage 1 to Landmark 1")
+        dialog.geometry("450x200")
+        ttk.Label(dialog, text="Jog Carriage 1 to the Landmark 1 position.", font=("Arial", 12)).pack(pady=10)
+        ttk.Label(dialog, text=f"Target PCB coords: X={l1['x1']}, Y={l1['y1']}", font=("Arial", 10)).pack(pady=5)
+        ttk.Label(dialog, text="Use W/A/S/D keys to jog Carriage 1.", font=("Arial", 10)).pack(pady=2)
+        ttk.Button(dialog, text="Confirm — Carriage 1 is at Landmark 1",
+                   command=lambda: self.capture_landmark1_c1(dialog)).pack(pady=15)
+        dialog.bind('<Key-w>', lambda e: self.jog(1, 'Y', 1))
+        dialog.bind('<Key-s>', lambda e: self.jog(1, 'Y', -1))
+        dialog.bind('<Key-a>', lambda e: self.jog(1, 'X', -1))
+        dialog.bind('<Key-d>', lambda e: self.jog(1, 'X', 1))
+        dialog.focus_set()
 
-        ttk.Button(dialog, text=f"Confirm Landmark {carriage_num}", command=confirm).pack(pady=20)
-        
-    def capture_landmark(self, carriage_num, offset, dialog):
-        # Calc Machine Zero
-        # Machine_Zero = Current_Pos - Landmark_Offset
-        # So if I am at 100, and Landmark is at 10, Zero is at 90.
-        
+    def capture_landmark1_c1(self, dialog):
         try:
-            curr_x = self.controller.positions.get(f'x{carriage_num}', 0.0)
-            curr_y = self.controller.positions.get(f'y{carriage_num}', 0.0)
-            
-            # Use appropriate offset from CSV row (assuming x1/y1 for L1 and x2/y2 for L2)
-            off_x = offset.get('x1') if carriage_num == 1 else offset.get('x2')
-            off_y = offset.get('y1') if carriage_num == 1 else offset.get('y2')
-
-            machine_zero = {
-                'x': curr_x - off_x,
-                'y': curr_y - off_y
+            l1 = self.landmark_offsets['Landmark1']
+            curr_x = self.controller.positions.get('x1', 0.0)
+            curr_y = self.controller.positions.get('y1', 0.0)
+            self.machine_zeros['c1'] = {
+                'x': curr_x - l1['x1'],
+                'y': curr_y - l1['y1']
             }
-            
-            key = 'c1' if carriage_num == 1 else 'c2'
-            self.machine_zeros[key] = machine_zero
-            
             dialog.destroy()
-            logging.info(f"Captured {key} Machine Zero: {machine_zero}")
-            
-            if carriage_num == 1:
-                # Next step: C2
-                self.after(500, lambda: self.message_landmark(2))
-            else:
-                # Done
-                messagebox.showinfo("Setup Complete", "Landmarks set! You can now run the sequence.")
-                self.btn_next.config(state=tk.NORMAL)
-                self.btn_start_move.config(state=tk.NORMAL)
-                self.update_current_row()
-                
+            logging.info(f"Captured C1 Machine Zero: {self.machine_zeros['c1']}")
+            # Park C1 at home to clear the way for C2
+            self.loop.create_task(self._park_c1_and_next())
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to capture landmark: {e}")
-            logging.error(f"Landmark capture error: {e}")
+            messagebox.showerror("Error", f"Failed to capture C1 landmark: {e}")
+            logging.error(f"Landmark C1 capture error: {e}")
+
+    async def _park_c1_and_next(self):
+        try:
+            park_x = self.controller.bounds['x1']['home']
+            park_y = self.controller.bounds['y1']['home']
+            logging.info(f"Parking C1 at home ({park_x}, {park_y})")
+            await self.controller.move_carriage(1, park_x, park_y, speed=self.jog_speed)
+            self.after(200, self.message_landmark1_c2)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to park C1: {e}")
+            logging.error(f"C1 park error: {e}")
+
+    # --- Step 2: Carriage 2 to Landmark 1 ---
+
+    def message_landmark1_c2(self):
+        l1 = self.landmark_offsets['Landmark1']
+        dialog = tk.Toplevel(self)
+        dialog.title("Step 2 of 3: Carriage 2 to Landmark 1")
+        dialog.geometry("450x220")
+        ttk.Label(dialog, text="Carriage 1 has been parked.", font=("Arial", 10), foreground="green").pack(pady=5)
+        ttk.Label(dialog, text="Jog Carriage 2 to the Landmark 1 position.", font=("Arial", 12)).pack(pady=5)
+        ttk.Label(dialog, text=f"Target PCB coords: X={l1['x2']}, Y={l1['y2']}", font=("Arial", 10)).pack(pady=5)
+        ttk.Label(dialog, text="Use Arrow keys to jog Carriage 2.", font=("Arial", 10)).pack(pady=2)
+        ttk.Button(dialog, text="Confirm — Carriage 2 is at Landmark 1",
+                   command=lambda: self.capture_landmark1_c2(dialog)).pack(pady=15)
+        dialog.bind('<Up>', lambda e: self.jog(2, 'Y', 1))
+        dialog.bind('<Down>', lambda e: self.jog(2, 'Y', -1))
+        dialog.bind('<Left>', lambda e: self.jog(2, 'X', -1))
+        dialog.bind('<Right>', lambda e: self.jog(2, 'X', 1))
+        dialog.focus_set()
+
+    def capture_landmark1_c2(self, dialog):
+        try:
+            l1 = self.landmark_offsets['Landmark1']
+            curr_x = self.controller.positions.get('x2', 0.0)
+            curr_y = self.controller.positions.get('y2', 0.0)
+            self.machine_zeros['c2'] = {
+                'x': curr_x - l1['x2'],
+                'y': curr_y - l1['y2']
+            }
+            dialog.destroy()
+            logging.info(f"Captured C2 Machine Zero (at L1): {self.machine_zeros['c2']}")
+            self.after(200, self.message_landmark2)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to capture C2 landmark: {e}")
+            logging.error(f"Landmark C2 capture error: {e}")
+
+    # --- Step 3: Carriage 2 to Landmark 2 (rotation measurement) ---
+
+    def message_landmark2(self):
+        l2 = self.landmark_offsets['Landmark2']
+        dialog = tk.Toplevel(self)
+        dialog.title("Step 3 of 3: Carriage 2 to Landmark 2")
+        dialog.geometry("450x220")
+        ttk.Label(dialog, text="Jog Carriage 2 to the Landmark 2 position.", font=("Arial", 12)).pack(pady=10)
+        ttk.Label(dialog, text=f"Target PCB coords: X={l2['x2']}, Y={l2['y2']}", font=("Arial", 10)).pack(pady=5)
+        ttk.Label(dialog, text="Use Arrow keys to jog Carriage 2.", font=("Arial", 10)).pack(pady=2)
+        ttk.Button(dialog, text="Confirm — Carriage 2 is at Landmark 2",
+                   command=lambda: self.capture_landmark2(dialog)).pack(pady=15)
+        dialog.bind('<Up>', lambda e: self.jog(2, 'Y', 1))
+        dialog.bind('<Down>', lambda e: self.jog(2, 'Y', -1))
+        dialog.bind('<Left>', lambda e: self.jog(2, 'X', -1))
+        dialog.bind('<Right>', lambda e: self.jog(2, 'X', 1))
+        dialog.focus_set()
+
+    def capture_landmark2(self, dialog):
+        try:
+            l2 = self.landmark_offsets['Landmark2']
+            curr_x2 = self.controller.positions.get('x2', 0.0)
+            curr_y2 = self.controller.positions.get('y2', 0.0)
+
+            # Actual vector from L1 to L2 in machine space (using C2's machine zero as L1 origin)
+            actual_x = curr_x2 - self.machine_zeros['c2']['x']
+            actual_y = curr_y2 - self.machine_zeros['c2']['y']
+
+            # Expected vector from L1 to L2 in PCB space
+            expected_x = l2['x2']
+            expected_y = l2['y2']
+
+            self.rotation_angle = math.atan2(actual_y, actual_x) - math.atan2(expected_y, expected_x)
+
+            dialog.destroy()
+            deg = math.degrees(self.rotation_angle)
+            logging.info(f"PCB rotation angle: {deg:.3f} degrees")
+
+            messagebox.showinfo("Setup Complete",
+                f"Landmarks set!\nPCB rotation: {deg:.2f}°\n\nYou can now run the sequence.")
+            self.btn_next.config(state=tk.NORMAL)
+            self.btn_start_move.config(state=tk.NORMAL)
+            self.update_current_row()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to capture landmark 2: {e}")
+            logging.error(f"Landmark 2 capture error: {e}")
 
     def load_csv(self):
         filename = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
@@ -403,36 +475,40 @@ class App(tk.Tk):
 
         try:
             # Calculate absolute machine coordinates
-            # Target = Machine_Zero + CSV_Offset
-            
+            # Target = Machine_Zero + Rotate(CSV_Offset)
+
             c1_zero = self.machine_zeros['c1']
             c2_zero = self.machine_zeros['c2']
-            
-            x1 = c1_zero['x'] + float(row['x1'])
-            y1 = c1_zero['y'] + float(row['y1'])
-            
-            x2 = c2_zero['x'] + float(row['x2'])
-            y2 = c2_zero['y'] + float(row['y2'])
+
+            rx1, ry1 = self._rotate_pcb(float(row['x1']), float(row['y1']))
+            rx2, ry2 = self._rotate_pcb(float(row['x2']), float(row['y2']))
+
+            x1 = c1_zero['x'] + rx1
+            y1 = c1_zero['y'] + ry1
+
+            x2 = c2_zero['x'] + rx2
+            y2 = c2_zero['y'] + ry2
 
             # Check for collision using PCB coordinates (Normalized Units)
             # We use the PCB distance because machine coordinate distances might be unreliable
             # if the carriages have different datums or are uncalibrated relative to each other.
+            # Rotation preserves distances, so we can use the original PCB coords here.
             p1_x, p1_y = float(row['x1']), float(row['y1'])
             p2_x, p2_y = float(row['x2']), float(row['y2'])
-            
+
             dist = math.sqrt((p1_x - p2_x)**2 + (p1_y - p2_y)**2)
             collision_threshold = float(self.config.get("collision_distance", 25.0))
-            
+
             logging.info(f"Move Check (PCB Units): P1({p1_x:.2f}, {p1_y:.2f}) P2({p2_x:.2f}, {p2_y:.2f}) Dist={dist:.2f} Threshold={collision_threshold}")
 
             if dist < collision_threshold:
                 # Collision likely!
                 logging.warning(f"Collision detected (dist={dist:.2f} < {collision_threshold}). Park C2 and use single C1.")
-                
-                # Calculate Point B target for C1 (using C1 Zero + Point B Offset)
-                x2_c1 = c1_zero['x'] + float(row['x2'])
-                y2_c1 = c1_zero['y'] + float(row['y2'])
-                
+
+                # Point B for C1 uses C1's zero + rotated Point B offset
+                x2_c1 = c1_zero['x'] + rx2
+                y2_c1 = c1_zero['y'] + ry2
+
                 await self.handle_collision_move(x1, y1, x2_c1, y2_c1)
             else:
                 await self.controller.move_to_coordinates(x1, y1, x2, y2, speed=self.jog_speed)
@@ -507,6 +583,12 @@ class App(tk.Tk):
         dialog.bind('<Right>', lambda e: self.jog(1, 'X', 1))
         
         dialog.focus_set()
+
+    def _rotate_pcb(self, px, py):
+        """Rotate a PCB-space point by the measured rotation angle."""
+        cos_a = math.cos(self.rotation_angle)
+        sin_a = math.sin(self.rotation_angle)
+        return cos_a * px - sin_a * py, sin_a * px + cos_a * py
 
     def jog(self, carriage, axis, direction):
         # Allow jogging strictly if we are not currently running a sequence?
