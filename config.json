@@ -1,6 +1,6 @@
 {
     "collision_distance": 25.0,
-    "default_feed_rate": 3000.0,
+    "default_feed_rate": 9000.0,
     "park_position": {
         "x": 750.0,
         "y": 0.0
