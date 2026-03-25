@@ -92,8 +92,8 @@ class CarriageController:
         2. Set dual carriage to T1 (x2/y2), move X/Y (mapped to X2/Y2).
         
         Klipper Dual Carriage usually mapping:
-        SET_DUAL_CARRIAGE CARRIAGE=x  -> G1 X.. moves X1
-        SET_DUAL_CARRIAGE CARRIAGE=x2 -> G1 X.. moves X2
+        SET_DUAL_CARRIAGE CARRIAGE=x  -> COMPENSATED_ABS_MV X.. moves X1
+        SET_DUAL_CARRIAGE CARRIAGE=x2 -> COMPENSATED_ABS_MV X.. moves X2
         """
         # Clamp positions before sending
         cx1 = self._clamp_position('x1', x1)
@@ -110,7 +110,7 @@ class CarriageController:
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y") 
         
         # Move C1
-        await self.client.send_gcode(f"G1 X{cx1} Y{cy1} F{speed}")
+        await self.client.send_gcode(f"COMPENSATED_ABS_MV X={cx1} Y={cy1} F={speed}")
         
         # Move Carriage 2 (cx2, cy2)
         # Activate Carriage 2 - MUST WAIT for this to complete
@@ -118,7 +118,7 @@ class CarriageController:
         await self.client.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
         
         # Move C2
-        await self.client.send_gcode(f"G1 X{cx2} Y{cy2} F{speed}")
+        await self.client.send_gcode(f"COMPENSATED_ABS_MV X={cx2} Y={cy2} F={speed}")
         
         # Update internal state with clamped values
         self.positions['x1'] = cx1
@@ -181,7 +181,7 @@ class CarriageController:
         await self.client.send_gcode_and_wait(f"SET_DUAL_CARRIAGE CARRIAGE={cy_name}")
         
         # Move
-        await self.client.send_gcode(f"G1 X{clamped_x} Y{clamped_y} F{speed}")
+        await self.client.send_gcode(f"COMPENSATED_ABS_MV X={clamped_x} Y={clamped_y} F={speed}")
         
         # Update State
         self.positions[cx_key] = clamped_x
