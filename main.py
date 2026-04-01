@@ -22,7 +22,7 @@ except ImportError as e:
 
 async def main():
     # WebSocket URL from existing config
-    url = "ws://10.34.243.54:7125/websocket?token=4deca56b67664a47bb4d59e4ee628d10"
+    url = "ws://172.16.55.2:7125/websocket?token=4deca56b67664a47bb4d59e4ee628d10"
     
     logging.info(f"Starting FlexCableAligner with connection to {url}")
 

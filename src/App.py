@@ -59,7 +59,7 @@ class App(tk.Tk):
         
         # URL Entry
         ttk.Label(toolbar, text="URL:").pack(side=tk.LEFT, padx=2)
-        default_url = self.config.get("url", "ws://10.34.243.54/websocket?token=4deca56b67664a47bb4d59e4ee628d10")
+        default_url = self.config.get("url", "ws://172.16.55.2:7125/websocket?token=4deca56b67664a47bb4d59e4ee628d10")
         self.var_url = tk.StringVar(value=default_url)
         self.ent_url = ttk.Entry(toolbar, textvariable=self.var_url, width=30)
         self.ent_url.pack(side=tk.LEFT, padx=5)
@@ -167,7 +167,7 @@ class App(tk.Tk):
         # But wait, logic in jog() handles the state check.
         # But user requested "carriage 1 only has keyboard control enabled from the start"
         # So Carriage 2 should be disabled initially?
-        
+         
         self.bind('<Up>', lambda e: self.jog(2, 'Y', 1))
         self.bind('<Down>', lambda e: self.jog(2, 'Y', -1))
         self.bind('<Left>', lambda e: self.jog(2, 'X', -1))

@@ -23,8 +23,8 @@ class CarriageController:
             self.bounds = {
                 'x1': {'home': 0.0, 'min': 0.0, 'max': 800.0},
                 'y1': {'home': 0.0, 'min': -50.0, 'max': 300.0},
-                'x2': {'home': 792.79, 'min': 0.0, 'max': 800.0},
-                'y2': {'home': -27.15, 'min': -50.0, 'max': 300.0}
+                'x2': {'home': 711.31, 'min': 0.0, 'max': 800.0},
+                'y2': {'home': -26.8, 'min': -50.0, 'max': 300.0}
             }
 
         # Initialize positions based on home bounds
