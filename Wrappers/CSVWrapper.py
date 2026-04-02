@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel
+from PositionSchema import Position
 
 # Expected Schema: index, x1, y1, x2, y2, manual
 class TestPair(BaseModel):
@@ -68,6 +69,13 @@ class CSVWrapper:
             x2_new = pair.x2 * cos_angle - pair.y2 * sin_angle
             y2_new = pair.x2 * sin_angle + pair.y2 * cos_angle
             pair.x2, pair.y2 = x2_new, y2_new
+
+    def get_nth_test_pair(self, n: int):
+        if n < len(self.test_pairs):
+            p = self.test_pairs[n]
+            return Position(x1=p.x1, y1=p.y1, x2=p.x2, y2=p.y2)
+        else:
+            return None
 
 
     def get_next_test_pair(self):

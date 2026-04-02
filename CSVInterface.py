@@ -4,8 +4,11 @@ from PySide6.QtGui import QPainter, QColor, QBrush
 from PySide6.QtCore import Qt, QPointF, QTimer
 from Wrappers.CSVWrapper import CSVWrapper, Point
 from Wrappers.ToolSingleton import ToolSingleton
-from PositionSchema import Position
+from PositionSchema import Position, dist_between_points
+from TooCloseInterface import TooCloseInterface
 import os
+
+MIN_SAFE_DISTANCE = 50.0
 
 class PreviewCanvas(QWidget):
     def __init__(self):
@@ -134,6 +137,7 @@ class CSVInterface(QWidget):
         self.csv_wrapper = None
         self.tool = ToolSingleton.tool_wrapper
         self.current_row = 0
+        self.other_process_running = False
 
     def load_csv(self):
         file_dialog = QFileDialog()
@@ -265,6 +269,10 @@ class CSVInterface(QWidget):
             self.error_message.showMessage("No CSV file loaded.")
             return
         
+        if self.other_process_running:
+            self.error_message.showMessage("Please complete the current process before proceeding to the next one.")
+            return
+        
         if self.current_row >= len(self.csv_wrapper.test_pairs):
             self.message_box.setText("All rows have been processed.")
             self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -272,8 +280,15 @@ class CSVInterface(QWidget):
             self.message_box.show()
             return
         
-        test_pair = self.csv_wrapper.test_pairs[self.current_row]
-        self.tool.move(Position(x1=test_pair.x1, y1=test_pair.y1, x2=test_pair.x2, y2=test_pair.y2))
+        test_pair: Position = self.csv_wrapper.get_nth_test_pair(self.current_row)
+        if dist_between_points(test_pair) < MIN_SAFE_DISTANCE:
+            self.error_message.showMessage(f"Test pair at index {self.current_row} is too close together. Skipping.")
+            self.current_row += 1
+            x = TooCloseInterface(self)
+            self.other_process_running = True
+            x.show()
+            return
+        self.tool.move(test_pair)
         self.current_row += 1
         self.lbl_current_row.setText(f"Current Row: {self.current_row}")
         progress = int((self.current_row / len(self.csv_wrapper.test_pairs)) * 100)

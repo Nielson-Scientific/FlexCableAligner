@@ -8,6 +8,10 @@ class Position(BaseModel):
     x2: Optional[float] = None
     y2: Optional[float] = None
 
+def dist_between_points(p: Position):
+    if p.x1 is None or p.y1 is None or p.x2 is None or p.y2 is None:
+        raise ValueError("All position values must be provided")
+    return ((p.x2 - p.x1) ** 2 + (p.y2 - p.y1) ** 2) ** 0.5
 
 class ParkPosition:
     def __init__(self, json_path):
