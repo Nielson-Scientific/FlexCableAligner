@@ -79,7 +79,7 @@ class WebSocketClient:
             except queue.Empty:
                 print(f"Timeout: Did not receive '{target_id}' within {timeout} seconds.")
                 break
-            return None
+        return None
 
     def close(self):
         if self.ws:

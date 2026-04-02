@@ -13,6 +13,7 @@ class WebSocketWrapper:
     def connect(self):
         try:
             self.ws = WebSocketClient(self.url)
+            self.ws.connect()
             self.connected = True
         except Exception as e:
             print(f"Error connecting to WebSocket: {e}")

@@ -60,10 +60,11 @@ class WebInterface(QWidget):
         tabs.addTab(tab_web, "Manual Control")
 
         # --- Tab 2: Native Qt Widgets ---
-        tab_native = CSVInterface() # This is our custom QWidget with native controls
+        tab_native = CSVInterface(tabs) # This is our custom QWidget with native controls
         
 
         tabs.addTab(tab_native, "Automatic Control")
+        self.tabs = tabs # Store reference to tabs for later use in CSVInterface
 
     def handle_carriage_1(self):
         self.tool_wrapper.select_carriage(1)

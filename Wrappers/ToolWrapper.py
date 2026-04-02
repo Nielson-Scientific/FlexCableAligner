@@ -29,9 +29,9 @@ class ToolWrapper(ToolController):
 
     def park_carriage(self, carriage_index):
         if carriage_index == 1:
-            self.move(self.park_positions.park1_position)
+            super().move(self.park_positions.park1_position) # Move to park position in the native coordinate system
         elif carriage_index == 2:
-            self.move(self.park_positions.park2_position)
+            super().move(self.park_positions.park2_position)
         else:
             print("Invalid carriage index. Must be 1 or 2.")
 
