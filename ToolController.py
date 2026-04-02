@@ -67,7 +67,7 @@ class ToolController:
             desired.y1 = move.y1 if move.y1 is not None else self.position.y1
             desired.x2 = move.x2 if move.x2 is not None else self.position.x2
             desired.y2 = move.y2 if move.y2 is not None else self.position.y2
-            if self.position != move:
+            if self.position != desired:
                 print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
                 return False
             return True
