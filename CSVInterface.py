@@ -4,6 +4,7 @@ from PySide6.QtGui import QPainter, QColor, QBrush
 from PySide6.QtCore import Qt, QPointF, QTimer
 from Wrappers.CSVWrapper import CSVWrapper, Point
 from Wrappers.ToolSingleton import ToolSingleton
+from PositionSchema import Position
 import os
 
 class PreviewCanvas(QWidget):
@@ -79,13 +80,15 @@ class CSVInterface(QWidget):
         self.tabs = parent.tabs
         self.current_carriage_label = parent.current_carriage_label
         
-        main_layout = QHBoxLayout(self)
+        outer_layout = QVBoxLayout(self)
+        
+        content_layout = QHBoxLayout()
         
         # Left side: Preview Canvas
         self.preview_canvas = PreviewCanvas()
         self.error_message = QErrorMessage()
         self.message_box = QMessageBox()
-        main_layout.addWidget(self.preview_canvas, stretch=1)
+        content_layout.addWidget(self.preview_canvas, stretch=1)
         
         # Right side: Controls
         right_layout = QVBoxLayout()
@@ -100,8 +103,10 @@ class CSVInterface(QWidget):
         self.lbl_current_row = QLabel("Current Row: 0")
         self.lbl_current_file = QLabel("No file loaded")
         self.btn_next = QPushButton("Next")
+        self.btn_next.clicked.connect(self.run_next)
         self.btn_next.setEnabled(False)
         self.btn_done = QPushButton("Done")
+        self.btn_done.clicked.connect(self.handle_done)
         self.btn_done.setEnabled(False)
         self.status_bar = QStatusBar()
         
@@ -113,9 +118,12 @@ class CSVInterface(QWidget):
         right_layout.addWidget(self.btn_next)
         right_layout.addWidget(self.btn_done)
         right_layout.addStretch()
-        right_layout.addWidget(self.status_bar)
         
-        main_layout.addLayout(right_layout)
+        content_layout.addLayout(right_layout)
+        
+        outer_layout.addLayout(content_layout)
+        outer_layout.addWidget(self.status_bar)
+        
         self.set_max_x(200)
         self.set_max_y(200)
         self.plot_red(50, 50)
@@ -125,6 +133,7 @@ class CSVInterface(QWidget):
         self.file_path = None
         self.csv_wrapper = None
         self.tool = ToolSingleton.tool_wrapper
+        self.current_row = 0
 
     def load_csv(self):
         file_dialog = QFileDialog()
@@ -136,6 +145,7 @@ class CSVInterface(QWidget):
                 self.csv_wrapper = CSVWrapper(file_path)
                 self.plot_csv_points()
                 self.btn_cal_land.setEnabled(True)
+                self.status_bar.showMessage("CSV loaded successfully. You can now calibrate the landmarks", 5000)
             except Exception as e:
                 self.error_message.showMessage(f"Error loading CSV: {str(e)}")
                 self.btn_cal_land.setEnabled(False)
@@ -195,6 +205,7 @@ class CSVInterface(QWidget):
             self.error_message.showMessage("No CSV file loaded.")
             return
         
+        self.status_bar.showMessage("Starting, please wait...", 5000)
         self.tool.park_carriage(2)  # Park the second carriage to avoid interference
         self.tool.select_carriage(1)
         self.current_carriage_label.setText(f"Current Carriage: {self.tool.current_carriage}")
@@ -236,11 +247,44 @@ class CSVInterface(QWidget):
         true_pos3 = self.tool.refresh_position()
         print("True Position of Landmark 2 (relative coordinates):", true_pos3)
         self.tabs.setCurrentIndex(1)
-        land1, land2 = self.csv_wrapper.get_landmarks()
+        _, land2 = self.csv_wrapper.get_landmarks()
         print(f"Expected Position of Landmark 2 (from CSV): {land2}")
         rotation = self.csv_wrapper.get_rotation(Point(x=true_pos3.x2, y=true_pos3.y2), Point(x=land2[0], y=land2[1]))
         print(f"Calculated rotation (radians): {rotation}")
         self.csv_wrapper.apply_rotation(rotation)
         self.plot_csv_points()
+        self.btn_load_csv.setEnabled(False)
+        self.btn_cal_land.setEnabled(False)
+        self.btn_next.setEnabled(True)
+        self.btn_done.setEnabled(True)
         self.status_bar.showMessage("Calibration complete! You can now run the process.", 5000)
+
+
+    def run_next(self):
+        if not self.csv_wrapper:
+            self.error_message.showMessage("No CSV file loaded.")
+            return
+        
+        if self.current_row >= len(self.csv_wrapper.test_pairs):
+            self.message_box.setText("All rows have been processed.")
+            self.message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+            self.message_box.buttonClicked.connect(lambda: self.message_box.hide())
+            self.message_box.show()
+            return
+        
+        test_pair = self.csv_wrapper.test_pairs[self.current_row]
+        self.tool.move(Position(x1=test_pair.x1, y1=test_pair.y1, x2=test_pair.x2, y2=test_pair.y2))
+        self.current_row += 1
+        self.lbl_current_row.setText(f"Current Row: {self.current_row}")
+        progress = int((self.current_row / len(self.csv_wrapper.test_pairs)) * 100)
+        self.progress_bar.setValue(progress)
+
+    def handle_done(self):
+        self.btn_load_csv.setEnabled(True)
+        self.btn_cal_land.setEnabled(False)
+        self.btn_next.setEnabled(False)
+        self.btn_done.setEnabled(False)
+        self.current_row = 0
+        self.csv_wrapper = None
+        self.file_path = None
 
