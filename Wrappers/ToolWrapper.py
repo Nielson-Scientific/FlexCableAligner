@@ -1,7 +1,7 @@
 from ToolController import ToolController
 from PositionSchema import Position, ParkPosition
 import numpy as np
-
+from Wrappers.CSVWrapper import Point
 
 """
 This wraps ToolController and adds the functionality of having a seperate local coordinate system that can be set and used for moves.
@@ -17,12 +17,23 @@ class ToolWrapper(ToolController):
 
     def get_position(self):
         pos = super().get_position()
-        return Position(
+        p = Position(
             x1=pos.x1 - self.offsets.x1,
             y1=pos.y1 - self.offsets.y1,
             x2=pos.x2 - self.offsets.x2,
             y2=pos.y2 - self.offsets.y2
         )
+        return p
+    
+    def refresh_position(self):
+        pos = super().refresh_position()
+        p = Position(
+            x1=pos.x1 - self.offsets.x1,
+            y1=pos.y1 - self.offsets.y1,
+            x2=pos.x2 - self.offsets.x2,
+            y2=pos.y2 - self.offsets.y2
+        )
+        return p
     
     def set_offset(self, offset: Position):
         self.offsets = offset
@@ -47,6 +58,20 @@ class ToolWrapper(ToolController):
             target = move
 
         return super().move(target, absolute, blocking)
+    
+    def set_position_as_point(self, point: Point, carriage_index: float):
+        if carriage_index not in [1, 2]:
+            print("Invalid carriage index. Must be 1 or 2.")
+            return
+        current_pos = super().get_position()
+        if carriage_index == 1:
+            self.offsets.x1 = current_pos.x1 - point.x
+            self.offsets.y1 = current_pos.y1 - point.y
+        elif carriage_index == 2:
+            self.offsets.x2 = current_pos.x2 - point.x
+            self.offsets.y2 = current_pos.y2 - point.y
+        else:
+            print("Invalid carriage index. Must be 1 or 2.")
     
     def set_position_as_zero(self, carriage_index):
         if carriage_index not in [1, 2]:

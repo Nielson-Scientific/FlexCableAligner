@@ -48,9 +48,10 @@ class CSVWrapper:
     
     def get_rotation(self, p1: Point, p2: Point):
         # Calculate the angle between the two points (in radians)
-        dx = p2.x - p1.x
-        dy = p2.y - p1.y
-        return np.arctan2(dy, dx)
+        angle1 = np.arctan2(p1.y, p1.x)
+        angle2 = np.arctan2(p2.y, p2.x)
+        rotation = angle2 - angle1
+        return rotation
     
     def apply_rotation(self, angle: float):
         # Rotate all test pairs by the given angle (in radians)

@@ -34,6 +34,10 @@ class WebInterface(QWidget):
         self.btn_carriage_2.clicked.connect(self.handle_carriage_2)
         side_panel.addWidget(self.btn_carriage_2)
 
+        self.btn_avoid_home = QPushButton("Avoid Home")
+        self.btn_avoid_home.clicked.connect(self.handle_avoid_home)
+        side_panel.addWidget(self.btn_avoid_home)
+
         self.current_carriage_label = QLabel(f"Current Carriage: {self.tool_wrapper.current_carriage}")
         side_panel.addWidget(self.current_carriage_label)
         
@@ -45,6 +49,7 @@ class WebInterface(QWidget):
         # 2. Right Panel (The Tabbed View)
         # ==========================================
         tabs = QTabWidget()
+        self.tabs = tabs # Store reference to tabs for later use in CSVInterface
         main_layout.addWidget(tabs, 4) # Stretch factor 4 makes it much wider than the sidebar
 
         # --- Tab 1: The Web Browser ---
@@ -60,11 +65,10 @@ class WebInterface(QWidget):
         tabs.addTab(tab_web, "Manual Control")
 
         # --- Tab 2: Native Qt Widgets ---
-        tab_native = CSVInterface(tabs) # This is our custom QWidget with native controls
+        tab_native = CSVInterface(self) # This is our custom QWidget with native controls
         
 
         tabs.addTab(tab_native, "Automatic Control")
-        self.tabs = tabs # Store reference to tabs for later use in CSVInterface
 
     def handle_carriage_1(self):
         self.tool_wrapper.select_carriage(1)
@@ -73,6 +77,11 @@ class WebInterface(QWidget):
     def handle_carriage_2(self):
         self.tool_wrapper.select_carriage(2)
         self.current_carriage_label.setText(f"Current Carriage: {self.tool_wrapper.current_carriage}")
+
+    def handle_avoid_home(self):
+        self.tool_wrapper.avoid_home()
+        # After sending the avoid home command, we can refresh the position to update the UI
+        self.tool_wrapper.refresh_position()
 
 
     def handle_run_process(self):

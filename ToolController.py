@@ -82,9 +82,9 @@ class ToolController:
 
     def avoid_home(self):
         gcode = "SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"
-        gcode += f"SET_KINEMATIC_POSITION X{self.position.x1} Y{self.position.y1}\n"
+        gcode += f"SET_KINEMATIC_POSITION X={self.position.x1} Y={self.position.y1}\n"
         gcode += "SET_DUAL_CARRIAGE CARRIAGE=x2\nSET_DUAL_CARRIAGE CARRIAGE=y2\n"
-        gcode += f"SET_KINEMATIC_POSITION X{self.position.x2} Y{self.position.y2}\n"
+        gcode += f"SET_KINEMATIC_POSITION X={self.position.x2} Y={self.position.y2}\n"
         self.ws_wrapper.send_gcode(gcode)
 
     def is_moving(self):
