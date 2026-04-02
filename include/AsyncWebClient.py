@@ -195,3 +195,27 @@ class AsyncWebSocketClient:
         except Exception as e:
             print(f"Error getting toolhead status: {e}")
             return {}
+
+
+if __name__ == "__main__":
+    async def test_client():
+        url = "10.34.243.54:7125/websocket"
+        client = AsyncWebSocketClient(url)
+        if await client.connect():
+            print("Connected to WebSocket")
+            try:
+                # Test sending a G-code command
+                response = await client.send_gcode_and_wait("G28 X Y")
+                print(f"G28 response: {response}")
+                
+                # Test getting printer objects
+                objects = await client.get_printer_objects({"toolhead": ["homed_axes"]})
+                print(f"Toolhead status: {objects}")
+                
+            finally:
+                await client.disconnect()
+                print("Disconnected from WebSocket")
+        else:
+            print("Failed to connect to WebSocket")
+
+    asyncio.run(test_client())
