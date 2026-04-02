@@ -6,6 +6,7 @@ from Wrappers.CSVWrapper import CSVWrapper, Point
 from Wrappers.ToolSingleton import ToolSingleton
 from PositionSchema import Position, dist_between_points
 from TooCloseInterface import TooCloseInterface
+from CalibrationInterface import CalibrationInterface
 import os
 
 MIN_SAFE_DISTANCE = 50.0
@@ -213,39 +214,35 @@ class CSVInterface(QWidget):
         self.tool.park_carriage(2)  # Park the second carriage to avoid interference
         self.tool.select_carriage(1)
         self.current_carriage_label.setText(f"Current Carriage: {self.tool.current_carriage}")
-        self._configure_message_box()
         self.tabs.setCurrentIndex(0)  # Switch to the Manual Control tab for calibration
-        self.message_box.setText("Please move carriage 1 to Landmark 1 (green point) and click OK.")
-        self.message_box.buttonClicked.connect(lambda: self.on_landmark1_calibrated())
-        self.message_box.show()
+        text = "Please move carriage 1 to Landmark 1 (green point) and click OK."
+        ci = CalibrationInterface(parent=self, on_clicked=lambda: self.on_landmark1_calibrated(), text=text)
+        ci.show()
 
     def on_landmark1_calibrated(self):
         self.tool.refresh_position()
         land1, _ = self.csv_wrapper.get_landmarks()
         self.tool.set_position_as_point(Point(x=land1[0], y=land1[1]), carriage_index=1)
-        self._configure_message_box()
         self.tool.park_carriage(1)
         self.tool.select_carriage(2)
         self.current_carriage_label.setText(f"Current Carriage: {self.tool.current_carriage}")
         QTimer.singleShot(0, lambda: self.show_landmark2_message())
 
     def show_landmark2_message(self):
-        self._configure_message_box()
-        self.message_box.setText("Please move carriage 2 to Landmark 1 (green point) and click OK.")
-        self.message_box.buttonClicked.connect(lambda: self.on_landmark2_calibrated())
-        self.message_box.show()
+        text = "Please move carriage 2 to Landmark 1 (green point) and click OK."
+        ci = CalibrationInterface(parent=self, on_clicked=lambda: self.on_landmark2_calibrated(), text=text)
+        ci.show()
 
     def on_landmark2_calibrated(self):
         self.tool.refresh_position()
         land1, _ = self.csv_wrapper.get_landmarks()
         self.tool.set_position_as_point(Point(x=land1[0], y=land1[1]), carriage_index=2)
-        self._configure_message_box()
         QTimer.singleShot(0, lambda: self.show_landmark3_message())
 
     def show_landmark3_message(self):
-        self.message_box.setText("Please move carriage 2 to Landmark 2 (green point) and click OK.")
-        self.message_box.buttonClicked.connect(lambda: self.on_landmark3_calibrated())
-        self.message_box.show()
+        text = "Please move carriage 2 to Landmark 2 (green point) and click OK."
+        ci = CalibrationInterface(parent=self, on_clicked=lambda: self.on_landmark3_calibrated(), text=text)
+        ci.show()
 
     def on_landmark3_calibrated(self):
         true_pos3 = self.tool.refresh_position()
@@ -282,13 +279,14 @@ class CSVInterface(QWidget):
         
         test_pair: Position = self.csv_wrapper.get_nth_test_pair(self.current_row)
         if dist_between_points(test_pair) < MIN_SAFE_DISTANCE:
-            self.error_message.showMessage(f"Test pair at index {self.current_row} is too close together. Skipping.")
-            self.current_row += 1
             x = TooCloseInterface(self)
             self.other_process_running = True
             x.show()
             return
         self.tool.move(test_pair)
+        self.mark_current_row_as_done()
+
+    def mark_current_row_as_done(self):
         self.current_row += 1
         self.lbl_current_row.setText(f"Current Row: {self.current_row}")
         progress = int((self.current_row / len(self.csv_wrapper.test_pairs)) * 100)
