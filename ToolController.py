@@ -62,10 +62,11 @@ class ToolController:
             while self.ws_wrapper.is_toolhead_moving():
                 time.sleep(0.1)
             self.refresh_position()
-            move.x1 = move.x1 if move.x1 is not None else self.position.x1
-            move.y1 = move.y1 if move.y1 is not None else self.position.y1
-            move.x2 = move.x2 if move.x2 is not None else self.position.x2
-            move.y2 = move.y2 if move.y2 is not None else self.position.y2
+            desired = Position()
+            desired.x1 = move.x1 if move.x1 is not None else self.position.x1
+            desired.y1 = move.y1 if move.y1 is not None else self.position.y1
+            desired.x2 = move.x2 if move.x2 is not None else self.position.x2
+            desired.y2 = move.y2 if move.y2 is not None else self.position.y2
             if self.position != move:
                 print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
                 return False

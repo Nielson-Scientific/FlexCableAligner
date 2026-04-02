@@ -18,5 +18,9 @@ class ParkPosition:
         with open(json_path, 'r') as f:
             data = json.load(f)
             self.park1_position = Position(**data.get('carriage1').get('park_position', {}))
+            self.park1_position.x2 = None
+            self.park1_position.y2 = None
             self.park2_position = Position(**data.get('carriage2').get('park_position', {}))
+            self.park2_position.x2 = None
+            self.park2_position.y2 = None
         

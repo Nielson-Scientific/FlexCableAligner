@@ -86,6 +86,9 @@ class ToolWrapper(ToolController):
             self.offsets.x2 = current_pos.x2
             self.offsets.y2 = current_pos.y2
 
+    def set_offsets_to_zero(self):
+        self.offsets = Position(x1=0, y1=0, x2=0, y2=0)
+
 
 if __name__ == "__main__":
     tool_wrapper = ToolWrapper("ws://10.34.243.54:7125/websocket")

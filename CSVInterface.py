@@ -279,7 +279,9 @@ class CSVInterface(QWidget):
         
         test_pair: Position = self.csv_wrapper.get_nth_test_pair(self.current_row)
         if dist_between_points(test_pair) < MIN_SAFE_DISTANCE:
-            x = TooCloseInterface(self)
+            pos1 = Position(x2=test_pair.x1, y2=test_pair.y1)
+            pos2=Position(x2=test_pair.x2, y2=test_pair.y2)
+            x = TooCloseInterface(self, pos1=pos1, pos2=pos2)
             self.other_process_running = True
             x.show()
             return
@@ -300,4 +302,7 @@ class CSVInterface(QWidget):
         self.current_row = 0
         self.csv_wrapper = None
         self.file_path = None
+        self.progress_bar.setValue(0)
+        self.lbl_current_row.setText("Current Row: 0")
+        self.tool.set_offsets_to_zero()
 
