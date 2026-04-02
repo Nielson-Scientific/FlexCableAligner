@@ -1,0 +1,8 @@
+{
+    "carriage1": {
+        "park_position": {"x1": 0, "y1": 20}
+    },
+    "carriage2": {
+        "park_position": {"x2": 500, "y2": 20}
+    }
+}

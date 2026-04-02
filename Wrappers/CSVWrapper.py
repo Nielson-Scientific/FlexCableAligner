@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+from pydantic import BaseModel
+
+# Expected Schema: index, x1, y1, x2, y2, manual
+class TestPair(BaseModel):
+    index: int
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+    manual: bool
+
+class Point(BaseModel):
+    x: float
+    y: float
+
+class CSVWrapper:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        data = pd.read_csv(file_path)
+        self.landmark1: tuple[float, float] = None
+        self.landmark2: tuple[float, float] = None
+        self.current_row = 0
+        self.test_pairs: list[TestPair] = []
+
+
+        for _, row in data.iterrows():
+            if row['index'] == 'landmark1':
+                self.landmark1 = (row['x1'], row['y1'])
+            elif row['index'] == 'landmark2':
+                self.landmark2 = (row['x2'], row['y2'])
+            else:
+                self.test_pairs.append(TestPair(
+                    index=int(row['index']),
+                    x1=row['x1'],
+                    y1=row['y1'],
+                    x2=row['x2'],
+                    y2=row['y2'],
+                    manual=bool(row['manual'])
+                ))
+
+    def get_number_of_test_pairs(self):
+        return len(self.test_pairs)
+    
+    def get_landmarks(self):
+        return self.landmark1, self.landmark2
+    
+    def get_rotation(self, p1: Point, p2: Point):
+        # Calculate the angle between the two points (in radians)
+        dx = p2.x - p1.x
+        dy = p2.y - p1.y
+        return np.arctan2(dy, dx)
+    
+    def apply_rotation(self, angle: float):
+        # Rotate all test pairs by the given angle (in radians)
+        cos_angle = np.cos(angle)
+        sin_angle = np.sin(angle)
+
+        for pair in self.test_pairs:
+            # Rotate point 1
+            x1_new = pair.x1 * cos_angle - pair.y1 * sin_angle
+            y1_new = pair.x1 * sin_angle + pair.y1 * cos_angle
+            pair.x1, pair.y1 = x1_new, y1_new
+
+            # Rotate point 2
+            x2_new = pair.x2 * cos_angle - pair.y2 * sin_angle
+            y2_new = pair.x2 * sin_angle + pair.y2 * cos_angle
+            pair.x2, pair.y2 = x2_new, y2_new
+
+
+    def get_next_test_pair(self):
+        if self.current_row < len(self.test_pairs):
+            self.current_row += 1
+            return self.test_pairs[self.current_row - 1]
+        else:
+            return None
