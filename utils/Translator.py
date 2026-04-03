@@ -19,8 +19,6 @@ class Translator:
         c_x, c_y, _ = c.ravel()
         return (c_x, c_y)
 
-
-
     def get_rotation_matrix(self, c1, c2, s1, s2):
         A = np.array([
             [c1[0], -1*c1[1], 0, 1],
