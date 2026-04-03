@@ -41,6 +41,7 @@ class CameraControl:
 
 		self._cam = None
 		self._running = False
+		self._vmb_acquired = False
 		self._frame_lock = threading.Lock()
 		self._latest_frame: Optional[CameraFrame] = None
 		self._frame_queue = Queue(maxsize=buffer_count)
@@ -64,6 +65,7 @@ class CameraControl:
 
 		try:
 			vmb = self._acquire_vmb()
+			self._vmb_acquired = True
 			cam = vmb.get_camera_by_id(self.camera_id)
 
 			cam.__enter__()
@@ -84,7 +86,9 @@ class CameraControl:
 	def stop(self) -> None:
 		if self._cam is None:
 			self._running = False
-			self._release_vmb_if_needed()
+			if self._vmb_acquired:
+				self._vmb_acquired = False
+				self._release_vmb_if_needed()
 			return
 
 		cam = self._cam
@@ -101,7 +105,9 @@ class CameraControl:
 				pass
 
 			self._running = False
-			self._release_vmb_if_needed()
+			if self._vmb_acquired:
+				self._vmb_acquired = False
+				self._release_vmb_if_needed()
 
 	def restart(self) -> None:
 		self.stop()
