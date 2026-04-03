@@ -296,7 +296,7 @@ class CSVInterface(QWidget):
             self.other_process_running = True
             x.show()
             return
-        self.tool.move(test_pair)
+        self.tool.move_pcb_space(test_pair)
         self.mark_current_row_as_done()
 
     def mark_current_row_as_done(self):

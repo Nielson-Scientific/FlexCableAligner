@@ -41,11 +41,11 @@ class TooCloseInterface(QWidget):
 
     def move_to_pos1(self):
         if self.pos1:
-            self.tool.move(self.pos1)
+            self.tool.move_pcb_space(self.pos1)
 
     def move_to_pos2(self):
         if self.pos2:
-            self.tool.move(self.pos2)
+            self.tool.move_pcb_space(self.pos2)
         
 
     def handle_done(self):

@@ -44,6 +44,15 @@ class ToolWrapper(ToolController):
     def move_absolute(self, move: Position, blocking=True):
         return super().move(move, absolute=True, blocking=blocking)
     
+    def move_pcb_space(self, move: Position, absolute=True, blocking=True):
+        self.move(move, absolute=absolute, blocking=blocking)
+
+    def get_position_pcb_space(self):
+        return self.get_position()
+    
+    def refresh_position_pcb_space(self):
+        return self.refresh_position()
+    
     def set_offset(self, offset: Position):
         self.offsets = offset
 
