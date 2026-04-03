@@ -17,6 +17,7 @@ CAMERA_1_ID = ""
 CAMERA_2_ID = ""
 
 CAMERA_PREVIEW_HEIGHT_PX = 180
+CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
 
 class WebInterface(QWidget):
@@ -102,12 +103,29 @@ class WebInterface(QWidget):
         # --- Tab 1: The Web Browser ---
         # We create a generic QWidget to act as the tab's container
         tab_web = QWidget()
-        web_layout = QVBoxLayout(tab_web)
+        web_layout = QHBoxLayout(tab_web)
         web_layout.setContentsMargins(0, 0, 0, 0) # Removes the border so the web view fills the tab completely
 
         browser = QWebEngineView()
         browser.setUrl(QUrl(f"http://{BASE_URL}"))
-        web_layout.addWidget(browser)
+
+        camera_panel = QWidget()
+        camera_panel.setMinimumWidth(CAMERA_BIG_PREVIEW_MIN_WIDTH_PX)
+        camera_panel_layout = QVBoxLayout(camera_panel)
+        camera_panel_layout.setContentsMargins(8, 8, 8, 8)
+
+        self.camera1_big_label = QLabel("Camera 1: Feed stopped")
+        self.camera1_big_label.setAlignment(Qt.AlignCenter)
+        self.camera1_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        camera_panel_layout.addWidget(self.camera1_big_label)
+
+        self.camera2_big_label = QLabel("Camera 2: Feed stopped")
+        self.camera2_big_label.setAlignment(Qt.AlignCenter)
+        self.camera2_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        camera_panel_layout.addWidget(self.camera2_big_label)
+
+        web_layout.addWidget(browser, 4)
+        web_layout.addWidget(camera_panel, 2)
 
         tabs.addTab(tab_web, "Manual Control")
 
@@ -189,19 +207,27 @@ class WebInterface(QWidget):
 
             self.camera1_label.setText("Camera 1: Starting...")
             self.camera2_label.setText("Camera 2: Starting...")
+            self.camera1_big_label.setText("Camera 1: Starting...")
+            self.camera2_big_label.setText("Camera 2: Starting...")
 
             if not self._camera_timer.isActive():
                 self._camera_timer.start()
         except CameraControlError as exc:
             self.camera1_label.setText(f"Camera 1: {exc}")
             self.camera2_label.setText(f"Camera 2: {exc}")
+            self.camera1_big_label.setText(f"Camera 1: {exc}")
+            self.camera2_big_label.setText(f"Camera 2: {exc}")
         except Exception as exc:
             self.camera1_label.setText(f"Camera 1: {type(exc).__name__}: {exc}")
             self.camera2_label.setText(f"Camera 2: {type(exc).__name__}: {exc}")
+            self.camera1_big_label.setText(f"Camera 1: {type(exc).__name__}: {exc}")
+            self.camera2_big_label.setText(f"Camera 2: {type(exc).__name__}: {exc}")
 
     def _update_camera_previews(self):
         self._update_camera_preview(self.camera1, self.camera1_label, "Camera 1")
         self._update_camera_preview(self.camera2, self.camera2_label, "Camera 2")
+        self._update_camera_preview(self.camera1, self.camera1_big_label, "Camera 1")
+        self._update_camera_preview(self.camera2, self.camera2_big_label, "Camera 2")
 
     def _update_camera_preview(self, camera: CameraControl, label: QLabel, title: str):
         if camera is None or not camera.is_running:
@@ -218,6 +244,10 @@ class WebInterface(QWidget):
 
         img = frame.image_bgr
         try:
+            # Rotate 90 degrees clockwise for vertical cameras.
+            import numpy as np
+
+            img = np.rot90(img, k=-1).copy()
             height, width, channels = img.shape
             if channels != 3:
                 label.setText(f"{title}: Unsupported frame")
