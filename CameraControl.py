@@ -9,6 +9,7 @@ def abort(reason: str, return_code: int = 1, usage: bool = False):
 
 class VimbaCameraControl:
     def __init__(self, camera_id: Optional[str] = None):
+        self.instance = VmbSystem.get_instance()
         self.camera = self.get_camera(camera_id)
         print(f"Using camera: {self.camera.get_id()} - {self.camera.get_name()}")
         self.setup_camera(self.camera)
