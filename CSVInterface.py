@@ -231,11 +231,12 @@ class CSVInterface(QWidget):
         ci.show()
 
     def on_landmark1_calibrated(self):
-        self.tool.refresh_position()
+        pos1 = self.tool.refresh_absolute_position()
         land1, _ = self.csv_wrapper.get_landmarks()
         self.tool.set_position_as_point(Point(x=land1[0], y=land1[1]), carriage_index=1)
         self.tool.park_carriage(1)
         self.tool.select_carriage(2)
+        self.tool.move_absolute(Position(x2=pos1.x1, y2=pos1.y1))  # Move carriage 2 to the same position as carriage 1
         self.current_carriage_label.setText(f"Current Carriage: {self.tool.current_carriage}")
         QTimer.singleShot(0, lambda: self.show_landmark2_message())
 
@@ -245,9 +246,9 @@ class CSVInterface(QWidget):
         ci.show()
 
     def on_landmark2_calibrated(self):
-        self.tool.refresh_position()
-        land1, _ = self.csv_wrapper.get_landmarks()
+        land1, land2 = self.csv_wrapper.get_landmarks()
         self.tool.set_position_as_point(Point(x=land1[0], y=land1[1]), carriage_index=2)
+        self.tool.move_pcb_space(Position(x2=land2[0], y2=land2[1]))  # Move carriage 1 to Landmark 2 expected position
         QTimer.singleShot(0, lambda: self.show_landmark3_message())
 
     def show_landmark3_message(self):
