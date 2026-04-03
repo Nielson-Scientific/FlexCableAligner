@@ -35,6 +35,15 @@ class ToolWrapper(ToolController):
         )
         return p
     
+    def get_absolute_position(self):
+        return super().get_position()
+    
+    def refresh_absolute_position(self):
+        return super().refresh_position()
+    
+    def move_absolute(self, move: Position, blocking=True):
+        return super().move(move, absolute=True, blocking=blocking)
+    
     def set_offset(self, offset: Position):
         self.offsets = offset
 

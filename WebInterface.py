@@ -20,6 +20,9 @@ class WebInterface(QWidget):
         # The main horizontal layout to separate the left sidebar from the right content
         main_layout = QHBoxLayout(self)
 
+        self.saved_positions = []
+        self.saved_positions_labels = []
+
         # ==========================================
         # 1. Left Panel (Sidebar)
         # ==========================================
@@ -40,7 +43,15 @@ class WebInterface(QWidget):
 
         self.current_carriage_label = QLabel(f"Current Carriage: {self.tool_wrapper.current_carriage}")
         side_panel.addWidget(self.current_carriage_label)
-        
+
+        self.btn_add_position = QPushButton("Save Current Position")
+        self.btn_add_position.clicked.connect(self.handle_add_position)
+        side_panel.addWidget(self.btn_add_position)
+
+        self.btn_clear_positions = QPushButton("Clear Saved Positions")
+        self.btn_clear_positions.clicked.connect(self.handle_clear_positions)
+        side_panel.addWidget(self.btn_clear_positions)
+
         side_panel.addStretch() # Pushes the buttons to the top
 
         main_layout.addLayout(side_panel, 1) # Stretch factor 1
@@ -87,6 +98,37 @@ class WebInterface(QWidget):
     def handle_run_process(self):
         project_name = self.input_project_name.text()
         print(f"Run Process clicked! Project Name: {project_name}")
+
+    def handle_add_position(self):
+        current_pos = self.tool_wrapper.refresh_absolute_position()
+        self.saved_positions.append(current_pos)
+        current_pos_str = f"C1: ({current_pos.x1:.2f}, {current_pos.y1:.2f}), C2: ({current_pos.x2:.2f}, {current_pos.y2:.2f})"
+        label = QLabel(current_pos_str)
+        self.saved_positions_labels.append(label)
+        # Add the new label to the sidebar (just before the stretch)
+        self.layout().itemAt(0).layout().insertWidget(self.layout().itemAt(0).layout().count() - 1, label)
+        btn = QPushButton(f"Go to Position {len(self.saved_positions)}")
+        btn.clicked.connect(lambda _, idx=len(self.saved_positions)-1: self.go_to_position(idx))
+        self.layout().itemAt(0).layout().insertWidget(self.layout().itemAt(0).layout().count() - 1, btn)
+
+    def go_to_position(self, position_index):
+        if 0 <= position_index < len(self.saved_positions):
+            target_pos = self.saved_positions[position_index]
+            self.tool_wrapper.move_absolute(target_pos)
+        else:
+            print("Invalid position index")
+
+    def handle_clear_positions(self):
+        self.saved_positions.clear()
+        for label in self.saved_positions_labels:
+            label.deleteLater() # Remove the label from the UI
+        self.saved_positions_labels.clear() # Clear the list of labels
+        # Also remove any "Go to Position" buttons
+        side_layout = self.layout().itemAt(0).layout()
+        for i in reversed(range(side_layout.count())):
+            widget = side_layout.itemAt(i).widget()
+            if isinstance(widget, QPushButton) and widget.text().startswith("Go to Position"):
+                widget.deleteLater()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
