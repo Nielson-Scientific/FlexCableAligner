@@ -53,6 +53,15 @@ class PreviewCanvas(QWidget):
         
         w = self.width()
         h = self.height()
+
+        # Draw a set of lines from the red points to the blue points for better visualization
+        painter.setPen(QColor("lightgray"))
+        for (x1, y1), (x2, y2) in zip(self.red_points, self.blue_points):
+            px1 = (x1 / self.max_x) * w if self.max_x else 0
+            py1 = h - ((y1 / self.max_y) * h) if self.max_y else h
+            px2 = (x2 / self.max_x) * w if self.max_x else 0
+            py2 = h - ((y2 / self.max_y) * h) if self.max_y else h
+            painter.drawLine(px1, py1, px2, py2)
         
         # Draw red points
         painter.setBrush(QBrush(QColor("red")))
@@ -165,10 +174,13 @@ class CSVInterface(QWidget):
         self.remove_all()
         
         land1, land2 = self.csv_wrapper.get_landmarks()
+        all_x = [tp.x1 for tp in self.csv_wrapper.test_pairs] + [tp.x2 for tp in self.csv_wrapper.test_pairs] + [land1[0], land2[0]]
+        all_y = [tp.y1 for tp in self.csv_wrapper.test_pairs] + [tp.y2 for tp in self.csv_wrapper.test_pairs] + [land1[1], land2[1]]
+        self.set_max_x(max(all_x) * 1.25)
+        self.set_max_y(max(all_y) * 1.25)
         self.plot_green(*land1)
         self.plot_green(*land2)
-        self.set_max_x(max(land1[0], land2[0]) * 1.25)
-        self.set_max_y(max(land1[1], land2[1]) * 1.25)
+
         
         for test_pair in self.csv_wrapper.test_pairs:
             self.plot_red(test_pair.x1, test_pair.y1)
