@@ -38,22 +38,22 @@ class ToolController:
 
         if move.x1 or move.y1:
             self.ws_wrapper.select_carriage(1)
-            gcode = "G1"
+            gcode = "COMPENSATED_ABS_MV"
             if move.x1 is not None:
-                gcode += f" X{move.x1}"
+                gcode += f" X={move.x1}"
             if move.y1 is not None:
-                gcode += f" Y{move.y1}"
-            gcode += f" F{FEEDRATE}"
+                gcode += f" Y={move.y1}"
+            gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
         if move.x2 or move.y2:
             self.ws_wrapper.select_carriage(2)
-            gcode = "G1"
+            gcode = "COMPENSATED_ABS_MV"
             if move.x2 is not None:
-                gcode += f" X{move.x2}"
+                gcode += f" X={move.x2}"
             if move.y2 is not None:
-                gcode += f" Y{move.y2}"
-            gcode += f" F{FEEDRATE}"
+                gcode += f" Y={move.y2}"
+            gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
         print(f"Sent move command: {move} (absolute={absolute})")
