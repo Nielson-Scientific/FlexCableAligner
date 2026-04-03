@@ -53,6 +53,15 @@ class PreviewCanvas(QWidget):
         
         w = self.width()
         h = self.height()
+
+        # Draw a set of lines from the red points to the blue points for better visualization
+        painter.setPen(QColor("lightgray"))
+        for (x1, y1), (x2, y2) in zip(self.red_points, self.blue_points):
+            px1 = (x1 / self.max_x) * w if self.max_x else 0
+            py1 = h - ((y1 / self.max_y) * h) if self.max_y else h
+            px2 = (x2 / self.max_x) * w if self.max_x else 0
+            py2 = h - ((y2 / self.max_y) * h) if self.max_y else h
+            painter.drawLine(px1, py1, px2, py2)
         
         # Draw red points
         painter.setBrush(QBrush(QColor("red")))
@@ -165,10 +174,13 @@ class CSVInterface(QWidget):
         self.remove_all()
         
         land1, land2 = self.csv_wrapper.get_landmarks()
+        all_x = [tp.x1 for tp in self.csv_wrapper.test_pairs] + [tp.x2 for tp in self.csv_wrapper.test_pairs] + [land1[0], land2[0]]
+        all_y = [tp.y1 for tp in self.csv_wrapper.test_pairs] + [tp.y2 for tp in self.csv_wrapper.test_pairs] + [land1[1], land2[1]]
+        self.set_max_x(max(all_x) * 1.25)
+        self.set_max_y(max(all_y) * 1.25)
         self.plot_green(*land1)
         self.plot_green(*land2)
-        self.set_max_x(max(land1[0], land2[0]) * 1.25)
-        self.set_max_y(max(land1[1], land2[1]) * 1.25)
+
         
         for test_pair in self.csv_wrapper.test_pairs:
             self.plot_red(test_pair.x1, test_pair.y1)
@@ -185,8 +197,6 @@ class CSVInterface(QWidget):
         self.preview_canvas.plot_red(x, y)
 
     def plot_green(self, x, y):
-        if x == 0 and y == 0:
-            x, y = 0.5, 0.5
         self.preview_canvas.plot_green(x, y)
 
     def plot_blue(self, x, y):
@@ -211,6 +221,7 @@ class CSVInterface(QWidget):
             return
         
         self.status_bar.showMessage("Starting, please wait...", 5000)
+        self.tool.set_offsets_to_zero()
         self.tool.park_carriage(2)  # Park the second carriage to avoid interference
         self.tool.select_carriage(1)
         self.current_carriage_label.setText(f"Current Carriage: {self.tool.current_carriage}")
@@ -252,7 +263,7 @@ class CSVInterface(QWidget):
         print(f"Expected Position of Landmark 2 (from CSV): {land2}")
         rotation = self.csv_wrapper.get_rotation(Point(x=true_pos3.x2, y=true_pos3.y2), Point(x=land2[0], y=land2[1]))
         print(f"Calculated rotation (radians): {rotation}")
-        self.csv_wrapper.apply_rotation(rotation)
+        self.csv_wrapper.apply_rotation(-rotation)
         self.plot_csv_points()
         self.btn_load_csv.setEnabled(False)
         self.btn_cal_land.setEnabled(False)
@@ -285,7 +296,7 @@ class CSVInterface(QWidget):
             self.other_process_running = True
             x.show()
             return
-        self.tool.move(test_pair)
+        self.tool.move_pcb_space(test_pair)
         self.mark_current_row_as_done()
 
     def mark_current_row_as_done(self):
