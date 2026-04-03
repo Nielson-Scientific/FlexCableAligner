@@ -5,6 +5,7 @@ import threading
 import time
 from dataclasses import dataclass
 from typing import Optional
+from queue import Queue
 
 
 class CameraControlError(RuntimeError):
@@ -42,14 +43,20 @@ class CameraControl:
 		self._running = False
 		self._frame_lock = threading.Lock()
 		self._latest_frame: Optional[CameraFrame] = None
+		self._frame_queue = Queue(maxsize=buffer_count)
 
 	@property
 	def is_running(self) -> bool:
 		return self._running
 
 	def get_latest_frame(self) -> Optional[CameraFrame]:
-		with self._frame_lock:
-			return self._latest_frame
+		try:
+			image = self._frame_queue.get_nowait()
+			return CameraFrame(image_bgr=image, timestamp_s=time.time())
+		except Exception:
+			return None
+		# with self._frame_lock:
+		# 	return self._latest_frame
 
 	def start(self) -> None:
 		if self._running:
@@ -199,8 +206,9 @@ class CameraControl:
 					display = frame.convert_pixel_format(PixelFormat.Bgr8)
 
 				image = display.as_opencv_image()
-				with self._frame_lock:
-					self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
+				self._frame_queue.put_nowait(image)
+				# with self._frame_lock:
+				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
 			except Exception:
 				pass
 
@@ -208,3 +216,17 @@ class CameraControl:
 			cam.queue_frame(frame)
 		except Exception:
 			pass
+
+if __name__ == "__main__":
+	print('Creating CameraControl instance')
+	c = CameraControl("DEV_1AB22C071903")
+	print('CameraControl instance created')
+	print('Starting camera feed')
+	c.start()
+	print('Camera feed started, sleeping for 5 seconds')
+	time.sleep(5)
+	print('Stopping camera feed')
+	c.get_latest_frame()
+	c.restart()
+	print('Camera feed restarted, sleeping for 5 seconds')
+	c.stop()
