@@ -36,7 +36,7 @@ class ToolController:
                 y2=move.y2 + self.position.y2 if move.y2 is not None else None
             )
 
-        if move.x1 or move.y1:
+        if move.x1 is not None or move.y1 is not None:
             self.ws_wrapper.select_carriage(1)
             gcode = "COMPENSATED_ABS_MV"
             if move.x1 is not None:
@@ -46,7 +46,7 @@ class ToolController:
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
-        if move.x2 or move.y2:
+        if move.x2 is not None or move.y2 is not None:
             self.ws_wrapper.select_carriage(2)
             gcode = "COMPENSATED_ABS_MV"
             if move.x2 is not None:

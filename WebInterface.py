@@ -6,6 +6,7 @@ from PySide6.QtCore import QUrl
 from Wrappers.ToolWrapper import ToolWrapper
 from Wrappers.ToolSingleton import ToolSingleton
 from CSVInterface import CSVInterface
+from JogModeDialog import JogModeDialog
 
 BASE_URL = "10.34.243.54"
 
@@ -36,6 +37,10 @@ class WebInterface(QWidget):
         self.btn_carriage_2 = QPushButton("Select Carriage 2")
         self.btn_carriage_2.clicked.connect(self.handle_carriage_2)
         side_panel.addWidget(self.btn_carriage_2)
+
+        self.btn_jog_mode = QPushButton("Jog Mode")
+        self.btn_jog_mode.clicked.connect(self.handle_jog_mode)
+        side_panel.addWidget(self.btn_jog_mode)
 
         self.btn_avoid_home = QPushButton("Avoid Home")
         self.btn_avoid_home.clicked.connect(self.handle_avoid_home)
@@ -80,6 +85,10 @@ class WebInterface(QWidget):
         
 
         tabs.addTab(tab_native, "Automatic Control")
+
+    def handle_jog_mode(self):
+        dlg = JogModeDialog(self.tool_wrapper, parent=self)
+        dlg.exec()
 
     def handle_carriage_1(self):
         self.tool_wrapper.select_carriage(1)

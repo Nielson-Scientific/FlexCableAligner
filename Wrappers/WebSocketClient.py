@@ -9,6 +9,7 @@ class WebSocketClient:
         self.url = url
         self.ws = None
         self.wst = None
+        self._io_lock = threading.Lock()
         # Queue to pass messages from the WS thread to the main thread
         self.message_queue = queue.Queue()
         # Event to pause the main thread until the connection is fully open
@@ -50,36 +51,38 @@ class WebSocketClient:
         self.connected_event.clear()
 
     def send(self, message):
-        if self.ws and self.connected_event.is_set():
-            self.ws.send(message)
-        else:
-            print("Cannot send message. WebSocket is not connected.")
+        with self._io_lock:
+            if self.ws and self.connected_event.is_set():
+                self.ws.send(message)
+            else:
+                print("Cannot send message. WebSocket is not connected.")
 
     def send_and_wait_for(self, message, target_id, timeout=10):
         """Sends a message and collects responses until target_reply is found."""
-        
-        # Clear the queue of any old messages before sending
-        while not self.message_queue.empty():
-            self.message_queue.get()
 
-        self.ws.send(message)
+        with self._io_lock:
+            # Clear the queue of any old messages before sending
+            while not self.message_queue.empty():
+                self.message_queue.get()
 
-        collected_responses = []
-        
-        while True:
-            try:
-                # Block here until a message arrives or it times out
-                reply = self.message_queue.get(timeout=timeout)
-                collected_responses.append(reply)
-                
-                reply = json.loads(reply)
-                if reply.get("id") == target_id:
-                    return reply  # Return the target reply immediately when found
-                    
-            except queue.Empty:
-                print(f"Timeout: Did not receive '{target_id}' within {timeout} seconds.")
-                break
-        return None
+            self.ws.send(message)
+
+            collected_responses = []
+
+            while True:
+                try:
+                    # Block here until a message arrives or it times out
+                    reply = self.message_queue.get(timeout=timeout)
+                    collected_responses.append(reply)
+
+                    reply = json.loads(reply)
+                    if reply.get("id") == target_id:
+                        return reply  # Return the target reply immediately when found
+
+                except queue.Empty:
+                    print(f"Timeout: Did not receive '{target_id}' within {timeout} seconds.")
+                    break
+            return None
 
     def close(self):
         if self.ws:
