@@ -228,15 +228,17 @@ class CameraControl:
 			pass
 
 if __name__ == "__main__":
+	UP_TIME = 1
+	RESTART_TIME = 5
 	print('Creating CameraControl instance')
 	c = CameraControl("DEV_1AB22C071903")
 	print('CameraControl instance created')
 	print('Starting camera feed')
 	c.start()
-	print('Camera feed started, sleeping for 5 seconds')
-	time.sleep(1)
+	print(f'Camera feed started, sleeping for {UP_TIME} seconds')
+	time.sleep(UP_TIME)
 	print('Stopping camera feed')
 	c.get_latest_frame()
 	c.restart()
-	print('Camera feed restarted, sleeping for 5 seconds')
+	print(f'Camera feed restarted, sleeping for {RESTART_TIME} seconds')
 	c.stop()
