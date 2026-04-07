@@ -214,9 +214,9 @@ class CameraControl:
 					display = frame.convert_pixel_format(PixelFormat.Bgr8)
 
 				image = display.as_opencv_image()
+				AF.test_capture_image(image)
 				print(f"Sharpness Score: {AF.get_sharpness_score(image)}")
 				self._frame_queue.put_nowait(image)
-				AF.test_capture_image()
 				# with self._frame_lock:
 				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
 			except Exception:
