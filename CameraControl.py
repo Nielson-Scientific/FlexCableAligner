@@ -216,6 +216,7 @@ class CameraControl:
 				image = display.as_opencv_image()
 				print(f"Sharpness Score: {AF.get_sharpness_score(image)}")
 				self._frame_queue.put_nowait(image)
+				AF.test_capture_image()
 				# with self._frame_lock:
 				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
 			except Exception:
@@ -233,7 +234,7 @@ if __name__ == "__main__":
 	print('Starting camera feed')
 	c.start()
 	print('Camera feed started, sleeping for 5 seconds')
-	time.sleep(5)
+	time.sleep(1)
 	print('Stopping camera feed')
 	c.get_latest_frame()
 	c.restart()
