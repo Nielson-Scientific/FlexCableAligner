@@ -19,6 +19,7 @@ CAMERA_2_ID = ""
 CAMERA_PREVIEW_HEIGHT_PX = 180
 CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
+CAMERA_BAR_HEIGHT_PX = 240
 
 class WebInterface(QWidget):
     def __init__(self):
@@ -103,29 +104,31 @@ class WebInterface(QWidget):
         # --- Tab 1: The Web Browser ---
         # We create a generic QWidget to act as the tab's container
         tab_web = QWidget()
-        web_layout = QHBoxLayout(tab_web)
+        web_layout = QVBoxLayout(tab_web)
         web_layout.setContentsMargins(0, 0, 0, 0) # Removes the border so the web view fills the tab completely
 
         browser = QWebEngineView()
         browser.setUrl(QUrl(f"http://{BASE_URL}"))
 
-        camera_panel = QWidget()
-        camera_panel.setMinimumWidth(CAMERA_BIG_PREVIEW_MIN_WIDTH_PX)
-        camera_panel_layout = QVBoxLayout(camera_panel)
-        camera_panel_layout.setContentsMargins(8, 8, 8, 8)
+        # Horizontal camera bar below the website.
+        camera_bar = QWidget()
+        camera_bar.setFixedHeight(CAMERA_BAR_HEIGHT_PX)
+        camera_bar_layout = QHBoxLayout(camera_bar)
+        camera_bar_layout.setContentsMargins(8, 8, 8, 8)
 
         self.camera1_big_label = QLabel("Camera 1: Feed stopped")
         self.camera1_big_label.setAlignment(Qt.AlignCenter)
-        self.camera1_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        camera_panel_layout.addWidget(self.camera1_big_label)
+        # Ignore pixmap size hints so the viewport doesn't slowly grow over time.
+        self.camera1_big_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        camera_bar_layout.addWidget(self.camera1_big_label)
 
         self.camera2_big_label = QLabel("Camera 2: Feed stopped")
         self.camera2_big_label.setAlignment(Qt.AlignCenter)
-        self.camera2_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        camera_panel_layout.addWidget(self.camera2_big_label)
+        self.camera2_big_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        camera_bar_layout.addWidget(self.camera2_big_label)
 
-        web_layout.addWidget(browser, 4)
-        web_layout.addWidget(camera_panel, 2)
+        web_layout.addWidget(browser, 1)
+        web_layout.addWidget(camera_bar, 0)
 
         tabs.addTab(tab_web, "Manual Control")
 
@@ -138,6 +141,10 @@ class WebInterface(QWidget):
         self._camera_timer = QTimer(self)
         self._camera_timer.setInterval(CAMERA_UI_REFRESH_MS)
         self._camera_timer.timeout.connect(self._update_camera_previews)
+
+        # Prevent QLabel pixmap size hints from affecting layout for the sidebar previews as well.
+        self.camera1_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
+        self.camera2_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
 
     def handle_jog_mode(self):
         dlg = JogModeDialog(self.tool_wrapper, parent=self)
@@ -256,7 +263,10 @@ class WebInterface(QWidget):
 
             qimg = QImage(img.data, width, height, bytes_per_line, QImage.Format_BGR888).copy()
             pix = QPixmap.fromImage(qimg)
-            scaled = pix.scaled(label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            target_size = label.contentsRect().size()
+            if target_size.width() <= 0 or target_size.height() <= 0:
+                return
+            scaled = pix.scaled(target_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             label.setPixmap(scaled)
         except Exception:
             # If something goes wrong (unexpected dtype/shape), keep UI alive.
