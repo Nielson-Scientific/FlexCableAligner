@@ -1,4 +1,5 @@
 import sys
+import os
 from PySide6.QtWidgets import (QApplication, QWidget, QHBoxLayout, QVBoxLayout, 
                                QPushButton, QLabel, QTabWidget, QLineEdit, QFormLayout, QSpacerItem, QSizePolicy)
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -10,11 +11,12 @@ from CSVInterface import CSVInterface
 from JogModeDialog import JogModeDialog
 from CameraControl import CameraControl, CameraControlError
 
-BASE_URL = "10.34.243.54"
+with open('config/base_url.txt', 'r') as f:
+    BASE_URL = f.read().strip()
 
 # Fill these in with your actual Vimba camera IDs.
-CAMERA_1_ID = ""
-CAMERA_2_ID = ""
+CAMERA_1_ID = "DEV_1AB22C071903"
+CAMERA_2_ID = "DEV_1AB22C089E02"
 
 CAMERA_PREVIEW_HEIGHT_PX = 180
 CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
@@ -72,27 +74,37 @@ class WebInterface(QWidget):
         self.btn_clear_positions.clicked.connect(self.handle_clear_positions)
         side_panel.addWidget(self.btn_clear_positions)
 
-        # Spacer that expands: everything after it will be pinned to the bottom.
-        self._sidebar_spacer = QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        side_panel.addItem(self._sidebar_spacer)
-
         self.btn_restart_feeds = QPushButton("Restart Feeds")
         self.btn_restart_feeds.clicked.connect(self.handle_restart_feeds)
         side_panel.addWidget(self.btn_restart_feeds)
 
-        self.camera1_label = QLabel("Camera 1: Feed stopped")
-        self.camera1_label.setAlignment(Qt.AlignCenter)
-        self.camera1_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
-        self.camera1_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        side_panel.addWidget(self.camera1_label)
-
-        self.camera2_label = QLabel("Camera 2: Feed stopped")
-        self.camera2_label.setAlignment(Qt.AlignCenter)
-        self.camera2_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
-        self.camera2_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        side_panel.addWidget(self.camera2_label)
+        side_panel.addStretch() # Pushes the buttons to the top
 
         main_layout.addLayout(side_panel, 1) # Stretch factor 1
+
+        
+
+        # Spacer that expands: everything after it will be pinned to the bottom.
+        # self._sidebar_spacer = QSpacerItem(0, 0, QSizePolicy.Maximum, QSizePolicy.Expanding)
+        # side_panel.addItem(self._sidebar_spacer)
+
+        # self.btn_restart_feeds = QPushButton("Restart Feeds")
+        # self.btn_restart_feeds.clicked.connect(self.handle_restart_feeds)
+        # side_panel.addWidget(self.btn_restart_feeds)
+
+        # self.camera1_label = QLabel("Camera 1: Feed stopped")
+        # self.camera1_label.setAlignment(Qt.AlignCenter)
+        # self.camera1_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
+        # self.camera1_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # side_panel.addWidget(self.camera1_label)
+
+        # self.camera2_label = QLabel("Camera 2: Feed stopped")
+        # self.camera2_label.setAlignment(Qt.AlignCenter)
+        # self.camera2_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
+        # self.camera2_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # side_panel.addWidget(self.camera2_label)
+
+        # main_layout.addLayout(side_panel, 1) # Stretch factor 1
 
         # ==========================================
         # 2. Right Panel (The Tabbed View)
@@ -174,14 +186,11 @@ class WebInterface(QWidget):
         current_pos_str = f"C1: ({current_pos.x1:.2f}, {current_pos.y1:.2f}), C2: ({current_pos.x2:.2f}, {current_pos.y2:.2f})"
         label = QLabel(current_pos_str)
         self.saved_positions_labels.append(label)
-        # Add the new label to the sidebar (just before the expanding spacer)
-        side_layout = self.layout().itemAt(0).layout()
-        spacer_index = side_layout.indexOf(self._sidebar_spacer)
-        insert_index = spacer_index if spacer_index >= 0 else max(0, side_layout.count())
-        side_layout.insertWidget(insert_index, label)
+        # Add the new label to the sidebar (just before the stretch)
+        self.layout().itemAt(0).layout().insertWidget(self.layout().itemAt(0).layout().count() - 1, label)
         btn = QPushButton(f"Go to Position {len(self.saved_positions)}")
         btn.clicked.connect(lambda _, idx=len(self.saved_positions)-1: self.go_to_position(idx))
-        side_layout.insertWidget(insert_index + 1, btn)
+        self.layout().itemAt(0).layout().insertWidget(self.layout().itemAt(0).layout().count() - 1, btn)
 
     def go_to_position(self, position_index):
         if 0 <= position_index < len(self.saved_positions):
@@ -212,27 +221,19 @@ class WebInterface(QWidget):
             self.camera1.restart()
             self.camera2.restart()
 
-            self.camera1_label.setText("Camera 1: Starting...")
-            self.camera2_label.setText("Camera 2: Starting...")
             self.camera1_big_label.setText("Camera 1: Starting...")
             self.camera2_big_label.setText("Camera 2: Starting...")
 
             if not self._camera_timer.isActive():
                 self._camera_timer.start()
         except CameraControlError as exc:
-            self.camera1_label.setText(f"Camera 1: {exc}")
-            self.camera2_label.setText(f"Camera 2: {exc}")
             self.camera1_big_label.setText(f"Camera 1: {exc}")
             self.camera2_big_label.setText(f"Camera 2: {exc}")
         except Exception as exc:
-            self.camera1_label.setText(f"Camera 1: {type(exc).__name__}: {exc}")
-            self.camera2_label.setText(f"Camera 2: {type(exc).__name__}: {exc}")
             self.camera1_big_label.setText(f"Camera 1: {type(exc).__name__}: {exc}")
             self.camera2_big_label.setText(f"Camera 2: {type(exc).__name__}: {exc}")
 
     def _update_camera_previews(self):
-        self._update_camera_preview(self.camera1, self.camera1_label, "Camera 1")
-        self._update_camera_preview(self.camera2, self.camera2_label, "Camera 2")
         self._update_camera_preview(self.camera1, self.camera1_big_label, "Camera 1")
         self._update_camera_preview(self.camera2, self.camera2_big_label, "Camera 2")
 
