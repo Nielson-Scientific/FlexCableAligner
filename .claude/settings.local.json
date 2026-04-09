@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.emva.org)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

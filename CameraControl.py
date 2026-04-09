@@ -157,12 +157,79 @@ class CameraControl:
 		except Exception:
 			pass
 
+		self._setup_resolution(cam)
+
 		try:
 			stream = cam.get_streams()[0]
 			stream.GVSPAdjustPacketSize.run()
 			while not stream.GVSPAdjustPacketSize.is_done():
 				pass
 		except Exception:
+			pass
+
+	def _setup_resolution(self, cam, width: int = 1920, height: int = 1080) -> None:
+		"""Constrain the camera output to at most *width* x *height* (1080p by default).
+
+		If the sensor is smaller than the requested size the camera runs at its native
+		resolution.  Offsets are centred so we capture the middle of the sensor.
+		"""
+		try:
+			# Reset offsets to 0 first so Width/Height changes are never out-of-range.
+			try:
+				cam.OffsetX.set(0)
+			except Exception:
+				pass
+			try:
+				cam.OffsetY.set(0)
+			except Exception:
+				pass
+
+			# Clamp to whatever the sensor can actually deliver.
+			target_w = min(width, cam.Width.get_range()[1])
+			target_h = min(height, cam.Height.get_range()[1])
+
+			# Width/Height must be multiples of their increment (usually 1 or 2).
+			try:
+				w_inc = cam.Width.get_increment()
+				target_w = (target_w // w_inc) * w_inc
+			except Exception:
+				pass
+			try:
+				h_inc = cam.Height.get_increment()
+				target_h = (target_h // h_inc) * h_inc
+			except Exception:
+				pass
+
+			cam.Width.set(target_w)
+			cam.Height.set(target_h)
+
+			# Centre the ROI on the sensor.
+			try:
+				sensor_w = cam.SensorWidth.get()
+				offset_x = max(0, (sensor_w - target_w) // 2)
+				try:
+					x_inc = cam.OffsetX.get_increment()
+					offset_x = (offset_x // x_inc) * x_inc
+				except Exception:
+					pass
+				cam.OffsetX.set(offset_x)
+			except Exception:
+				pass
+
+			try:
+				sensor_h = cam.SensorHeight.get()
+				offset_y = max(0, (sensor_h - target_h) // 2)
+				try:
+					y_inc = cam.OffsetY.get_increment()
+					offset_y = (offset_y // y_inc) * y_inc
+				except Exception:
+					pass
+				cam.OffsetY.set(offset_y)
+			except Exception:
+				pass
+
+		except Exception:
+			# Non-fatal: fall back to native resolution if anything goes wrong.
 			pass
 
 	def _setup_pixel_format(self, cam) -> None:
