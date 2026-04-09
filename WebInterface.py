@@ -18,10 +18,10 @@ with open('config/base_url.txt', 'r') as f:
 CAMERA_1_ID = "DEV_1AB22C071903"
 CAMERA_2_ID = "DEV_1AB22C089E02"
 
-CAMERA_PREVIEW_HEIGHT_PX = 180
+CAMERA_PREVIEW_HEIGHT_PX = 300
 CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
-CAMERA_BAR_HEIGHT_PX = 240
+CAMERA_BAR_HEIGHT_PX = 350
 
 class WebInterface(QWidget):
     def __init__(self):
@@ -84,28 +84,6 @@ class WebInterface(QWidget):
 
         
 
-        # Spacer that expands: everything after it will be pinned to the bottom.
-        # self._sidebar_spacer = QSpacerItem(0, 0, QSizePolicy.Maximum, QSizePolicy.Expanding)
-        # side_panel.addItem(self._sidebar_spacer)
-
-        # self.btn_restart_feeds = QPushButton("Restart Feeds")
-        # self.btn_restart_feeds.clicked.connect(self.handle_restart_feeds)
-        # side_panel.addWidget(self.btn_restart_feeds)
-
-        # self.camera1_label = QLabel("Camera 1: Feed stopped")
-        # self.camera1_label.setAlignment(Qt.AlignCenter)
-        # self.camera1_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
-        # self.camera1_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # side_panel.addWidget(self.camera1_label)
-
-        # self.camera2_label = QLabel("Camera 2: Feed stopped")
-        # self.camera2_label.setAlignment(Qt.AlignCenter)
-        # self.camera2_label.setFixedHeight(CAMERA_PREVIEW_HEIGHT_PX)
-        # self.camera2_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # side_panel.addWidget(self.camera2_label)
-
-        # main_layout.addLayout(side_panel, 1) # Stretch factor 1
-
         # ==========================================
         # 2. Right Panel (The Tabbed View)
         # ==========================================
@@ -153,10 +131,6 @@ class WebInterface(QWidget):
         self._camera_timer = QTimer(self)
         self._camera_timer.setInterval(CAMERA_UI_REFRESH_MS)
         self._camera_timer.timeout.connect(self._update_camera_previews)
-
-        # Prevent QLabel pixmap size hints from affecting layout for the sidebar previews as well.
-        self.camera1_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
-        self.camera2_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
 
     def handle_jog_mode(self):
         dlg = JogModeDialog(self.tool_wrapper, parent=self)
