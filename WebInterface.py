@@ -224,7 +224,7 @@ class WebInterface(QWidget):
                 label.setText(f"{title}: No frames yet")
             return
 
-        img = frame.image_bgr
+        img = frame.image_rgb
         try:
             # Rotate 90 degrees clockwise for vertical cameras.
             import numpy as np
@@ -238,7 +238,7 @@ class WebInterface(QWidget):
                 return
             bytes_per_line = int(img.strides[0])
 
-            qimg = QImage(img.data, width, height, bytes_per_line, QImage.Format_BGR888).copy()
+            qimg = QImage(img.data, width, height, bytes_per_line, QImage.Format_RGB888).copy()
             pix = QPixmap.fromImage(qimg)
             target_size = label.contentsRect().size()
             if target_size.width() <= 0 or target_size.height() <= 0:

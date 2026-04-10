@@ -14,7 +14,7 @@ class CameraControlError(RuntimeError):
 
 @dataclass(frozen=True)
 class CameraFrame:
-	image_bgr: "object"  # numpy ndarray, kept generic to avoid hard dependency here
+	image_rgb: "object"  # numpy ndarray, kept generic to avoid hard dependency here
 	timestamp_s: float
 
 
@@ -53,7 +53,7 @@ class CameraControl:
 	def get_latest_frame(self) -> Optional[CameraFrame]:
 		# try:
 		# 	image = self._frame_queue.get_nowait()
-		# 	return CameraFrame(image_bgr=image, timestamp_s=time.time())
+		# 	return CameraFrame(image_rgb=image, timestamp_s=time.time())
 		# except Exception:
 		# 	return None
 		with self._frame_lock:
@@ -240,7 +240,7 @@ class CameraControl:
 			intersect_pixel_formats,
 		)
 
-		opencv_display_format = PixelFormat.Bgr8
+		opencv_display_format = PixelFormat.Rgb8
 
 		cam_formats = cam.get_pixel_formats()
 		cam_color_formats = intersect_pixel_formats(cam_formats, COLOR_PIXEL_FORMATS)
@@ -265,7 +265,7 @@ class CameraControl:
 			cam.set_pixel_format(convertible_mono_formats[0])
 		else:
 			raise CameraControlError(
-				"Camera does not support an OpenCV compatible pixel format (Bgr8 convertible)."
+				"Camera does not support an OpenCV compatible pixel format (Rgb8 convertible)."
 			)
 
 	def _handler(self, cam, stream, frame) -> None:
@@ -273,15 +273,15 @@ class CameraControl:
 
 		if frame.get_status() == FrameStatus.Complete:
 			try:
-				if frame.get_pixel_format() == PixelFormat.Bgr16:
+				if frame.get_pixel_format() == PixelFormat.Rgb8:
 					display = frame
 				else:
-					display = frame.convert_pixel_format(PixelFormat.Bgr16)
+					display = frame.convert_pixel_format(PixelFormat.Rgb8)
 
 				image = display.as_opencv_image()
 				# self._frame_queue.put_nowait(image)
 				with self._frame_lock:
-					self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
+					self._latest_frame = CameraFrame(image_rgb=image, timestamp_s=time.time())
 			except Exception:
 				pass
 
