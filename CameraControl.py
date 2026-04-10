@@ -51,13 +51,13 @@ class CameraControl:
 		return self._running
 
 	def get_latest_frame(self) -> Optional[CameraFrame]:
-		try:
-			image = self._frame_queue.get_nowait()
-			return CameraFrame(image_bgr=image, timestamp_s=time.time())
-		except Exception:
-			return None
-		# with self._frame_lock:
-		# 	return self._latest_frame
+		# try:
+		# 	image = self._frame_queue.get_nowait()
+		# 	return CameraFrame(image_bgr=image, timestamp_s=time.time())
+		# except Exception:
+		# 	return None
+		with self._frame_lock:
+			return self._latest_frame
 
 	def start(self) -> None:
 		if self._running:
@@ -273,15 +273,15 @@ class CameraControl:
 
 		if frame.get_status() == FrameStatus.Complete:
 			try:
-				if frame.get_pixel_format() == PixelFormat.Bgr8:
+				if frame.get_pixel_format() == PixelFormat.Bgr16:
 					display = frame
 				else:
-					display = frame.convert_pixel_format(PixelFormat.Bgr8)
+					display = frame.convert_pixel_format(PixelFormat.Bgr16)
 
 				image = display.as_opencv_image()
-				self._frame_queue.put_nowait(image)
-				# with self._frame_lock:
-				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
+				# self._frame_queue.put_nowait(image)
+				with self._frame_lock:
+					self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
 			except Exception:
 				pass
 
