@@ -18,10 +18,10 @@ with open('config/base_url.txt', 'r') as f:
 CAMERA_1_ID = "DEV_1AB22C071903"
 CAMERA_2_ID = "DEV_1AB22C089E02"
 
-CAMERA_PREVIEW_HEIGHT_PX = 300
+CAMERA_PREVIEW_HEIGHT_PX = 700
 CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
-CAMERA_BAR_HEIGHT_PX = 350
+CAMERA_BAR_HEIGHT_PX = 750
 
 class WebInterface(QWidget):
     def __init__(self):
@@ -230,6 +230,8 @@ class WebInterface(QWidget):
             import numpy as np
 
             img = np.rot90(img, k=-1).copy()
+            # Flip vertically so the feed is upside down.
+            img = np.flipud(img).copy()
             height, width, channels = img.shape
             if channels != 3:
                 label.setText(f"{title}: Unsupported frame")
