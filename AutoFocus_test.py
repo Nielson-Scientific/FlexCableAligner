@@ -9,9 +9,9 @@ import time
 
 import numpy as np
 
-HIGH = 10
-LOW = 1
-STEP_SIZE = 0.5
+HIGH = 11
+LOW = 10
+STEP_SIZE = 0.025
 
 X = 0
 Y = 0.5
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     # Instantiate Movement and get Position
     tool_controller = ToolController(TOOL_CTRL_URL)
-    tool_controller.home()
+    tool_controller.avoid_home()
     print("Current Position:", tool_controller.get_position())
     
     # Start Camera Feed
