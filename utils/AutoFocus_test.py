@@ -13,8 +13,8 @@ HIGH = 10
 LOW = 1
 STEP_SIZE = 0.5
 
-X = 20
-Y = 20
+X = 0
+Y = 0.5
 
 TOOL_CTRL_URL = "ws://10.34.243.54:7125/websocket"
 
