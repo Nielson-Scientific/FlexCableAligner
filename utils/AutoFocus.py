@@ -7,23 +7,50 @@ from Controllers.CameraControl import CameraControl
 from Controllers.ToolController import ToolController
 from PositionSchema import Position
 
+# Perhaps it would be best to move this insdie of the Camera Control class.
+# The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program
+# This is enabled by easy access to the movement ToolController vial the ToolController singleton 
 
 class Autofocus:
     @staticmethod
-    def fast_autofocus(high, low, broad_pass_step = 0.2, fine_pass_step = 0.025, mid_range = 0.5):
-        pass
+    def fast_autofocus(high, low, broad_pass_step = 0.1, fine_pass_step = 0.01, finer_pass_step = None):
+        print(f"Beginning Fast AutoFocus Test, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
+        print('Creating CameraControl instance')
+        cam_control = CameraControl("DEV_1AB22C071903")
+        print('CameraControl instance created')
+        print('Starting camera feed')
+        cam_control.start()
+        
+        broad_best = Autofocus.autofocus(high, low, broad_pass_step, camera_in=cam_control)
+        fine_high = broad_best + broad_pass_step
+        fine_low = broad_best - broad_pass_step
+        fine_best = Autofocus.autofocus(fine_high, fine_low, fine_pass_step, show_plot=True, camera_in=cam_control)
+        if finer_pass_step is None:
+            best = fine_best
+        else:
+            finer_high = fine_best + fine_pass_step
+            finer_low = fine_best - fine_pass_step
+            best =  Autofocus.autofocus(finer_high, finer_low, finer_pass_step, show_plot=True, camera_in=cam_control)
+        
+        cam_control.stop()
+        return best
 
 
 
     @staticmethod
-    def autofocus(high, low, step_size, show_plot = False):
+    def autofocus(high, low, step_size, show_plot = False, camera_in = None):
 
         print(f"Beginning AutoFocus Test, High = {high}, Low = {low}, Step Size = {step_size}")
 
         # Instantiate Camera Control
-        print('Creating CameraControl instance')
-        cam_control = CameraControl("DEV_1AB22C071903")
-        print('CameraControl instance created')
+        if camera_in is None:
+            print('Creating CameraControl instance')
+            cam_control = CameraControl("DEV_1AB22C071903")
+            print('CameraControl instance created')
+        else:
+            cam_control = camera_in
+
+        # Initialize data for loop
         focus_dict = {}
         heights = Autofocus.generate_heights(high, low, step_size)
         positions = [Position(z1 = h) for h in heights]
@@ -34,17 +61,19 @@ class Autofocus:
         tool_controller = ToolController(TOOL_CTRL_URL)
 
         # Start Camera Feed
-        print('Starting camera feed')
-        cam_control.start()
+        
+        if camera_in is None:
+            print('Starting camera feed') 
+            cam_control.start()
         try:
             # Start stepping through heights
-            for position, height in zip(positions, heights):
+            for position in reversed(positions):
                 tool_controller.move(position, verify_mov=False)
                 frame = Autofocus.wait_for_fresh_frame(cam_control, timeout_s=2.0)
                 if frame is None:
-                    raise RuntimeError(f"No camera frame received at z={height}")
+                    raise RuntimeError(f"No camera frame received at z={position.z1:.3f}mm within timeout.")
                 focus_val = Autofocus.get_sharpness_tenengrad(frame.image_bgr)
-                focus_dict[float(height)] = float(focus_val)
+                focus_dict[float(position.z1)] = float(focus_val)
 
             # Extract best
             max_focus_val = max(focus_dict.values())
@@ -53,9 +82,10 @@ class Autofocus:
 
             # Go to best
             tool_controller.move(Position(z1 = optimal_height))
+
         finally:
             # Stop Camera Stream
-            cam_control.stop()
+            if camera_in is None: cam_control.stop()
             # Plot Curve
             if show_plot: Autofocus.plot_focus_curve(focus_dict)
         return optimal_height

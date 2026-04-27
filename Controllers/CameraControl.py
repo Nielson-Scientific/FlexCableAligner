@@ -7,9 +7,6 @@ from dataclasses import dataclass
 from typing import Optional
 from queue import Queue
 
-from utils.AutoFocus import Autofocus as AF
-
-
 class CameraControlError(RuntimeError):
 	pass
 
@@ -214,7 +211,6 @@ class CameraControl:
 					display = frame.convert_pixel_format(PixelFormat.Bgr8)
 
 				image = display.as_opencv_image()
-				self._handler_helper(image)
 				self._frame_queue.put_nowait(image)
 				# with self._frame_lock:
 				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())
@@ -226,12 +222,6 @@ class CameraControl:
 		except Exception:
 			pass
 	
-	def _handler_helper(self, image):
-		pass
-
-	def register_handler_helper(self, func):
-		_handler_helper = func
-		
 
 if __name__ == "__main__":
 	UP_TIME = 1
@@ -239,11 +229,7 @@ if __name__ == "__main__":
 	print('Creating CameraControl instance')
 	c = CameraControl("DEV_1AB22C071903")
 	print('CameraControl instance created')\
-	
-	def helper(image):
-		AF.test_capture_image(image)
-		print(f"Sharpness Score: {AF.get_sharpness_score(image)}")
-	c.register_handler_helper(helper)
+
 
 
 	print('Starting camera feed')
