@@ -1,14 +1,114 @@
 import cv2
 import numpy as np
+import time
 from datetime import datetime
 from pathlib import Path
+from Controllers.CameraControl import CameraControl
+from Controllers.ToolController import ToolController
+from PositionSchema import Position
 
 
 class Autofocus:
     @staticmethod
-    def get_sharpness_score(img):
-        """Return focus sharpness via variance of the Laplacian."""
-        return Autofocus.get_sharpness_laplacian(img)
+    def fast_autofocus(high, low, broad_pass_step = 0.2, fine_pass_step = 0.025, mid_range = 0.5):
+        pass
+
+
+
+    @staticmethod
+    def autofocus(high, low, step_size, show_plot = False):
+
+        print(f"Beginning AutoFocus Test, High = {high}, Low = {low}, Step Size = {step_size}")
+
+        # Instantiate Camera Control
+        print('Creating CameraControl instance')
+        cam_control = CameraControl("DEV_1AB22C071903")
+        print('CameraControl instance created')
+        focus_dict = {}
+        heights = Autofocus.generate_heights(high, low, step_size)
+        positions = [Position(z1 = h) for h in heights]
+        optimal_height = None
+
+        # Instantiate Movement and get Position
+        TOOL_CTRL_URL = "ws://10.34.243.54:7125/websocket"
+        tool_controller = ToolController(TOOL_CTRL_URL)
+
+        # Start Camera Feed
+        print('Starting camera feed')
+        cam_control.start()
+        try:
+            # Start stepping through heights
+            for position, height in zip(positions, heights):
+                tool_controller.move(position, verify_mov=False)
+                frame = Autofocus.wait_for_fresh_frame(cam_control, timeout_s=2.0)
+                if frame is None:
+                    raise RuntimeError(f"No camera frame received at z={height}")
+                focus_val = Autofocus.get_sharpness_tenengrad(frame.image_bgr)
+                focus_dict[float(height)] = float(focus_val)
+
+            # Extract best
+            max_focus_val = max(focus_dict.values())
+            optimal_height = max(focus_dict, key=focus_dict.get)
+            print(f"Best focus {max_focus_val:.3f} at z={optimal_height:.3f}")
+
+            # Go to best
+            tool_controller.move(Position(z1 = optimal_height))
+        finally:
+            # Stop Camera Stream
+            cam_control.stop()
+            # Plot Curve
+            if show_plot: Autofocus.plot_focus_curve(focus_dict)
+        return optimal_height
+
+
+
+    ##########################
+    #### HELPER FUNCTIONS ####
+    ##########################
+
+    @staticmethod
+    def generate_heights(high: float, low: float, step_size: float) -> np.ndarray:
+        if step_size <= 0:
+            raise ValueError("step_size must be > 0")
+        direction = 1 if low >= high else -1
+        step = direction * abs(step_size)
+        return np.arange(high, low + step, step, dtype=float)
+
+    @staticmethod
+    def wait_for_fresh_frame(cam_control: CameraControl, timeout_s: float = 2.0):
+        deadline = time.time() + timeout_s
+        latest = None
+        while time.time() < deadline:
+            frame = cam_control.get_latest_frame()
+            if frame is None:
+                if latest is not None:
+                    break
+                time.sleep(0.01)
+                continue
+            latest = frame
+        return latest
+
+    @staticmethod
+    def plot_focus_curve(z_to_focus: dict[float, float], *, title: str = "Focus vs Z"):
+        import matplotlib.pyplot as plt
+
+        if not z_to_focus:
+            raise ValueError("z_to_focus is empty")
+
+        # Sort by z so the line is drawn left-to-right correctly
+        zs = sorted(z_to_focus.keys())
+        focus_vals = [z_to_focus[z] for z in zs]
+
+        plt.figure(figsize=(7, 4))
+        plt.plot(zs, focus_vals, marker="o")
+        plt.xlabel("Z (mm)")
+        plt.ylabel("Focus Value")
+        plt.title(title)
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.show()
+
+
 
     @staticmethod
     def get_sharpness_laplacian(img):
@@ -57,58 +157,7 @@ class Autofocus:
 
         return str(output_path)
     
-    @staticmethod
-    def try_all_sharpnesses(img):
-        lap = Autofocus.get_sharpness_laplacian(img)
-        ten = Autofocus.get_sharpness_tenengrad(img)
-        bre = Autofocus.get_sharpness_brenner(img)
-        return lap,ten,bre
     
     
-if __name__ == '__main__':
-    root = Path("test_images")
-    exts = {".png",}
 
-    image_paths = sorted(
-        p for p in root.rglob("*")
-        if p.is_file() and p.suffix.lower() in exts
-    )
-
-    focused_imgs = []
-    unfocused_imgs = []
-    semifocused_imgs = []
-
-    for p in image_paths:
-        img = cv2.imread(str(p))
-        if img is not None:
-            label = p.parent.name
-            match(label):
-                case 'unfocused':
-                    unfocused_imgs.append(img)
-                case 'focused':
-                    focused_imgs.append(img)
-                case 'semifocused':
-                    semifocused_imgs.append(img)
-    
-
-    unfocus_vals =  [Autofocus.try_all_sharpnesses(img) for img in unfocused_imgs]
-    unfocus_avgs = np.mean(unfocus_vals, axis=0).tolist()
-
-    focus_vals =  [Autofocus.try_all_sharpnesses(img) for img in focused_imgs]
-    focus_avgs = np.mean(focus_vals, axis=0).tolist()
-
-    semifocus_vals =  [Autofocus.try_all_sharpnesses(img) for img in semifocused_imgs]
-    semifocus_avgs = np.mean(semifocus_vals, axis=0).tolist()
-
-    LAP_IDX = 0
-    TEN_IDX = 1
-    BRE_IDX = 2
-    def result_print(title, foc, semifoc, unfoc, idx):
-        print(f"{title} Focused: {foc[idx]:.2f} | Semifocused: {semifoc[idx]:.2f} | Unfocused {unfoc[idx]:.2f}")
-
-    
-    # Print LAP Comparison
-    result_print("LAPLACIAN", focus_avgs, semifocus_avgs, unfocus_avgs, LAP_IDX)
-    result_print("TENENGRED", focus_avgs, semifocus_avgs, unfocus_avgs, TEN_IDX)
-    result_print("BRENNER  ", focus_avgs, semifocus_avgs, unfocus_avgs, BRE_IDX)
     

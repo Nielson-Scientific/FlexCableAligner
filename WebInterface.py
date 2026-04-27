@@ -9,7 +9,7 @@ from Wrappers.ToolWrapper import ToolWrapper
 from Wrappers.ToolSingleton import ToolSingleton
 from CSVInterface import CSVInterface
 from JogModeDialog import JogModeDialog
-from CameraControl import CameraControl, CameraControlError
+from Controllers.CameraControl import CameraControl, CameraControlError
 
 with open('config/base_url.txt', 'r') as f:
     BASE_URL = f.read().strip()

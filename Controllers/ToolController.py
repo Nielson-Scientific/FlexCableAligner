@@ -27,7 +27,7 @@ class ToolController:
         self.ws_wrapper.select_carriage(carriage_number)
         self.current_carriage = carriage_number
     
-    def move(self, move: Position, absolute=True, blocking=True):
+    def move(self, move: Position, absolute=True, blocking=True, verify_mov = True):
         if not absolute:
             move = Position(
                 x1=move.x1 + self.position.x1 if move.x1 is not None else None,
@@ -66,19 +66,19 @@ class ToolController:
 
         if blocking:
             while self.ws_wrapper.is_toolhead_moving():
-                time.sleep(0.1)
-            self.refresh_position()
-            desired = Position()
-            desired.x1 = move.x1 if move.x1 is not None else self.position.x1
-            desired.y1 = move.y1 if move.y1 is not None else self.position.y1
-            desired.z1 = move.z1 if move.z1 is not None else self.position.z1
-            desired.x2 = move.x2 if move.x2 is not None else self.position.x2
-            desired.y2 = move.y2 if move.y2 is not None else self.position.y2
-            desired.z2 = move.z2 if move.z2 is not None else self.position.z2
-            if self.position != desired:
-                print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
-                return False
-            return True
+                time.sleep(0.01)
+            if verify_mov:
+                self.refresh_position()
+                desired = Position()
+                desired.x1 = move.x1 if move.x1 is not None else self.position.x1
+                desired.y1 = move.y1 if move.y1 is not None else self.position.y1
+                desired.z1 = move.z1 if move.z1 is not None else self.position.z1
+                desired.x2 = move.x2 if move.x2 is not None else self.position.x2
+                desired.y2 = move.y2 if move.y2 is not None else self.position.y2
+                desired.z2 = move.z2 if move.z2 is not None else self.position.z2
+                if self.position != desired:
+                    print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
+                    return False
         else:
             return True # Don't verify position for relative moves
     
