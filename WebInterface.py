@@ -232,6 +232,7 @@ class WebInterface(QWidget):
             img = np.rot90(img, k=-1).copy()
             # Flip vertically so the feed is upside down.
             img = np.flipud(img).copy()
+            img = np.fliplr(img).copy()
             height, width, channels = img.shape
             if channels != 3:
                 label.setText(f"{title}: Unsupported frame")

@@ -32,14 +32,39 @@ class CSVWrapper:
             elif row['index'] == 'landmark2':
                 self.landmark2 = (row['x2'], row['y2'])
             else:
-                self.test_pairs.append(TestPair(
-                    index=int(row['index']),
-                    x1=row['x1'],
-                    y1=row['y1'],
-                    x2=row['x2'],
-                    y2=row['y2'],
-                    manual=bool(row['manual'])
-                ))
+                x1 = row['x1']
+                y1 = row['y1']
+                x2 = row['x2']
+                y2 = row['y2']
+
+                # Normalize point ordering: (x1, y1) is always the point with the smaller X.
+                # This makes left-to-right ordering consistent across all rows.
+                try:
+                    if pd.notna(x1) and pd.notna(x2) and float(x1) > float(x2):
+                        x1, x2 = x2, x1
+                        y1, y2 = y2, y1
+                except (TypeError, ValueError):
+                    pass
+
+                self.test_pairs.append(
+                    TestPair(
+                        index=int(row['index']),
+                        x1=x1,
+                        y1=y1,
+                        x2=x2,
+                        y2=y2,
+                        manual=bool(row['manual']),
+                    )
+                )
+
+    def _normalize_test_pair_ordering(self) -> None:
+        for pair in self.test_pairs:
+            try:
+                if float(pair.x1) > float(pair.x2):
+                    pair.x1, pair.x2 = pair.x2, pair.x1
+                    pair.y1, pair.y2 = pair.y2, pair.y1
+            except (TypeError, ValueError):
+                continue
 
     def get_number_of_test_pairs(self):
         return len(self.test_pairs)
@@ -69,6 +94,9 @@ class CSVWrapper:
             x2_new = pair.x2 * cos_angle - pair.y2 * sin_angle
             y2_new = pair.x2 * sin_angle + pair.y2 * cos_angle
             pair.x2, pair.y2 = x2_new, y2_new
+
+        # Keep the min-X point in (x1, y1) after transformation.
+        self._normalize_test_pair_ordering()
 
     def get_nth_test_pair(self, n: int):
         if n < len(self.test_pairs):
