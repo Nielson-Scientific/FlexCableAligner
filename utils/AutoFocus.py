@@ -18,14 +18,18 @@ class Autofocus:
         return float(lap.var())
     
     @staticmethod
-    def get_sharpness_tenengrad(img):
+    def get_sharpness_tenengrad(img, tau_p = 90):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
         gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
 
-        g = np.sqrt(gx**2 + gy**2)
-
-        return np.sum(g**2)
+        g2 = gx**2 + gy**2
+        
+        tau = np.percentile(g2, tau_p)
+        strong = g2[g2 > tau]
+        if not strong.size:
+            return 0.0
+        return float(np.mean(strong))
     
     @staticmethod
     def get_sharpness_brenner(img):
@@ -33,7 +37,7 @@ class Autofocus:
         return np.sum((gray[:, 2:] - gray[:, :-2])**2)
     
     @staticmethod
-    def test_capture_image(img, output_dir="test_images"):
+    def test_capture_image(img, output_dir="af_test_images"):
         """
         Save an OpenCV image into `output_dir` with a timestamped filename.
         Returns the saved file path.

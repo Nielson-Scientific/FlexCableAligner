@@ -12,26 +12,36 @@ CONFIG_PATH = "config/config.json"
 class ToolWrapper(ToolController):
     def __init__(self, ws_url):
         super().__init__(ws_url)
-        self.offsets = Position(x1=0, y1=0, x2=0, y2=0)
+        self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
         self.park_positions = ParkPosition(CONFIG_PATH)
+
+    @staticmethod
+    def _sub_optional(value, offset):
+        if value is None:
+            return None
+        return value - (offset or 0)
 
     def get_position(self):
         pos = super().get_position()
         p = Position(
-            x1=pos.x1 - self.offsets.x1,
-            y1=pos.y1 - self.offsets.y1,
-            x2=pos.x2 - self.offsets.x2,
-            y2=pos.y2 - self.offsets.y2
+            x1=self._sub_optional(pos.x1, self.offsets.x1),
+            y1=self._sub_optional(pos.y1, self.offsets.y1),
+            z1=self._sub_optional(pos.z1, self.offsets.z1),
+            x2=self._sub_optional(pos.x2, self.offsets.x2),
+            y2=self._sub_optional(pos.y2, self.offsets.y2),
+            z2=self._sub_optional(pos.z2, self.offsets.z2)
         )
         return p
     
     def refresh_position(self):
         pos = super().refresh_position()
         p = Position(
-            x1=pos.x1 - self.offsets.x1,
-            y1=pos.y1 - self.offsets.y1,
-            x2=pos.x2 - self.offsets.x2,
-            y2=pos.y2 - self.offsets.y2
+            x1=self._sub_optional(pos.x1, self.offsets.x1),
+            y1=self._sub_optional(pos.y1, self.offsets.y1),
+            z1=self._sub_optional(pos.z1, self.offsets.z1),
+            x2=self._sub_optional(pos.x2, self.offsets.x2),
+            y2=self._sub_optional(pos.y2, self.offsets.y2),
+            z2=self._sub_optional(pos.z2, self.offsets.z2)
         )
         return p
     
@@ -69,8 +79,10 @@ class ToolWrapper(ToolController):
             target = Position(
                 x1=move.x1 + self.offsets.x1 if move.x1 is not None else None,
                 y1=move.y1 + self.offsets.y1 if move.y1 is not None else None,
+                z1=move.z1 + self.offsets.z1 if move.z1 is not None else None,
                 x2=move.x2 + self.offsets.x2 if move.x2 is not None else None,
-                y2=move.y2 + self.offsets.y2 if move.y2 is not None else None
+                y2=move.y2 + self.offsets.y2 if move.y2 is not None else None,
+                z2=move.z2 + self.offsets.z2 if move.z2 is not None else None
             )
         else:
             target = move
@@ -105,7 +117,7 @@ class ToolWrapper(ToolController):
             self.offsets.y2 = current_pos.y2
 
     def set_offsets_to_zero(self):
-        self.offsets = Position(x1=0, y1=0, x2=0, y2=0)
+        self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
 
 
 if __name__ == "__main__":

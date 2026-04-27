@@ -5,8 +5,10 @@ import json
 class Position(BaseModel):
     x1: Optional[float] = None
     y1: Optional[float] = None
+    z1: Optional[float] = None
     x2: Optional[float] = None
     y2: Optional[float] = None
+    z2: Optional[float] = None
 
 def dist_between_points(p: Position):
     if p.x1 is None or p.y1 is None or p.x2 is None or p.y2 is None:

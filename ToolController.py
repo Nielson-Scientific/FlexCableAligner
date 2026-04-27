@@ -32,27 +32,33 @@ class ToolController:
             move = Position(
                 x1=move.x1 + self.position.x1 if move.x1 is not None else None,
                 y1=move.y1 + self.position.y1 if move.y1 is not None else None,
+                z1=move.z1 + self.position.z1 if move.z1 is not None else None,
                 x2=move.x2 + self.position.x2 if move.x2 is not None else None,
-                y2=move.y2 + self.position.y2 if move.y2 is not None else None
+                y2=move.y2 + self.position.y2 if move.y2 is not None else None,
+                z2=move.z2 + self.position.z2 if move.z2 is not None else None
             )
 
-        if move.x1 is not None or move.y1 is not None:
+        if move.x1 is not None or move.y1 is not None or move.z1 is not None:
             self.ws_wrapper.select_carriage(1)
             gcode = "COMPENSATED_ABS_MV"
             if move.x1 is not None:
                 gcode += f" X={move.x1}"
             if move.y1 is not None:
                 gcode += f" Y={move.y1}"
+            if move.z1 is not None:
+                gcode += f" Z={move.z1}"
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
-        if move.x2 is not None or move.y2 is not None:
+        if move.x2 is not None or move.y2 is not None or move.z2 is not None:
             self.ws_wrapper.select_carriage(2)
             gcode = "COMPENSATED_ABS_MV"
             if move.x2 is not None:
                 gcode += f" X={move.x2}"
             if move.y2 is not None:
                 gcode += f" Y={move.y2}"
+            if move.z2 is not None:
+                gcode += f" Z={move.z2}"
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
@@ -65,8 +71,10 @@ class ToolController:
             desired = Position()
             desired.x1 = move.x1 if move.x1 is not None else self.position.x1
             desired.y1 = move.y1 if move.y1 is not None else self.position.y1
+            desired.z1 = move.z1 if move.z1 is not None else self.position.z1
             desired.x2 = move.x2 if move.x2 is not None else self.position.x2
             desired.y2 = move.y2 if move.y2 is not None else self.position.y2
+            desired.z2 = move.z2 if move.z2 is not None else self.position.z2
             if self.position != desired:
                 print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
                 return False
@@ -83,9 +91,15 @@ class ToolController:
 
     def avoid_home(self):
         gcode = "SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"
-        gcode += f"SET_KINEMATIC_POSITION X={self.position.x1} Y={self.position.y1}\n"
+        gcode += f"SET_KINEMATIC_POSITION X={self.position.x1} Y={self.position.y1}"
+        if self.position.z1 is not None:
+            gcode += f" Z={self.position.z1}"
+        gcode += "\n"
         gcode += "SET_DUAL_CARRIAGE CARRIAGE=x2\nSET_DUAL_CARRIAGE CARRIAGE=y2\n"
-        gcode += f"SET_KINEMATIC_POSITION X={self.position.x2} Y={self.position.y2}\n"
+        gcode += f"SET_KINEMATIC_POSITION X={self.position.x2} Y={self.position.y2}"
+        if self.position.z2 is not None:
+            gcode += f" Z={self.position.z2}"
+        gcode += "\n"
         self.ws_wrapper.send_gcode(gcode)
 
     def is_moving(self):

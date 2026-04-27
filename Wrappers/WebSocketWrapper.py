@@ -60,13 +60,13 @@ class WebSocketWrapper:
         def get_carriage_pos():
             data = self.ws.send_and_wait_for(json.dumps(subscribe_req), 1, 10)
             pos = data.get('result').get('status').get('toolhead').get('position')
-            return pos[:2]
+            return pos[:3]
         
         self.select_carriage(1)
-        x1, y1 = get_carriage_pos()
+        x1, y1, z1 = get_carriage_pos()
         self.select_carriage(2)
-        x2, y2 = get_carriage_pos()
-        return Position(x1=x1, y1=y1, x2=x2, y2=y2)
+        x2, y2, z2 = get_carriage_pos()
+        return Position(x1=x1, y1=y1, z1=z1, x2=x2, y2=y2, z2=z2)
     
     def is_toolhead_moving(self):
         subscribe_req = {
@@ -106,4 +106,3 @@ if __name__ == "__main__":
             tt += time.time() - t
         print(f"Average time taken to get position: {tt/it:.2f} seconds")
         print(ws_wrapper.is_toolhead_moving())
-
