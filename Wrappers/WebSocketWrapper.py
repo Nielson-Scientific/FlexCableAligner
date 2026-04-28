@@ -46,6 +46,29 @@ class WebSocketWrapper:
         }
         self.ws.send(json.dumps(gcode_req))
 
+    def get_z_positions(self):
+        subscribe_req = {
+            "jsonrpc": "2.0",
+            "method": "printer.objects.subscribe",
+            "params": {
+                "objects": {
+                    "gcode_macro _Z_AXIS_STATE": None
+                }
+            },
+            "id": 2
+        }
+
+        data = self.ws.send_and_wait_for(json.dumps(subscribe_req), 2, 10)
+
+        state = data.get('result').get('status').get('gcode_macro _Z_AXIS_STATE')
+
+        z1 = state.get('pos_1')
+        z2 = state.get('pos_2')
+        z3 = state.get('pos_3')
+        z4 = state.get('pos_4')
+
+        return [z1, z2, z3, z4]
+
     def get_position(self):
         subscribe_req = {
             "jsonrpc": "2.0",
@@ -63,9 +86,12 @@ class WebSocketWrapper:
             return pos[:3]
         
         self.select_carriage(1)
-        x1, y1, z1 = get_carriage_pos()
+        x1, y1, _ = get_carriage_pos()
         self.select_carriage(2)
-        x2, y2, z2 = get_carriage_pos()
+        x2, y2, _ = get_carriage_pos()
+
+        z1, z2, z3, z4 = self.get_z_positions()
+        
         return Position(x1=x1, y1=y1, z1=z1, x2=x2, y2=y2, z2=z2)
     
     def is_toolhead_moving(self):

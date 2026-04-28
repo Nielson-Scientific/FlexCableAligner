@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from typing import Optional
 from queue import Queue
 
+CAM_ID_1 = "DEV_1AB22C071903"
+CAM_ID_2 = "DEV_1AB22C089E02"
+
 class CameraControlError(RuntimeError):
 	pass
 
@@ -228,7 +231,7 @@ if __name__ == "__main__":
 	RESTART_TIME = 5
 	print('Creating CameraControl instance')
 	c = CameraControl("DEV_1AB22C071903")
-	print('CameraControl instance created')\
+	print('CameraControl instance created')
 
 
 

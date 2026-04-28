@@ -6,7 +6,7 @@ FEEDRATE = 9000
 DEF_URL = "ws://10.34.243.54:7125/websocket"
 
 class ToolController:
-    def __init__(self, ws_url):
+    def __init__(self, ws_url = DEF_URL):
         self.ws_wrapper = WebSocketWrapper(ws_url)
         self.ws_wrapper.connect()
         self.position: Position = self.ws_wrapper.get_position()
@@ -84,7 +84,7 @@ class ToolController:
             return True # Don't verify position for relative moves
     
     def home(self):
-        self.ws_wrapper.send_gcode("G28 X Y")
+        self.ws_wrapper.send_gcode("HOME_ALL")
         # self.wait_for(5)
         while self.ws_wrapper.is_toolhead_moving():
             time.sleep(0.1)
