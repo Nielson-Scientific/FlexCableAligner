@@ -4,8 +4,8 @@ from pathlib import Path
 from PositionSchema import Position
 from Wrappers.WebSocketClient import WebSocketClient
 
-PROFILE_WS = True
-PROFILE_LOG_TO_CONSOLE = True
+PROFILE_WS = False
+PROFILE_LOG_TO_CONSOLE = False
 PROFILE_LOG_PATH = Path("logs/motion_profile.log")
 
 class WebSocketWrapper:

@@ -5,8 +5,8 @@ from pathlib import Path
 
 FEEDRATE = 3000
 DEF_URL = "ws://10.34.243.54:7125/websocket"
-PROFILE_MOVE = True
-PROFILE_LOG_TO_CONSOLE = True
+PROFILE_MOVE = False
+PROFILE_LOG_TO_CONSOLE = False
 PROFILE_LOG_PATH = Path("logs/motion_profile.log")
 
 class ToolController:
