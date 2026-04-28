@@ -47,7 +47,7 @@ class ToolController:
             if move.y1 is not None:
                 gcode += f" Y={move.y1}"
             if move.z1 is not None:
-                gcode += f" Z={move.z1}"
+                gcode += f" Z={move.z1} Z_AXIS=1"
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
@@ -59,7 +59,7 @@ class ToolController:
             if move.y2 is not None:
                 gcode += f" Y={move.y2}"
             if move.z2 is not None:
-                gcode += f" Z={move.z2}"
+                gcode += f" Z={move.z2} Z_AXIS=2"
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
 
