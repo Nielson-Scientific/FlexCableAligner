@@ -29,6 +29,7 @@ class ToolController:
         self.current_carriage = carriage_number
     
     def move(self, move: Position, absolute=True, blocking=True, verify_mov = True):
+        z_move_requested = move.z1 is not None or move.z2 is not None
         if not absolute:
             move = Position(
                 x1=move.x1 + self.position.x1 if move.x1 is not None else None,
@@ -66,8 +67,23 @@ class ToolController:
         print(f"Sent move command: {move} (absolute={absolute})")
 
         if blocking:
+            # Always block on queued motion completion; this also catches manual_stepper macro moves.
+            self.ws_wrapper.wait_for_moves()
             while self.ws_wrapper.is_toolhead_moving():
                 time.sleep(0.01)
+
+            # Z movement is driven by manual steppers via macro state; wait until reported state converges.
+            if z_move_requested:
+                timeout_s = 5.0
+                deadline = time.time() + timeout_s
+                while time.time() < deadline:
+                    self.refresh_position()
+                    z1_ok = (move.z1 is None) or (self.position.z1 is not None and abs(self.position.z1 - move.z1) <= 1e-3)
+                    z2_ok = (move.z2 is None) or (self.position.z2 is not None and abs(self.position.z2 - move.z2) <= 1e-3)
+                    if z1_ok and z2_ok:
+                        break
+                    time.sleep(0.01)
+
             if verify_mov:
                 self.refresh_position()
                 desired = Position()
@@ -80,6 +96,7 @@ class ToolController:
                 if self.position != desired:
                     print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
                     return False
+            return True
         else:
             return True # Don't verify position for relative moves
     

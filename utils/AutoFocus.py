@@ -42,12 +42,14 @@ class Autofocus:
         try:
             # Start stepping through heights
             for position in reversed(positions):
-                tool_handle.move(position, verify_mov=False)
+                tool_handle.move(position, verify_mov=True)
                 frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
                 if frame is None:
-                    raise RuntimeError(f"No camera frame received at z={position.z1:.3f}mm within timeout.")
+                    z_target = position.z1 if carriage == 1 else position.z2
+                    raise RuntimeError(f"No camera frame received at z={z_target:.3f}mm within timeout.")
                 focus_val = Autofocus.get_sharpness_tenengrad(frame.image_bgr)
-                focus_dict[float(position.z1)] = float(focus_val)
+                z_key = position.z1 if carriage == 1 else position.z2
+                focus_dict[float(z_key)] = float(focus_val)
 
             # Extract best
             max_focus_val = max(focus_dict.values())
