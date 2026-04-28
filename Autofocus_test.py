@@ -21,27 +21,27 @@ if __name__ == "__main__":
     cam_handle_2= CameraControl(CAM_ID_2)
     cam_handle_2.start()
 
-    Autofocus.fast_autofocus(
-        tool_handle=tool_handle, 
-        cam_handle=cam_handle_1,
-        carriage=1,
-        high             =HIGH, 
-        low              =LOW, 
-        broad_pass_step  =BROAD_STEP, 
-        fine_pass_step   =FINE_STEP, 
-        finer_pass_step  =FINER_STEP
-    )
-
     # Autofocus.fast_autofocus(
     #     tool_handle=tool_handle, 
-    #     cam_handle=cam_handle_2,
-    #     carriage=2,
+    #     cam_handle=cam_handle_1,
+    #     carriage=1,
     #     high             =HIGH, 
     #     low              =LOW, 
     #     broad_pass_step  =BROAD_STEP, 
     #     fine_pass_step   =FINE_STEP, 
     #     finer_pass_step  =FINER_STEP
     # )
+
+    Autofocus.fast_autofocus(
+        tool_handle=tool_handle, 
+        cam_handle=cam_handle_2,
+        carriage=2,
+        high             =HIGH, 
+        low              =LOW, 
+        broad_pass_step  =BROAD_STEP, 
+        fine_pass_step   =FINE_STEP, 
+        finer_pass_step  =FINER_STEP
+    )
 
     cam_handle_1.stop()
     cam_handle_2.stop()
