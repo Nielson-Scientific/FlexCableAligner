@@ -42,7 +42,9 @@ class ToolController:
     
     def move(self, move: Position, absolute=True, blocking=True, verify_mov = True):
         move_t0 = time.perf_counter()
+        xy_move_requested = any(v is not None for v in (move.x1, move.y1, move.x2, move.y2))
         z_move_requested = move.z1 is not None or move.z2 is not None
+        z_only_move = z_move_requested and not xy_move_requested
         if not absolute:
             move = Position(
                 x1=move.x1 + self.position.x1 if move.x1 is not None else None,
@@ -92,13 +94,16 @@ class ToolController:
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] wait_for_moves took {(time.perf_counter() - t_wait)*1000:.1f} ms")
 
-            t_vel = time.perf_counter()
-            vel_checks = 0
-            while self.ws_wrapper.is_toolhead_moving():
-                vel_checks += 1
-                time.sleep(0.01)
-            if PROFILE_MOVE:
-                self._profile_log(f"[MOVE PROFILE] velocity settle loop took {(time.perf_counter() - t_vel)*1000:.1f} ms ({vel_checks} checks)")
+            if not z_only_move:
+                t_vel = time.perf_counter()
+                vel_checks = 0
+                while self.ws_wrapper.is_toolhead_moving():
+                    vel_checks += 1
+                    time.sleep(0.01)
+                if PROFILE_MOVE:
+                    self._profile_log(f"[MOVE PROFILE] velocity settle loop took {(time.perf_counter() - t_vel)*1000:.1f} ms ({vel_checks} checks)")
+            elif PROFILE_MOVE:
+                self._profile_log("[MOVE PROFILE] velocity settle loop skipped for z-only move")
 
             # Z movement is driven by manual steppers via macro state; wait until reported state converges.
             if z_move_requested:
@@ -108,10 +113,15 @@ class ToolController:
                 z_checks = 0
                 while time.time() < deadline:
                     z_checks += 1
-                    self.refresh_position()
-                    z1_ok = (move.z1 is None) or (self.position.z1 is not None and abs(self.position.z1 - move.z1) <= 1e-3)
-                    z2_ok = (move.z2 is None) or (self.position.z2 is not None and abs(self.position.z2 - move.z2) <= 1e-3)
+                    z1_actual = self.ws_wrapper.get_z_position(1) if move.z1 is not None else None
+                    z2_actual = self.ws_wrapper.get_z_position(2) if move.z2 is not None else None
+                    z1_ok = (move.z1 is None) or (z1_actual is not None and abs(z1_actual - move.z1) <= 1e-3)
+                    z2_ok = (move.z2 is None) or (z2_actual is not None and abs(z2_actual - move.z2) <= 1e-3)
                     if z1_ok and z2_ok:
+                        if move.z1 is not None:
+                            self.position.z1 = z1_actual
+                        if move.z2 is not None:
+                            self.position.z2 = z2_actual
                         break
                     time.sleep(0.01)
                 if PROFILE_MOVE:
@@ -119,17 +129,26 @@ class ToolController:
 
             if verify_mov:
                 t_verify = time.perf_counter()
-                self.refresh_position()
-                desired = Position()
-                desired.x1 = move.x1 if move.x1 is not None else self.position.x1
-                desired.y1 = move.y1 if move.y1 is not None else self.position.y1
-                desired.z1 = move.z1 if move.z1 is not None else self.position.z1
-                desired.x2 = move.x2 if move.x2 is not None else self.position.x2
-                desired.y2 = move.y2 if move.y2 is not None else self.position.y2
-                desired.z2 = move.z2 if move.z2 is not None else self.position.z2
-                if self.position != desired:
-                    print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
-                    return False
+                if z_only_move:
+                    z1_actual = self.ws_wrapper.get_z_position(1) if move.z1 is not None else None
+                    z2_actual = self.ws_wrapper.get_z_position(2) if move.z2 is not None else None
+                    z1_ok = (move.z1 is None) or (z1_actual is not None and abs(z1_actual - move.z1) <= 1e-3)
+                    z2_ok = (move.z2 is None) or (z2_actual is not None and abs(z2_actual - move.z2) <= 1e-3)
+                    if not (z1_ok and z2_ok):
+                        print(f"Warning: Z mismatch after move. Expected: {move}, Actual Z1={z1_actual} Z2={z2_actual}")
+                        return False
+                else:
+                    self.refresh_position()
+                    desired = Position()
+                    desired.x1 = move.x1 if move.x1 is not None else self.position.x1
+                    desired.y1 = move.y1 if move.y1 is not None else self.position.y1
+                    desired.z1 = move.z1 if move.z1 is not None else self.position.z1
+                    desired.x2 = move.x2 if move.x2 is not None else self.position.x2
+                    desired.y2 = move.y2 if move.y2 is not None else self.position.y2
+                    desired.z2 = move.z2 if move.z2 is not None else self.position.z2
+                    if self.position != desired:
+                        print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
+                        return False
                 if PROFILE_MOVE:
                     self._profile_log(f"[MOVE PROFILE] verify_mov took {(time.perf_counter() - t_verify)*1000:.1f} ms")
             if PROFILE_MOVE:
