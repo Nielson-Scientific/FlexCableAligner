@@ -2,7 +2,7 @@ from Wrappers.WebSocketWrapper import WebSocketWrapper
 from PositionSchema import Position
 import time
 
-FEEDRATE = 9000
+FEEDRATE = 3000
 DEF_URL = "ws://10.34.243.54:7125/websocket"
 
 class ToolController:

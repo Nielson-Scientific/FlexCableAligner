@@ -12,10 +12,14 @@ FINER_STEP = 0.001
 if __name__ == "__main__":
     print('Creating Toolhandling instance')
     tool_handle = ToolController()
+    tool_handle.home()
+
     print('Creating CameraControl instance 1')
     cam_handle_1 = CameraControl(CAM_ID_1)
+    cam_handle_1.start()
     print('Creating CameraControl instance 2')
     cam_handle_2= CameraControl(CAM_ID_2)
+    cam_handle_2.start()
 
     Autofocus.fast_autofocus(
         tool_handle=tool_handle, 
@@ -38,3 +42,6 @@ if __name__ == "__main__":
         fine_pass_step   =FINE_STEP, 
         finer_pass_step  =FINER_STEP
     )
+
+    cam_handle_1.stop()
+    cam_handle_2.stop()

@@ -59,7 +59,7 @@ class WebSocketWrapper:
         }
 
         data = self.ws.send_and_wait_for(json.dumps(subscribe_req), 2, 10)
-
+        print(f"Received Z axis state data: {data}")
         state = data.get('result').get('status').get('gcode_macro _Z_AXIS_STATE')
 
         z1 = state.get('pos_1')

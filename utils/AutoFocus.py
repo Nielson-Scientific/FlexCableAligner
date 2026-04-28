@@ -13,16 +13,16 @@ class Autofocus:
     @staticmethod
     def fast_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None):
         print(f"Beginning Fast AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
-        broad_best = Autofocus.autofocus(cam_handle, tool_handle, high, low, broad_pass_step)
+        broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step)
         fine_high = broad_best + broad_pass_step
         fine_low = broad_best - broad_pass_step
-        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=True, camera_in=cam_handle, tool_handle=tool_handle)
+        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=True)
         if finer_pass_step is None:
             best = fine_best
         else:
             finer_high = fine_best + fine_pass_step
             finer_low = fine_best - fine_pass_step
-            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=True, camera_in=cam_handle, tool_handle=tool_handle)        
+            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=True)        
         return best
 
 
