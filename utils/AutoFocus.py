@@ -42,7 +42,7 @@ class Autofocus:
         try:
             # Start stepping through heights
             for position in reversed(positions):
-                tool_handle.move(position, verify_mov=True)
+                tool_handle.move(position, verify_mov=False)
                 frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
                 if frame is None:
                     z_target = position.z1 if carriage == 1 else position.z2

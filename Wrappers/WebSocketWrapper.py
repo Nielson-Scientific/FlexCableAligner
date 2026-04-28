@@ -48,6 +48,10 @@ class WebSocketWrapper:
             print("Invalid carriage number. Must be 1 or 2.")
             return
 
+        if carriage_number == self.selected_carriage:
+            self._log_timing("select_carriage", 0.0, f"{self.selected_carriage} -> {carriage_number} (skipped)")
+            return
+
         t0 = time.perf_counter()
         prev = self.selected_carriage
         self.selected_carriage = carriage_number
@@ -128,6 +132,15 @@ class WebSocketWrapper:
 
         self._log_timing("get_z_positions", time.perf_counter() - t0, f"z1={z1}, z2={z2}")
         return [z1, z2, z3, z4]
+
+    def get_z_position(self, axis):
+        if axis not in (1, 2, 3, 4):
+            raise ValueError("axis must be 1, 2, 3, or 4")
+        t0 = time.perf_counter()
+        z_vals = self.get_z_positions()
+        z_val = z_vals[axis - 1]
+        self._log_timing("get_z_position", time.perf_counter() - t0, f"axis={axis}, z={z_val}")
+        return z_val
 
     def get_position(self):
         t0 = time.perf_counter()
