@@ -2,8 +2,8 @@ from utils.AutoFocus import Autofocus
 from Controllers.ToolController import ToolController
 from Controllers.CameraControl import CameraControl, CAM_ID_1, CAM_ID_2
 
-HIGH = 11
-LOW = 10
+HIGH = 16
+LOW = 8
 BROAD_STEP = 0.1
 FINE_STEP = 0.01
 FINER_STEP = 0.001
