@@ -3,6 +3,7 @@ from PositionSchema import Position
 import time
 
 FEEDRATE = 9000
+DEF_URL = "ws://10.34.243.54:7125/websocket"
 
 class ToolController:
     def __init__(self, ws_url):
