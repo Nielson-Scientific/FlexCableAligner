@@ -1,9 +1,12 @@
 import json
 import time
+from pathlib import Path
 from PositionSchema import Position
 from Wrappers.WebSocketClient import WebSocketClient
 
 PROFILE_WS = True
+PROFILE_LOG_TO_CONSOLE = True
+PROFILE_LOG_PATH = Path("logs/motion_profile.log")
 
 class WebSocketWrapper:
     def __init__(self, url):
@@ -21,7 +24,16 @@ class WebSocketWrapper:
     def _log_timing(self, label, elapsed_s, extra=""):
         if PROFILE_WS:
             suffix = f" | {extra}" if extra else ""
-            print(f"[WS PROFILE] {label}: {elapsed_s*1000:.1f} ms{suffix}")
+            msg = f"[WS PROFILE] {label}: {elapsed_s*1000:.1f} ms{suffix}"
+            if PROFILE_LOG_TO_CONSOLE:
+                print(msg)
+            self._append_profile_log(msg)
+
+    def _append_profile_log(self, msg):
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        PROFILE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with PROFILE_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(f"{ts} {msg}\n")
 
     def connect(self):
         try:

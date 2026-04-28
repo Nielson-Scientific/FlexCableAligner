@@ -1,10 +1,13 @@
 from Wrappers.WebSocketWrapper import WebSocketWrapper
 from PositionSchema import Position
 import time
+from pathlib import Path
 
 FEEDRATE = 3000
 DEF_URL = "ws://10.34.243.54:7125/websocket"
 PROFILE_MOVE = True
+PROFILE_LOG_TO_CONSOLE = True
+PROFILE_LOG_PATH = Path("logs/motion_profile.log")
 
 class ToolController:
     def __init__(self, ws_url = DEF_URL):
@@ -17,6 +20,14 @@ class ToolController:
 
     def wait_for(self, seconds):
         time.sleep(seconds)
+
+    def _profile_log(self, msg):
+        if PROFILE_LOG_TO_CONSOLE:
+            print(msg)
+        ts = time.strftime("%Y-%m-%d %H:%M:%S")
+        PROFILE_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with PROFILE_LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(f"{ts} {msg}\n")
 
     def get_position(self):
         return self.position
@@ -55,7 +66,7 @@ class ToolController:
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] queue carriage1 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
+                self._profile_log(f"[MOVE PROFILE] queue carriage1 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
 
         if move.x2 is not None or move.y2 is not None or move.z2 is not None:
             t0 = time.perf_counter()
@@ -70,7 +81,7 @@ class ToolController:
             gcode += f" F={FEEDRATE}"
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] queue carriage2 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
+                self._profile_log(f"[MOVE PROFILE] queue carriage2 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
 
         print(f"Sent move command: {move} (absolute={absolute})")
 
@@ -79,7 +90,7 @@ class ToolController:
             t_wait = time.perf_counter()
             self.ws_wrapper.wait_for_moves()
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] wait_for_moves took {(time.perf_counter() - t_wait)*1000:.1f} ms")
+                self._profile_log(f"[MOVE PROFILE] wait_for_moves took {(time.perf_counter() - t_wait)*1000:.1f} ms")
 
             t_vel = time.perf_counter()
             vel_checks = 0
@@ -87,7 +98,7 @@ class ToolController:
                 vel_checks += 1
                 time.sleep(0.01)
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] velocity settle loop took {(time.perf_counter() - t_vel)*1000:.1f} ms ({vel_checks} checks)")
+                self._profile_log(f"[MOVE PROFILE] velocity settle loop took {(time.perf_counter() - t_vel)*1000:.1f} ms ({vel_checks} checks)")
 
             # Z movement is driven by manual steppers via macro state; wait until reported state converges.
             if z_move_requested:
@@ -104,7 +115,7 @@ class ToolController:
                         break
                     time.sleep(0.01)
                 if PROFILE_MOVE:
-                    print(f"[MOVE PROFILE] z convergence loop took {(time.perf_counter() - t_z)*1000:.1f} ms ({z_checks} checks)")
+                    self._profile_log(f"[MOVE PROFILE] z convergence loop took {(time.perf_counter() - t_z)*1000:.1f} ms ({z_checks} checks)")
 
             if verify_mov:
                 t_verify = time.perf_counter()
@@ -120,13 +131,13 @@ class ToolController:
                     print(f"Warning: Position mismatch after move. Expected: {move}, Actual: {self.position}")
                     return False
                 if PROFILE_MOVE:
-                    print(f"[MOVE PROFILE] verify_mov took {(time.perf_counter() - t_verify)*1000:.1f} ms")
+                    self._profile_log(f"[MOVE PROFILE] verify_mov took {(time.perf_counter() - t_verify)*1000:.1f} ms")
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] total move() time {(time.perf_counter() - move_t0)*1000:.1f} ms")
+                self._profile_log(f"[MOVE PROFILE] total move() time {(time.perf_counter() - move_t0)*1000:.1f} ms")
             return True
         else:
             if PROFILE_MOVE:
-                print(f"[MOVE PROFILE] non-blocking move() queued in {(time.perf_counter() - move_t0)*1000:.1f} ms")
+                self._profile_log(f"[MOVE PROFILE] non-blocking move() queued in {(time.perf_counter() - move_t0)*1000:.1f} ms")
             return True # Don't verify position for relative moves
     
     def home(self):
