@@ -11,7 +11,7 @@ from PositionSchema import Position
 
 class Autofocus:
     @staticmethod
-    def fast_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None):
+    def broad_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None):
         print(f"Beginning Fast AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
         broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step)
         fine_high = broad_best + broad_pass_step
