@@ -11,18 +11,18 @@ from PositionSchema import Position
 
 class Autofocus:
     @staticmethod
-    def broad_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None):
+    def fast_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None, show_plots = False):
         print(f"Beginning Fast AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
-        broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step)
+        broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step, show_plot = show_plots)
         fine_high = broad_best + broad_pass_step
         fine_low = broad_best - broad_pass_step
-        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=True)
+        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=show_plots)
         if finer_pass_step is None:
             best = fine_best
         else:
             finer_high = fine_best + fine_pass_step
             finer_low = fine_best - fine_pass_step
-            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=True)        
+            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=show_plots)        
         return best
 
 
@@ -43,7 +43,9 @@ class Autofocus:
             # Start stepping through heights
             for position in reversed(positions):
                 tool_handle.move(position, verify_mov=False)
+                time.sleep(0.5)
                 frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
+                time.sleep(0.5)
                 if frame is None:
                     z_target = position.z1 if carriage == 1 else position.z2
                     raise RuntimeError(f"No camera frame received at z={z_target:.3f}mm within timeout.")

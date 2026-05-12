@@ -3,9 +3,9 @@ from Controllers.ToolController import ToolController
 from Controllers.CameraControl import CameraControl, CAM_ID_1, CAM_ID_2
 from PositionSchema import Position
 
-HIGH = 20
+HIGH = 16
 LOW = 10
-BROAD_STEP = 0.1
+BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
 
@@ -26,7 +26,10 @@ if __name__ == "__main__":
     cam_handle_2= CameraControl(CAM_ID_2)
     cam_handle_2.start()
 
-    pos = Position(X_1, Y_1)
+    pos = Position(
+        x1 = X_1,
+        y1 = Y_1
+    )
     tool_handle.move(pos)
     
     Autofocus.fast_autofocus(
