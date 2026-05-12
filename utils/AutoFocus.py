@@ -3,8 +3,6 @@ import numpy as np
 import time
 from datetime import datetime
 from pathlib import Path
-from Controllers.CameraControl import CameraControl
-from Controllers.ToolController import ToolController
 from PositionSchema import Position
 
 # Perhaps it would be best to move this insdie of the Camera Control class.
@@ -13,67 +11,45 @@ from PositionSchema import Position
 
 class Autofocus:
     @staticmethod
-    def fast_autofocus(high, low, broad_pass_step = 0.1, fine_pass_step = 0.01, finer_pass_step = None):
-        print(f"Beginning Fast AutoFocus Test, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
-        print('Creating CameraControl instance')
-        cam_control = CameraControl("DEV_1AB22C071903")
-        print('CameraControl instance created')
-        print('Starting camera feed')
-        cam_control.start()
-        
-        broad_best = Autofocus.autofocus(high, low, broad_pass_step, camera_in=cam_control)
+    def broad_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None):
+        print(f"Beginning Fast AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
+        broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step)
         fine_high = broad_best + broad_pass_step
         fine_low = broad_best - broad_pass_step
-        fine_best = Autofocus.autofocus(fine_high, fine_low, fine_pass_step, show_plot=True, camera_in=cam_control)
+        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=True)
         if finer_pass_step is None:
             best = fine_best
         else:
             finer_high = fine_best + fine_pass_step
             finer_low = fine_best - fine_pass_step
-            best =  Autofocus.autofocus(finer_high, finer_low, finer_pass_step, show_plot=True, camera_in=cam_control)
-        
-        cam_control.stop()
+            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=True)        
         return best
 
 
 
     @staticmethod
-    def autofocus(high, low, step_size, show_plot = False, camera_in = None):
-
-        print(f"Beginning AutoFocus Test, High = {high}, Low = {low}, Step Size = {step_size}")
-
-        # Instantiate Camera Control
-        if camera_in is None:
-            print('Creating CameraControl instance')
-            cam_control = CameraControl("DEV_1AB22C071903")
-            print('CameraControl instance created')
-        else:
-            cam_control = camera_in
-
-        # Initialize data for loop
+    def autofocus(cam_handle, tool_handle, carriage, high, low, step_size, show_plot = False ):
+        print(f"Beginning AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Step Size = {step_size}")        # Initialize data for loop
         focus_dict = {}
         heights = Autofocus.generate_heights(high, low, step_size)
-        positions = [Position(z1 = h) for h in heights]
+        if carriage == 1:
+            positions = [Position(z1 = h) for h in heights]
+        else:
+            positions = [Position(z2 = h) for h in heights]
         optimal_height = None
 
-        # Instantiate Movement and get Position
-        TOOL_CTRL_URL = "ws://10.34.243.54:7125/websocket"
-        tool_controller = ToolController(TOOL_CTRL_URL)
-
         # Start Camera Feed
-        
-        if camera_in is None:
-            print('Starting camera feed') 
-            cam_control.start()
         try:
             # Start stepping through heights
             for position in reversed(positions):
-                tool_controller.move(position, verify_mov=False)
-                frame = Autofocus.wait_for_fresh_frame(cam_control, timeout_s=2.0)
+                tool_handle.move(position, verify_mov=False)
+                frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
                 if frame is None:
-                    raise RuntimeError(f"No camera frame received at z={position.z1:.3f}mm within timeout.")
+                    z_target = position.z1 if carriage == 1 else position.z2
+                    raise RuntimeError(f"No camera frame received at z={z_target:.3f}mm within timeout.")
                 focus_val = Autofocus.get_sharpness_tenengrad(frame.image_bgr)
-                focus_dict[float(position.z1)] = float(focus_val)
+                z_key = position.z1 if carriage == 1 else position.z2
+                focus_dict[float(z_key)] = float(focus_val)
 
             # Extract best
             max_focus_val = max(focus_dict.values())
@@ -81,12 +57,11 @@ class Autofocus:
             print(f"Best focus {max_focus_val:.3f} at z={optimal_height:.3f}")
 
             # Go to best
-            tool_controller.move(Position(z1 = optimal_height))
-
+            if carriage == 1:
+                tool_handle.move(Position(z1 = optimal_height))
+            else:
+                tool_handle.move(Position(z2 = optimal_height))
         finally:
-            # Stop Camera Stream
-            if camera_in is None: cam_control.stop()
-            # Plot Curve
             if show_plot: Autofocus.plot_focus_curve(focus_dict)
         return optimal_height
 
@@ -105,7 +80,7 @@ class Autofocus:
         return np.arange(high, low + step, step, dtype=float)
 
     @staticmethod
-    def wait_for_fresh_frame(cam_control: CameraControl, timeout_s: float = 2.0):
+    def wait_for_fresh_frame(cam_control, timeout_s: float = 2.0):
         deadline = time.time() + timeout_s
         latest = None
         while time.time() < deadline:

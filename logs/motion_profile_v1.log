@@ -1,0 +1,1493 @@
+2026-04-28 15:20:18 [WS PROFILE] select_carriage: 0.0 ms | 1 -> 1 (skipped)
+2026-04-28 15:20:18 [WS PROFILE] send_gcode_and_wait: 10.1 ms | SET_DUAL_CARRIAGE CARRIAGE=x2
+2026-04-28 15:20:18 [WS PROFILE] send_gcode_and_wait: 7.7 ms | SET_DUAL_CARRIAGE CARRIAGE=y2
+2026-04-28 15:20:18 [WS PROFILE] select_carriage: 19.8 ms | 1 -> 2
+2026-04-28 15:20:18 [WS PROFILE] get_z_positions: 251.1 ms | z1=10.58799999999987, z2=25.0
+2026-04-28 15:20:18 [WS PROFILE] get_position: 741.9 ms | x1=711.31 y1=-13.4 z1=10.58799999999987 x2=711.31 y2=-13.4 z2=25.0
+2026-04-28 15:20:18 [WS PROFILE] send_gcode_and_wait: 12.7 ms | SET_DUAL_CARRIAGE CARRIAGE=x
+2026-04-28 15:20:18 [WS PROFILE] send_gcode_and_wait: 7.7 ms | SET_DUAL_CARRIAGE CARRIAGE=y
+2026-04-28 15:20:18 [WS PROFILE] select_carriage: 24.9 ms | 2 -> 1
+2026-04-28 15:20:18 [WS PROFILE] select_carriage: 0.0 ms | 1 -> 1 (skipped)
+2026-04-28 15:20:19 [WS PROFILE] is_toolhead_moving:get_velocity: 220.1 ms | carriage=1, v=0.0
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 8372.3 ms | SET_DUAL_CARRIAGE CARRIAGE=x2
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 6.9 ms | SET_DUAL_CARRIAGE CARRIAGE=y2
+2026-04-28 15:20:27 [WS PROFILE] select_carriage: 8382.9 ms | 1 -> 2
+2026-04-28 15:20:27 [WS PROFILE] is_toolhead_moving:get_velocity: 8520.5 ms | carriage=2, v=0.0
+2026-04-28 15:20:27 [WS PROFILE] is_toolhead_moving: 8743.1 ms | moving=False
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 9.5 ms | SET_DUAL_CARRIAGE CARRIAGE=x
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 6.3 ms | SET_DUAL_CARRIAGE CARRIAGE=y
+2026-04-28 15:20:27 [WS PROFILE] select_carriage: 17.3 ms | 2 -> 1
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 11.0 ms | SET_DUAL_CARRIAGE CARRIAGE=x2
+2026-04-28 15:20:27 [WS PROFILE] send_gcode_and_wait: 7.3 ms | SET_DUAL_CARRIAGE CARRIAGE=y2
+2026-04-28 15:20:27 [WS PROFILE] select_carriage: 22.3 ms | 1 -> 2
+2026-04-28 15:20:28 [WS PROFILE] get_z_positions: 253.8 ms | z1=25.0, z2=25.0
+2026-04-28 15:20:28 [WS PROFILE] get_position: 752.1 ms | x1=0.0 y1=0.5 z1=25.0 x2=711.31 y2=-13.4 z2=25.0
+2026-04-28 15:20:33 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:33 [MOVE PROFILE] queue carriage2 cmd took 0.7 ms
+2026-04-28 15:20:36 [WS PROFILE] send_gcode_and_wait: 3351.1 ms | M400
+2026-04-28 15:20:36 [WS PROFILE] wait_for_moves: 3352.9 ms
+2026-04-28 15:20:36 [MOVE PROFILE] wait_for_moves took 3354.5 ms
+2026-04-28 15:20:36 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:37 [WS PROFILE] get_z_positions: 142.2 ms | z1=25.0, z2=9.999999999999858
+2026-04-28 15:20:37 [WS PROFILE] get_z_position: 143.9 ms | axis=2, z=9.999999999999858
+2026-04-28 15:20:37 [MOVE PROFILE] z convergence loop took 146.2 ms (1 checks)
+2026-04-28 15:20:37 [MOVE PROFILE] total move() time 3507.3 ms
+2026-04-28 15:20:37 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:37 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:20:37 [WS PROFILE] send_gcode_and_wait: 315.6 ms | M400
+2026-04-28 15:20:37 [WS PROFILE] wait_for_moves: 317.2 ms
+2026-04-28 15:20:37 [MOVE PROFILE] wait_for_moves took 318.8 ms
+2026-04-28 15:20:37 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:37 [WS PROFILE] get_z_positions: 201.7 ms | z1=25.0, z2=10.09999999999986
+2026-04-28 15:20:37 [WS PROFILE] get_z_position: 203.5 ms | axis=2, z=10.09999999999986
+2026-04-28 15:20:37 [MOVE PROFILE] z convergence loop took 205.2 ms (1 checks)
+2026-04-28 15:20:37 [MOVE PROFILE] total move() time 529.9 ms
+2026-04-28 15:20:38 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:38 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:20:38 [WS PROFILE] send_gcode_and_wait: 315.8 ms | M400
+2026-04-28 15:20:38 [WS PROFILE] wait_for_moves: 316.5 ms
+2026-04-28 15:20:38 [MOVE PROFILE] wait_for_moves took 317.1 ms
+2026-04-28 15:20:38 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:38 [WS PROFILE] get_z_positions: 236.8 ms | z1=25.0, z2=10.19999999999986
+2026-04-28 15:20:38 [WS PROFILE] get_z_position: 238.7 ms | axis=2, z=10.19999999999986
+2026-04-28 15:20:38 [MOVE PROFILE] z convergence loop took 240.2 ms (1 checks)
+2026-04-28 15:20:38 [MOVE PROFILE] total move() time 562.4 ms
+2026-04-28 15:20:38 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:38 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:20:39 [WS PROFILE] send_gcode_and_wait: 314.9 ms | M400
+2026-04-28 15:20:39 [WS PROFILE] wait_for_moves: 317.4 ms
+2026-04-28 15:20:39 [MOVE PROFILE] wait_for_moves took 319.0 ms
+2026-04-28 15:20:39 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:39 [WS PROFILE] get_z_positions: 242.3 ms | z1=25.0, z2=10.299999999999862
+2026-04-28 15:20:39 [WS PROFILE] get_z_position: 243.9 ms | axis=2, z=10.299999999999862
+2026-04-28 15:20:39 [MOVE PROFILE] z convergence loop took 245.4 ms (1 checks)
+2026-04-28 15:20:39 [MOVE PROFILE] total move() time 570.7 ms
+2026-04-28 15:20:39 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:39 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:20:39 [WS PROFILE] send_gcode_and_wait: 317.6 ms | M400
+2026-04-28 15:20:39 [WS PROFILE] wait_for_moves: 319.2 ms
+2026-04-28 15:20:39 [MOVE PROFILE] wait_for_moves took 320.7 ms
+2026-04-28 15:20:39 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:40 [WS PROFILE] get_z_positions: 241.6 ms | z1=25.0, z2=10.399999999999864
+2026-04-28 15:20:40 [WS PROFILE] get_z_position: 242.8 ms | axis=2, z=10.399999999999864
+2026-04-28 15:20:40 [MOVE PROFILE] z convergence loop took 243.4 ms (1 checks)
+2026-04-28 15:20:40 [MOVE PROFILE] total move() time 569.4 ms
+2026-04-28 15:20:40 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:40 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:20:40 [WS PROFILE] send_gcode_and_wait: 318.5 ms | M400
+2026-04-28 15:20:40 [WS PROFILE] wait_for_moves: 319.9 ms
+2026-04-28 15:20:40 [MOVE PROFILE] wait_for_moves took 321.0 ms
+2026-04-28 15:20:40 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:40 [WS PROFILE] get_z_positions: 233.5 ms | z1=25.0, z2=10.499999999999865
+2026-04-28 15:20:40 [WS PROFILE] get_z_position: 234.9 ms | axis=2, z=10.499999999999865
+2026-04-28 15:20:40 [MOVE PROFILE] z convergence loop took 236.0 ms (1 checks)
+2026-04-28 15:20:40 [MOVE PROFILE] total move() time 561.9 ms
+2026-04-28 15:20:41 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:41 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:20:41 [WS PROFILE] send_gcode_and_wait: 317.5 ms | M400
+2026-04-28 15:20:41 [WS PROFILE] wait_for_moves: 318.7 ms
+2026-04-28 15:20:41 [MOVE PROFILE] wait_for_moves took 319.6 ms
+2026-04-28 15:20:41 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:41 [WS PROFILE] get_z_positions: 209.4 ms | z1=25.0, z2=10.599999999999866
+2026-04-28 15:20:41 [WS PROFILE] get_z_position: 211.2 ms | axis=2, z=10.599999999999866
+2026-04-28 15:20:41 [MOVE PROFILE] z convergence loop took 213.8 ms (1 checks)
+2026-04-28 15:20:41 [MOVE PROFILE] total move() time 538.7 ms
+2026-04-28 15:20:41 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:41 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:42 [WS PROFILE] send_gcode_and_wait: 316.5 ms | M400
+2026-04-28 15:20:42 [WS PROFILE] wait_for_moves: 317.3 ms
+2026-04-28 15:20:42 [MOVE PROFILE] wait_for_moves took 318.0 ms
+2026-04-28 15:20:42 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:42 [WS PROFILE] get_z_positions: 226.2 ms | z1=25.0, z2=10.699999999999868
+2026-04-28 15:20:42 [WS PROFILE] get_z_position: 228.0 ms | axis=2, z=10.699999999999868
+2026-04-28 15:20:42 [MOVE PROFILE] z convergence loop took 229.7 ms (1 checks)
+2026-04-28 15:20:42 [MOVE PROFILE] total move() time 552.3 ms
+2026-04-28 15:20:42 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:42 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:42 [WS PROFILE] send_gcode_and_wait: 320.1 ms | M400
+2026-04-28 15:20:42 [WS PROFILE] wait_for_moves: 321.7 ms
+2026-04-28 15:20:42 [MOVE PROFILE] wait_for_moves took 323.2 ms
+2026-04-28 15:20:42 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:43 [WS PROFILE] get_z_positions: 209.7 ms | z1=25.0, z2=10.79999999999987
+2026-04-28 15:20:43 [WS PROFILE] get_z_position: 211.0 ms | axis=2, z=10.79999999999987
+2026-04-28 15:20:43 [MOVE PROFILE] z convergence loop took 211.7 ms (1 checks)
+2026-04-28 15:20:43 [MOVE PROFILE] total move() time 540.3 ms
+2026-04-28 15:20:43 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:43 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:43 [WS PROFILE] send_gcode_and_wait: 315.9 ms | M400
+2026-04-28 15:20:43 [WS PROFILE] wait_for_moves: 317.7 ms
+2026-04-28 15:20:43 [MOVE PROFILE] wait_for_moves took 319.3 ms
+2026-04-28 15:20:43 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:43 [WS PROFILE] get_z_positions: 223.8 ms | z1=25.0, z2=10.89999999999987
+2026-04-28 15:20:43 [WS PROFILE] get_z_position: 225.3 ms | axis=2, z=10.89999999999987
+2026-04-28 15:20:43 [MOVE PROFILE] z convergence loop took 226.7 ms (1 checks)
+2026-04-28 15:20:43 [MOVE PROFILE] total move() time 552.7 ms
+2026-04-28 15:20:44 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:44 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:44 [WS PROFILE] send_gcode_and_wait: 316.6 ms | M400
+2026-04-28 15:20:44 [WS PROFILE] wait_for_moves: 318.3 ms
+2026-04-28 15:20:44 [MOVE PROFILE] wait_for_moves took 319.7 ms
+2026-04-28 15:20:44 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:44 [WS PROFILE] get_z_positions: 212.5 ms | z1=25.0, z2=10.999999999999872
+2026-04-28 15:20:44 [WS PROFILE] get_z_position: 214.4 ms | axis=2, z=10.999999999999872
+2026-04-28 15:20:44 [MOVE PROFILE] z convergence loop took 216.2 ms (1 checks)
+2026-04-28 15:20:44 [MOVE PROFILE] total move() time 542.4 ms
+2026-04-28 15:20:44 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:44 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:45 [WS PROFILE] send_gcode_and_wait: 319.4 ms | M400
+2026-04-28 15:20:45 [WS PROFILE] wait_for_moves: 320.2 ms
+2026-04-28 15:20:45 [MOVE PROFILE] wait_for_moves took 320.9 ms
+2026-04-28 15:20:45 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:45 [WS PROFILE] get_z_positions: 255.0 ms | z1=25.0, z2=11.099999999999874
+2026-04-28 15:20:45 [WS PROFILE] get_z_position: 256.8 ms | axis=2, z=11.099999999999874
+2026-04-28 15:20:45 [MOVE PROFILE] z convergence loop took 258.6 ms (1 checks)
+2026-04-28 15:20:45 [MOVE PROFILE] total move() time 584.1 ms
+2026-04-28 15:20:45 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:45 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:20:45 [WS PROFILE] send_gcode_and_wait: 316.8 ms | M400
+2026-04-28 15:20:45 [WS PROFILE] wait_for_moves: 318.6 ms
+2026-04-28 15:20:45 [MOVE PROFILE] wait_for_moves took 321.3 ms
+2026-04-28 15:20:45 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:46 [WS PROFILE] get_z_positions: 228.1 ms | z1=25.0, z2=11.199999999999875
+2026-04-28 15:20:46 [WS PROFILE] get_z_position: 229.0 ms | axis=2, z=11.199999999999875
+2026-04-28 15:20:46 [MOVE PROFILE] z convergence loop took 229.6 ms (1 checks)
+2026-04-28 15:20:46 [MOVE PROFILE] total move() time 556.9 ms
+2026-04-28 15:20:46 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:46 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:20:46 [WS PROFILE] send_gcode_and_wait: 317.1 ms | M400
+2026-04-28 15:20:46 [WS PROFILE] wait_for_moves: 318.9 ms
+2026-04-28 15:20:46 [MOVE PROFILE] wait_for_moves took 320.5 ms
+2026-04-28 15:20:46 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:46 [WS PROFILE] get_z_positions: 232.6 ms | z1=25.0, z2=11.299999999999876
+2026-04-28 15:20:46 [WS PROFILE] get_z_position: 234.5 ms | axis=2, z=11.299999999999876
+2026-04-28 15:20:46 [MOVE PROFILE] z convergence loop took 236.1 ms (1 checks)
+2026-04-28 15:20:46 [MOVE PROFILE] total move() time 564.0 ms
+2026-04-28 15:20:47 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:47 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:47 [WS PROFILE] send_gcode_and_wait: 316.5 ms | M400
+2026-04-28 15:20:47 [WS PROFILE] wait_for_moves: 318.1 ms
+2026-04-28 15:20:47 [MOVE PROFILE] wait_for_moves took 319.4 ms
+2026-04-28 15:20:47 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:47 [WS PROFILE] get_z_positions: 216.8 ms | z1=25.0, z2=11.399999999999878
+2026-04-28 15:20:47 [WS PROFILE] get_z_position: 218.1 ms | axis=2, z=11.399999999999878
+2026-04-28 15:20:47 [MOVE PROFILE] z convergence loop took 219.3 ms (1 checks)
+2026-04-28 15:20:47 [MOVE PROFILE] total move() time 544.6 ms
+2026-04-28 15:20:47 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:47 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:48 [WS PROFILE] send_gcode_and_wait: 315.1 ms | M400
+2026-04-28 15:20:48 [WS PROFILE] wait_for_moves: 315.9 ms
+2026-04-28 15:20:48 [MOVE PROFILE] wait_for_moves took 316.4 ms
+2026-04-28 15:20:48 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:48 [WS PROFILE] get_z_positions: 246.4 ms | z1=25.0, z2=11.49999999999988
+2026-04-28 15:20:48 [WS PROFILE] get_z_position: 248.2 ms | axis=2, z=11.49999999999988
+2026-04-28 15:20:48 [MOVE PROFILE] z convergence loop took 249.7 ms (1 checks)
+2026-04-28 15:20:48 [MOVE PROFILE] total move() time 570.7 ms
+2026-04-28 15:20:48 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:48 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:48 [WS PROFILE] send_gcode_and_wait: 317.8 ms | M400
+2026-04-28 15:20:48 [WS PROFILE] wait_for_moves: 319.6 ms
+2026-04-28 15:20:48 [MOVE PROFILE] wait_for_moves took 321.3 ms
+2026-04-28 15:20:48 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:49 [WS PROFILE] get_z_positions: 234.2 ms | z1=25.0, z2=11.59999999999988
+2026-04-28 15:20:49 [WS PROFILE] get_z_position: 235.0 ms | axis=2, z=11.59999999999988
+2026-04-28 15:20:49 [MOVE PROFILE] z convergence loop took 235.7 ms (1 checks)
+2026-04-28 15:20:49 [MOVE PROFILE] total move() time 563.9 ms
+2026-04-28 15:20:49 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:49 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:49 [WS PROFILE] send_gcode_and_wait: 313.5 ms | M400
+2026-04-28 15:20:49 [WS PROFILE] wait_for_moves: 315.0 ms
+2026-04-28 15:20:49 [MOVE PROFILE] wait_for_moves took 316.5 ms
+2026-04-28 15:20:49 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:49 [WS PROFILE] get_z_positions: 244.5 ms | z1=25.0, z2=11.699999999999882
+2026-04-28 15:20:49 [WS PROFILE] get_z_position: 246.1 ms | axis=2, z=11.699999999999882
+2026-04-28 15:20:49 [MOVE PROFILE] z convergence loop took 247.5 ms (1 checks)
+2026-04-28 15:20:49 [MOVE PROFILE] total move() time 570.0 ms
+2026-04-28 15:20:50 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:50 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:20:50 [WS PROFILE] send_gcode_and_wait: 317.5 ms | M400
+2026-04-28 15:20:50 [WS PROFILE] wait_for_moves: 319.3 ms
+2026-04-28 15:20:50 [MOVE PROFILE] wait_for_moves took 321.0 ms
+2026-04-28 15:20:50 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:50 [WS PROFILE] get_z_positions: 204.1 ms | z1=25.0, z2=11.799999999999883
+2026-04-28 15:20:50 [WS PROFILE] get_z_position: 204.7 ms | axis=2, z=11.799999999999883
+2026-04-28 15:20:50 [MOVE PROFILE] z convergence loop took 205.3 ms (1 checks)
+2026-04-28 15:20:50 [MOVE PROFILE] total move() time 532.5 ms
+2026-04-28 15:20:50 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:50 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:20:51 [WS PROFILE] send_gcode_and_wait: 316.3 ms | M400
+2026-04-28 15:20:51 [WS PROFILE] wait_for_moves: 317.2 ms
+2026-04-28 15:20:51 [MOVE PROFILE] wait_for_moves took 317.9 ms
+2026-04-28 15:20:51 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:51 [WS PROFILE] get_z_positions: 237.8 ms | z1=25.0, z2=11.899999999999885
+2026-04-28 15:20:51 [WS PROFILE] get_z_position: 239.6 ms | axis=2, z=11.899999999999885
+2026-04-28 15:20:51 [MOVE PROFILE] z convergence loop took 241.1 ms (1 checks)
+2026-04-28 15:20:51 [MOVE PROFILE] total move() time 563.8 ms
+2026-04-28 15:20:51 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:51 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:20:51 [WS PROFILE] send_gcode_and_wait: 314.2 ms | M400
+2026-04-28 15:20:51 [WS PROFILE] wait_for_moves: 316.0 ms
+2026-04-28 15:20:51 [MOVE PROFILE] wait_for_moves took 317.8 ms
+2026-04-28 15:20:51 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:52 [WS PROFILE] get_z_positions: 243.1 ms | z1=25.0, z2=11.999999999999886
+2026-04-28 15:20:52 [WS PROFILE] get_z_position: 244.0 ms | axis=2, z=11.999999999999886
+2026-04-28 15:20:52 [MOVE PROFILE] z convergence loop took 244.7 ms (1 checks)
+2026-04-28 15:20:52 [MOVE PROFILE] total move() time 568.1 ms
+2026-04-28 15:20:52 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:52 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:52 [WS PROFILE] send_gcode_and_wait: 316.3 ms | M400
+2026-04-28 15:20:52 [WS PROFILE] wait_for_moves: 318.1 ms
+2026-04-28 15:20:52 [MOVE PROFILE] wait_for_moves took 320.5 ms
+2026-04-28 15:20:52 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:52 [WS PROFILE] get_z_positions: 230.9 ms | z1=25.0, z2=12.099999999999888
+2026-04-28 15:20:52 [WS PROFILE] get_z_position: 232.7 ms | axis=2, z=12.099999999999888
+2026-04-28 15:20:52 [MOVE PROFILE] z convergence loop took 234.4 ms (1 checks)
+2026-04-28 15:20:52 [MOVE PROFILE] total move() time 561.5 ms
+2026-04-28 15:20:53 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:53 [MOVE PROFILE] queue carriage2 cmd took 1.6 ms
+2026-04-28 15:20:53 [WS PROFILE] send_gcode_and_wait: 316.1 ms | M400
+2026-04-28 15:20:53 [WS PROFILE] wait_for_moves: 318.0 ms
+2026-04-28 15:20:53 [MOVE PROFILE] wait_for_moves took 319.7 ms
+2026-04-28 15:20:53 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:53 [WS PROFILE] get_z_positions: 208.8 ms | z1=25.0, z2=12.19999999999989
+2026-04-28 15:20:53 [WS PROFILE] get_z_position: 209.7 ms | axis=2, z=12.19999999999989
+2026-04-28 15:20:53 [MOVE PROFILE] z convergence loop took 210.5 ms (1 checks)
+2026-04-28 15:20:53 [MOVE PROFILE] total move() time 536.6 ms
+2026-04-28 15:20:53 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:53 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:20:54 [WS PROFILE] send_gcode_and_wait: 313.6 ms | M400
+2026-04-28 15:20:54 [WS PROFILE] wait_for_moves: 314.5 ms
+2026-04-28 15:20:54 [MOVE PROFILE] wait_for_moves took 315.1 ms
+2026-04-28 15:20:54 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:54 [WS PROFILE] get_z_positions: 238.6 ms | z1=25.0, z2=12.29999999999989
+2026-04-28 15:20:54 [WS PROFILE] get_z_position: 240.4 ms | axis=2, z=12.29999999999989
+2026-04-28 15:20:54 [MOVE PROFILE] z convergence loop took 242.1 ms (1 checks)
+2026-04-28 15:20:54 [MOVE PROFILE] total move() time 561.7 ms
+2026-04-28 15:20:54 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:54 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:54 [WS PROFILE] send_gcode_and_wait: 317.0 ms | M400
+2026-04-28 15:20:54 [WS PROFILE] wait_for_moves: 318.5 ms
+2026-04-28 15:20:54 [MOVE PROFILE] wait_for_moves took 320.0 ms
+2026-04-28 15:20:54 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:55 [WS PROFILE] get_z_positions: 225.5 ms | z1=25.0, z2=12.399999999999892
+2026-04-28 15:20:55 [WS PROFILE] get_z_position: 226.3 ms | axis=2, z=12.399999999999892
+2026-04-28 15:20:55 [MOVE PROFILE] z convergence loop took 227.0 ms (1 checks)
+2026-04-28 15:20:55 [MOVE PROFILE] total move() time 551.9 ms
+2026-04-28 15:20:55 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:55 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:20:55 [WS PROFILE] send_gcode_and_wait: 316.9 ms | M400
+2026-04-28 15:20:55 [WS PROFILE] wait_for_moves: 318.7 ms
+2026-04-28 15:20:55 [MOVE PROFILE] wait_for_moves took 320.3 ms
+2026-04-28 15:20:55 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:55 [WS PROFILE] get_z_positions: 234.6 ms | z1=25.0, z2=12.499999999999893
+2026-04-28 15:20:55 [WS PROFILE] get_z_position: 236.0 ms | axis=2, z=12.499999999999893
+2026-04-28 15:20:55 [MOVE PROFILE] z convergence loop took 237.2 ms (1 checks)
+2026-04-28 15:20:55 [MOVE PROFILE] total move() time 564.0 ms
+2026-04-28 15:20:56 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:56 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:56 [WS PROFILE] send_gcode_and_wait: 317.0 ms | M400
+2026-04-28 15:20:56 [WS PROFILE] wait_for_moves: 318.5 ms
+2026-04-28 15:20:56 [MOVE PROFILE] wait_for_moves took 319.9 ms
+2026-04-28 15:20:56 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:56 [WS PROFILE] get_z_positions: 203.2 ms | z1=25.0, z2=12.599999999999895
+2026-04-28 15:20:56 [WS PROFILE] get_z_position: 205.0 ms | axis=2, z=12.599999999999895
+2026-04-28 15:20:56 [MOVE PROFILE] z convergence loop took 206.7 ms (1 checks)
+2026-04-28 15:20:56 [MOVE PROFILE] total move() time 532.3 ms
+2026-04-28 15:20:56 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:56 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:57 [WS PROFILE] send_gcode_and_wait: 316.3 ms | M400
+2026-04-28 15:20:57 [WS PROFILE] wait_for_moves: 317.1 ms
+2026-04-28 15:20:57 [MOVE PROFILE] wait_for_moves took 317.6 ms
+2026-04-28 15:20:57 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:57 [WS PROFILE] get_z_positions: 226.5 ms | z1=25.0, z2=12.699999999999896
+2026-04-28 15:20:57 [WS PROFILE] get_z_position: 228.4 ms | axis=2, z=12.699999999999896
+2026-04-28 15:20:57 [MOVE PROFILE] z convergence loop took 230.1 ms (1 checks)
+2026-04-28 15:20:57 [MOVE PROFILE] total move() time 552.1 ms
+2026-04-28 15:20:57 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:57 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:20:57 [WS PROFILE] send_gcode_and_wait: 320.4 ms | M400
+2026-04-28 15:20:57 [WS PROFILE] wait_for_moves: 322.2 ms
+2026-04-28 15:20:57 [MOVE PROFILE] wait_for_moves took 324.0 ms
+2026-04-28 15:20:57 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:58 [WS PROFILE] get_z_positions: 253.8 ms | z1=25.0, z2=12.799999999999898
+2026-04-28 15:20:58 [WS PROFILE] get_z_position: 254.5 ms | axis=2, z=12.799999999999898
+2026-04-28 15:20:58 [MOVE PROFILE] z convergence loop took 255.1 ms (1 checks)
+2026-04-28 15:20:58 [MOVE PROFILE] total move() time 585.6 ms
+2026-04-28 15:20:58 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:58 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:58 [WS PROFILE] send_gcode_and_wait: 321.1 ms | M400
+2026-04-28 15:20:58 [WS PROFILE] wait_for_moves: 324.0 ms
+2026-04-28 15:20:58 [MOVE PROFILE] wait_for_moves took 325.8 ms
+2026-04-28 15:20:58 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:58 [WS PROFILE] get_z_positions: 249.4 ms | z1=25.0, z2=12.899999999999899
+2026-04-28 15:20:58 [WS PROFILE] get_z_position: 251.2 ms | axis=2, z=12.899999999999899
+2026-04-28 15:20:58 [MOVE PROFILE] z convergence loop took 252.8 ms (1 checks)
+2026-04-28 15:20:58 [MOVE PROFILE] total move() time 585.9 ms
+2026-04-28 15:20:59 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:59 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:20:59 [WS PROFILE] send_gcode_and_wait: 316.4 ms | M400
+2026-04-28 15:20:59 [WS PROFILE] wait_for_moves: 318.1 ms
+2026-04-28 15:20:59 [MOVE PROFILE] wait_for_moves took 319.8 ms
+2026-04-28 15:20:59 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:20:59 [WS PROFILE] get_z_positions: 233.3 ms | z1=25.0, z2=12.9999999999999
+2026-04-28 15:20:59 [WS PROFILE] get_z_position: 234.3 ms | axis=2, z=12.9999999999999
+2026-04-28 15:20:59 [MOVE PROFILE] z convergence loop took 235.1 ms (1 checks)
+2026-04-28 15:20:59 [MOVE PROFILE] total move() time 561.8 ms
+2026-04-28 15:20:59 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:20:59 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:00 [WS PROFILE] send_gcode_and_wait: 316.3 ms | M400
+2026-04-28 15:21:00 [WS PROFILE] wait_for_moves: 316.9 ms
+2026-04-28 15:21:00 [MOVE PROFILE] wait_for_moves took 317.7 ms
+2026-04-28 15:21:00 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:00 [WS PROFILE] get_z_positions: 226.4 ms | z1=25.0, z2=13.099999999999902
+2026-04-28 15:21:00 [WS PROFILE] get_z_position: 228.2 ms | axis=2, z=13.099999999999902
+2026-04-28 15:21:00 [MOVE PROFILE] z convergence loop took 229.9 ms (1 checks)
+2026-04-28 15:21:00 [MOVE PROFILE] total move() time 552.3 ms
+2026-04-28 15:21:00 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:00 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:00 [WS PROFILE] send_gcode_and_wait: 319.6 ms | M400
+2026-04-28 15:21:00 [WS PROFILE] wait_for_moves: 321.4 ms
+2026-04-28 15:21:00 [MOVE PROFILE] wait_for_moves took 323.1 ms
+2026-04-28 15:21:00 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:01 [WS PROFILE] get_z_positions: 255.5 ms | z1=25.0, z2=13.199999999999903
+2026-04-28 15:21:01 [WS PROFILE] get_z_position: 256.2 ms | axis=2, z=13.199999999999903
+2026-04-28 15:21:01 [MOVE PROFILE] z convergence loop took 256.9 ms (1 checks)
+2026-04-28 15:21:01 [MOVE PROFILE] total move() time 585.7 ms
+2026-04-28 15:21:01 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:01 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:01 [WS PROFILE] send_gcode_and_wait: 319.0 ms | M400
+2026-04-28 15:21:01 [WS PROFILE] wait_for_moves: 320.8 ms
+2026-04-28 15:21:01 [MOVE PROFILE] wait_for_moves took 322.5 ms
+2026-04-28 15:21:01 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:01 [WS PROFILE] get_z_positions: 235.8 ms | z1=25.0, z2=13.299999999999905
+2026-04-28 15:21:01 [WS PROFILE] get_z_position: 237.6 ms | axis=2, z=13.299999999999905
+2026-04-28 15:21:01 [MOVE PROFILE] z convergence loop took 239.3 ms (1 checks)
+2026-04-28 15:21:01 [MOVE PROFILE] total move() time 569.8 ms
+2026-04-28 15:21:02 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:02 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:02 [WS PROFILE] send_gcode_and_wait: 317.3 ms | M400
+2026-04-28 15:21:02 [WS PROFILE] wait_for_moves: 319.2 ms
+2026-04-28 15:21:02 [MOVE PROFILE] wait_for_moves took 320.9 ms
+2026-04-28 15:21:02 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:02 [WS PROFILE] get_z_positions: 212.6 ms | z1=25.0, z2=13.399999999999906
+2026-04-28 15:21:02 [WS PROFILE] get_z_position: 213.9 ms | axis=2, z=13.399999999999906
+2026-04-28 15:21:02 [MOVE PROFILE] z convergence loop took 215.1 ms (1 checks)
+2026-04-28 15:21:02 [MOVE PROFILE] total move() time 542.4 ms
+2026-04-28 15:21:02 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:02 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:03 [WS PROFILE] send_gcode_and_wait: 316.5 ms | M400
+2026-04-28 15:21:03 [WS PROFILE] wait_for_moves: 317.3 ms
+2026-04-28 15:21:03 [MOVE PROFILE] wait_for_moves took 317.9 ms
+2026-04-28 15:21:03 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:03 [WS PROFILE] get_z_positions: 231.2 ms | z1=25.0, z2=13.499999999999908
+2026-04-28 15:21:03 [WS PROFILE] get_z_position: 232.6 ms | axis=2, z=13.499999999999908
+2026-04-28 15:21:03 [MOVE PROFILE] z convergence loop took 233.8 ms (1 checks)
+2026-04-28 15:21:03 [MOVE PROFILE] total move() time 555.6 ms
+2026-04-28 15:21:03 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:03 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:03 [WS PROFILE] send_gcode_and_wait: 316.5 ms | M400
+2026-04-28 15:21:03 [WS PROFILE] wait_for_moves: 317.9 ms
+2026-04-28 15:21:03 [MOVE PROFILE] wait_for_moves took 319.1 ms
+2026-04-28 15:21:03 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:04 [WS PROFILE] get_z_positions: 224.4 ms | z1=25.0, z2=13.599999999999909
+2026-04-28 15:21:04 [WS PROFILE] get_z_position: 225.4 ms | axis=2, z=13.599999999999909
+2026-04-28 15:21:04 [MOVE PROFILE] z convergence loop took 226.1 ms (1 checks)
+2026-04-28 15:21:04 [MOVE PROFILE] total move() time 550.4 ms
+2026-04-28 15:21:04 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:04 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:04 [WS PROFILE] send_gcode_and_wait: 312.0 ms | M400
+2026-04-28 15:21:04 [WS PROFILE] wait_for_moves: 312.9 ms
+2026-04-28 15:21:04 [MOVE PROFILE] wait_for_moves took 313.6 ms
+2026-04-28 15:21:04 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:04 [WS PROFILE] get_z_positions: 229.8 ms | z1=25.0, z2=13.69999999999991
+2026-04-28 15:21:04 [WS PROFILE] get_z_position: 232.4 ms | axis=2, z=13.69999999999991
+2026-04-28 15:21:04 [MOVE PROFILE] z convergence loop took 234.2 ms (1 checks)
+2026-04-28 15:21:04 [MOVE PROFILE] total move() time 553.1 ms
+2026-04-28 15:21:05 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:05 [MOVE PROFILE] queue carriage2 cmd took 1.4 ms
+2026-04-28 15:21:05 [WS PROFILE] send_gcode_and_wait: 321.6 ms | M400
+2026-04-28 15:21:05 [WS PROFILE] wait_for_moves: 356.5 ms
+2026-04-28 15:21:05 [MOVE PROFILE] wait_for_moves took 380.0 ms
+2026-04-28 15:21:05 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:05 [WS PROFILE] get_z_positions: 127.5 ms | z1=25.0, z2=13.799999999999912
+2026-04-28 15:21:05 [WS PROFILE] get_z_position: 128.5 ms | axis=2, z=13.799999999999912
+2026-04-28 15:21:05 [MOVE PROFILE] z convergence loop took 129.5 ms (1 checks)
+2026-04-28 15:21:05 [MOVE PROFILE] total move() time 514.6 ms
+2026-04-28 15:21:06 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:06 [MOVE PROFILE] queue carriage2 cmd took 2.3 ms
+2026-04-28 15:21:06 [WS PROFILE] send_gcode_and_wait: 315.2 ms | M400
+2026-04-28 15:21:06 [WS PROFILE] wait_for_moves: 315.8 ms
+2026-04-28 15:21:06 [MOVE PROFILE] wait_for_moves took 316.3 ms
+2026-04-28 15:21:06 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:06 [WS PROFILE] get_z_positions: 76.0 ms | z1=25.0, z2=13.899999999999913
+2026-04-28 15:21:06 [WS PROFILE] get_z_position: 77.4 ms | axis=2, z=13.899999999999913
+2026-04-28 15:21:06 [MOVE PROFILE] z convergence loop took 78.4 ms (1 checks)
+2026-04-28 15:21:06 [MOVE PROFILE] total move() time 400.0 ms
+2026-04-28 15:21:06 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:06 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:07 [WS PROFILE] send_gcode_and_wait: 316.8 ms | M400
+2026-04-28 15:21:07 [WS PROFILE] wait_for_moves: 317.6 ms
+2026-04-28 15:21:07 [MOVE PROFILE] wait_for_moves took 319.4 ms
+2026-04-28 15:21:07 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:07 [WS PROFILE] get_z_positions: 137.8 ms | z1=25.0, z2=13.999999999999915
+2026-04-28 15:21:07 [WS PROFILE] get_z_position: 138.7 ms | axis=2, z=13.999999999999915
+2026-04-28 15:21:07 [MOVE PROFILE] z convergence loop took 139.7 ms (1 checks)
+2026-04-28 15:21:07 [MOVE PROFILE] total move() time 463.8 ms
+2026-04-28 15:21:07 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:07 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:07 [WS PROFILE] send_gcode_and_wait: 320.6 ms | M400
+2026-04-28 15:21:07 [WS PROFILE] wait_for_moves: 322.7 ms
+2026-04-28 15:21:07 [MOVE PROFILE] wait_for_moves took 324.1 ms
+2026-04-28 15:21:07 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:07 [WS PROFILE] get_z_positions: 186.4 ms | z1=25.0, z2=14.099999999999916
+2026-04-28 15:21:07 [WS PROFILE] get_z_position: 188.0 ms | axis=2, z=14.099999999999916
+2026-04-28 15:21:07 [MOVE PROFILE] z convergence loop took 189.4 ms (1 checks)
+2026-04-28 15:21:07 [MOVE PROFILE] total move() time 520.8 ms
+2026-04-28 15:21:08 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:08 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:08 [WS PROFILE] send_gcode_and_wait: 313.4 ms | M400
+2026-04-28 15:21:08 [WS PROFILE] wait_for_moves: 314.5 ms
+2026-04-28 15:21:08 [MOVE PROFILE] wait_for_moves took 315.1 ms
+2026-04-28 15:21:08 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:08 [WS PROFILE] get_z_positions: 167.6 ms | z1=25.0, z2=14.199999999999918
+2026-04-28 15:21:08 [WS PROFILE] get_z_position: 169.0 ms | axis=2, z=14.199999999999918
+2026-04-28 15:21:08 [MOVE PROFILE] z convergence loop took 170.1 ms (1 checks)
+2026-04-28 15:21:08 [MOVE PROFILE] total move() time 489.1 ms
+2026-04-28 15:21:08 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:08 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:09 [WS PROFILE] send_gcode_and_wait: 314.1 ms | M400
+2026-04-28 15:21:09 [WS PROFILE] wait_for_moves: 315.0 ms
+2026-04-28 15:21:09 [MOVE PROFILE] wait_for_moves took 315.7 ms
+2026-04-28 15:21:09 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:09 [WS PROFILE] get_z_positions: 166.4 ms | z1=25.0, z2=14.299999999999919
+2026-04-28 15:21:09 [WS PROFILE] get_z_position: 168.3 ms | axis=2, z=14.299999999999919
+2026-04-28 15:21:09 [MOVE PROFILE] z convergence loop took 170.0 ms (1 checks)
+2026-04-28 15:21:09 [MOVE PROFILE] total move() time 490.5 ms
+2026-04-28 15:21:09 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:09 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:10 [WS PROFILE] send_gcode_and_wait: 320.0 ms | M400
+2026-04-28 15:21:10 [WS PROFILE] wait_for_moves: 321.7 ms
+2026-04-28 15:21:10 [MOVE PROFILE] wait_for_moves took 323.2 ms
+2026-04-28 15:21:10 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:10 [WS PROFILE] get_z_positions: 182.9 ms | z1=25.0, z2=14.39999999999992
+2026-04-28 15:21:10 [WS PROFILE] get_z_position: 184.1 ms | axis=2, z=14.39999999999992
+2026-04-28 15:21:10 [MOVE PROFILE] z convergence loop took 184.8 ms (1 checks)
+2026-04-28 15:21:10 [MOVE PROFILE] total move() time 513.0 ms
+2026-04-28 15:21:10 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:10 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:10 [WS PROFILE] send_gcode_and_wait: 336.2 ms | M400
+2026-04-28 15:21:10 [WS PROFILE] wait_for_moves: 338.0 ms
+2026-04-28 15:21:10 [MOVE PROFILE] wait_for_moves took 339.6 ms
+2026-04-28 15:21:10 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:10 [WS PROFILE] get_z_positions: 226.3 ms | z1=25.0, z2=14.499999999999922
+2026-04-28 15:21:10 [WS PROFILE] get_z_position: 228.1 ms | axis=2, z=14.499999999999922
+2026-04-28 15:21:10 [MOVE PROFILE] z convergence loop took 229.9 ms (1 checks)
+2026-04-28 15:21:10 [MOVE PROFILE] total move() time 576.2 ms
+2026-04-28 15:21:11 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:11 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:11 [WS PROFILE] send_gcode_and_wait: 327.2 ms | M400
+2026-04-28 15:21:11 [WS PROFILE] wait_for_moves: 327.9 ms
+2026-04-28 15:21:11 [MOVE PROFILE] wait_for_moves took 328.6 ms
+2026-04-28 15:21:11 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:11 [WS PROFILE] get_z_positions: 177.1 ms | z1=25.0, z2=14.599999999999923
+2026-04-28 15:21:11 [WS PROFILE] get_z_position: 178.0 ms | axis=2, z=14.599999999999923
+2026-04-28 15:21:11 [MOVE PROFILE] z convergence loop took 179.0 ms (1 checks)
+2026-04-28 15:21:11 [MOVE PROFILE] total move() time 512.1 ms
+2026-04-28 15:21:11 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:11 [MOVE PROFILE] queue carriage2 cmd took 1.6 ms
+2026-04-28 15:21:12 [WS PROFILE] send_gcode_and_wait: 319.1 ms | M400
+2026-04-28 15:21:12 [WS PROFILE] wait_for_moves: 319.9 ms
+2026-04-28 15:21:12 [MOVE PROFILE] wait_for_moves took 320.7 ms
+2026-04-28 15:21:12 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:12 [WS PROFILE] get_z_positions: 205.2 ms | z1=25.0, z2=14.699999999999925
+2026-04-28 15:21:12 [WS PROFILE] get_z_position: 206.0 ms | axis=2, z=14.699999999999925
+2026-04-28 15:21:12 [MOVE PROFILE] z convergence loop took 206.6 ms (1 checks)
+2026-04-28 15:21:12 [MOVE PROFILE] total move() time 532.3 ms
+2026-04-28 15:21:12 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:12 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:12 [WS PROFILE] send_gcode_and_wait: 316.2 ms | M400
+2026-04-28 15:21:12 [WS PROFILE] wait_for_moves: 317.4 ms
+2026-04-28 15:21:12 [MOVE PROFILE] wait_for_moves took 318.3 ms
+2026-04-28 15:21:12 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:13 [WS PROFILE] get_z_positions: 234.4 ms | z1=25.0, z2=14.799999999999926
+2026-04-28 15:21:13 [WS PROFILE] get_z_position: 235.3 ms | axis=2, z=14.799999999999926
+2026-04-28 15:21:13 [MOVE PROFILE] z convergence loop took 236.1 ms (1 checks)
+2026-04-28 15:21:13 [MOVE PROFILE] total move() time 558.5 ms
+2026-04-28 15:21:13 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:13 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:13 [WS PROFILE] send_gcode_and_wait: 319.2 ms | M400
+2026-04-28 15:21:13 [WS PROFILE] wait_for_moves: 331.5 ms
+2026-04-28 15:21:13 [MOVE PROFILE] wait_for_moves took 333.9 ms
+2026-04-28 15:21:13 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:13 [WS PROFILE] get_z_positions: 215.6 ms | z1=25.0, z2=14.899999999999928
+2026-04-28 15:21:13 [WS PROFILE] get_z_position: 216.4 ms | axis=2, z=14.899999999999928
+2026-04-28 15:21:13 [MOVE PROFILE] z convergence loop took 217.0 ms (1 checks)
+2026-04-28 15:21:13 [MOVE PROFILE] total move() time 556.4 ms
+2026-04-28 15:21:14 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:14 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:21:14 [WS PROFILE] send_gcode_and_wait: 332.8 ms | M400
+2026-04-28 15:21:14 [WS PROFILE] wait_for_moves: 333.5 ms
+2026-04-28 15:21:14 [MOVE PROFILE] wait_for_moves took 334.1 ms
+2026-04-28 15:21:14 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:14 [WS PROFILE] get_z_positions: 188.8 ms | z1=25.0, z2=14.999999999999929
+2026-04-28 15:21:14 [WS PROFILE] get_z_position: 190.0 ms | axis=2, z=14.999999999999929
+2026-04-28 15:21:14 [MOVE PROFILE] z convergence loop took 191.2 ms (1 checks)
+2026-04-28 15:21:14 [MOVE PROFILE] total move() time 529.6 ms
+2026-04-28 15:21:14 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:14 [MOVE PROFILE] queue carriage2 cmd took 1.4 ms
+2026-04-28 15:21:15 [WS PROFILE] send_gcode_and_wait: 315.6 ms | M400
+2026-04-28 15:21:15 [WS PROFILE] wait_for_moves: 327.5 ms
+2026-04-28 15:21:15 [MOVE PROFILE] wait_for_moves took 328.5 ms
+2026-04-28 15:21:15 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:15 [WS PROFILE] get_z_positions: 166.7 ms | z1=25.0, z2=15.09999999999993
+2026-04-28 15:21:15 [WS PROFILE] get_z_position: 167.4 ms | axis=2, z=15.09999999999993
+2026-04-28 15:21:15 [MOVE PROFILE] z convergence loop took 168.0 ms (1 checks)
+2026-04-28 15:21:15 [MOVE PROFILE] total move() time 500.8 ms
+2026-04-28 15:21:15 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:15 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:16 [WS PROFILE] send_gcode_and_wait: 317.6 ms | M400
+2026-04-28 15:21:16 [WS PROFILE] wait_for_moves: 318.4 ms
+2026-04-28 15:21:16 [MOVE PROFILE] wait_for_moves took 318.8 ms
+2026-04-28 15:21:16 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:16 [WS PROFILE] get_z_positions: 144.7 ms | z1=25.0, z2=15.199999999999932
+2026-04-28 15:21:16 [WS PROFILE] get_z_position: 145.4 ms | axis=2, z=15.199999999999932
+2026-04-28 15:21:16 [MOVE PROFILE] z convergence loop took 146.0 ms (1 checks)
+2026-04-28 15:21:16 [MOVE PROFILE] total move() time 468.0 ms
+2026-04-28 15:21:16 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:16 [MOVE PROFILE] queue carriage2 cmd took 1.5 ms
+2026-04-28 15:21:16 [WS PROFILE] send_gcode_and_wait: 320.9 ms | M400
+2026-04-28 15:21:16 [WS PROFILE] wait_for_moves: 321.7 ms
+2026-04-28 15:21:16 [MOVE PROFILE] wait_for_moves took 322.4 ms
+2026-04-28 15:21:16 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:16 [WS PROFILE] get_z_positions: 248.6 ms | z1=25.0, z2=15.299999999999933
+2026-04-28 15:21:16 [WS PROFILE] get_z_position: 250.0 ms | axis=2, z=15.299999999999933
+2026-04-28 15:21:16 [MOVE PROFILE] z convergence loop took 251.3 ms (1 checks)
+2026-04-28 15:21:16 [MOVE PROFILE] total move() time 578.1 ms
+2026-04-28 15:21:17 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:17 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:17 [WS PROFILE] send_gcode_and_wait: 314.4 ms | M400
+2026-04-28 15:21:17 [WS PROFILE] wait_for_moves: 316.0 ms
+2026-04-28 15:21:17 [MOVE PROFILE] wait_for_moves took 317.4 ms
+2026-04-28 15:21:17 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:17 [WS PROFILE] get_z_positions: 201.6 ms | z1=25.0, z2=15.399999999999935
+2026-04-28 15:21:17 [WS PROFILE] get_z_position: 203.4 ms | axis=2, z=15.399999999999935
+2026-04-28 15:21:17 [MOVE PROFILE] z convergence loop took 205.1 ms (1 checks)
+2026-04-28 15:21:17 [MOVE PROFILE] total move() time 528.2 ms
+2026-04-28 15:21:17 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:17 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:18 [WS PROFILE] send_gcode_and_wait: 332.8 ms | M400
+2026-04-28 15:21:18 [WS PROFILE] wait_for_moves: 333.5 ms
+2026-04-28 15:21:18 [MOVE PROFILE] wait_for_moves took 334.2 ms
+2026-04-28 15:21:18 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:18 [WS PROFILE] get_z_positions: 212.7 ms | z1=25.0, z2=15.499999999999936
+2026-04-28 15:21:18 [WS PROFILE] get_z_position: 214.5 ms | axis=2, z=15.499999999999936
+2026-04-28 15:21:18 [MOVE PROFILE] z convergence loop took 216.4 ms (1 checks)
+2026-04-28 15:21:18 [MOVE PROFILE] total move() time 555.6 ms
+2026-04-28 15:21:18 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:18 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:18 [WS PROFILE] send_gcode_and_wait: 316.1 ms | M400
+2026-04-28 15:21:18 [WS PROFILE] wait_for_moves: 317.9 ms
+2026-04-28 15:21:18 [MOVE PROFILE] wait_for_moves took 319.5 ms
+2026-04-28 15:21:18 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:19 [WS PROFILE] get_z_positions: 233.7 ms | z1=25.0, z2=15.599999999999937
+2026-04-28 15:21:19 [WS PROFILE] get_z_position: 234.6 ms | axis=2, z=15.599999999999937
+2026-04-28 15:21:19 [MOVE PROFILE] z convergence loop took 235.3 ms (1 checks)
+2026-04-28 15:21:19 [MOVE PROFILE] total move() time 560.6 ms
+2026-04-28 15:21:19 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:19 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:19 [WS PROFILE] send_gcode_and_wait: 315.9 ms | M400
+2026-04-28 15:21:19 [WS PROFILE] wait_for_moves: 317.7 ms
+2026-04-28 15:21:19 [MOVE PROFILE] wait_for_moves took 319.4 ms
+2026-04-28 15:21:19 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:19 [WS PROFILE] get_z_positions: 231.5 ms | z1=25.0, z2=15.699999999999939
+2026-04-28 15:21:19 [WS PROFILE] get_z_position: 233.3 ms | axis=2, z=15.699999999999939
+2026-04-28 15:21:19 [MOVE PROFILE] z convergence loop took 235.1 ms (1 checks)
+2026-04-28 15:21:19 [MOVE PROFILE] total move() time 561.3 ms
+2026-04-28 15:21:20 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:20 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:20 [WS PROFILE] send_gcode_and_wait: 319.9 ms | M400
+2026-04-28 15:21:20 [WS PROFILE] wait_for_moves: 320.6 ms
+2026-04-28 15:21:20 [MOVE PROFILE] wait_for_moves took 321.1 ms
+2026-04-28 15:21:20 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:20 [WS PROFILE] get_z_positions: 210.0 ms | z1=25.0, z2=15.79999999999994
+2026-04-28 15:21:20 [WS PROFILE] get_z_position: 211.1 ms | axis=2, z=15.79999999999994
+2026-04-28 15:21:20 [MOVE PROFILE] z convergence loop took 211.8 ms (1 checks)
+2026-04-28 15:21:20 [MOVE PROFILE] total move() time 536.3 ms
+2026-04-28 15:21:20 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:20 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:21 [WS PROFILE] send_gcode_and_wait: 313.6 ms | M400
+2026-04-28 15:21:21 [WS PROFILE] wait_for_moves: 315.3 ms
+2026-04-28 15:21:21 [MOVE PROFILE] wait_for_moves took 317.0 ms
+2026-04-28 15:21:21 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:21 [WS PROFILE] get_z_positions: 167.3 ms | z1=25.0, z2=15.899999999999942
+2026-04-28 15:21:21 [WS PROFILE] get_z_position: 168.8 ms | axis=2, z=15.899999999999942
+2026-04-28 15:21:21 [MOVE PROFILE] z convergence loop took 170.3 ms (1 checks)
+2026-04-28 15:21:21 [MOVE PROFILE] total move() time 494.5 ms
+2026-04-28 15:21:22 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:22 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:22 [WS PROFILE] send_gcode_and_wait: 317.1 ms | M400
+2026-04-28 15:21:22 [WS PROFILE] wait_for_moves: 318.9 ms
+2026-04-28 15:21:22 [MOVE PROFILE] wait_for_moves took 320.5 ms
+2026-04-28 15:21:22 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:22 [WS PROFILE] get_z_positions: 60.6 ms | z1=25.0, z2=15.999999999999943
+2026-04-28 15:21:22 [WS PROFILE] get_z_position: 61.7 ms | axis=2, z=15.999999999999943
+2026-04-28 15:21:22 [MOVE PROFILE] z convergence loop took 63.5 ms (1 checks)
+2026-04-28 15:21:22 [MOVE PROFILE] total move() time 393.7 ms
+2026-04-28 15:21:23 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:23 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:23 [WS PROFILE] send_gcode_and_wait: 320.1 ms | M400
+2026-04-28 15:21:23 [WS PROFILE] wait_for_moves: 322.0 ms
+2026-04-28 15:21:23 [MOVE PROFILE] wait_for_moves took 323.6 ms
+2026-04-28 15:21:23 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:23 [WS PROFILE] get_z_positions: 258.1 ms | z1=25.0, z2=16.099999999999945
+2026-04-28 15:21:23 [WS PROFILE] get_z_position: 259.0 ms | axis=2, z=16.099999999999945
+2026-04-28 15:21:23 [MOVE PROFILE] z convergence loop took 259.5 ms (1 checks)
+2026-04-28 15:21:23 [MOVE PROFILE] total move() time 588.9 ms
+2026-04-28 15:21:24 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:24 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:24 [WS PROFILE] send_gcode_and_wait: 319.5 ms | M400
+2026-04-28 15:21:24 [WS PROFILE] wait_for_moves: 321.3 ms
+2026-04-28 15:21:24 [MOVE PROFILE] wait_for_moves took 323.0 ms
+2026-04-28 15:21:24 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:24 [WS PROFILE] get_z_positions: 17.8 ms | z1=25.0, z2=16.199999999999946
+2026-04-28 15:21:24 [WS PROFILE] get_z_position: 20.2 ms | axis=2, z=16.199999999999946
+2026-04-28 15:21:24 [MOVE PROFILE] z convergence loop took 23.0 ms (1 checks)
+2026-04-28 15:21:24 [MOVE PROFILE] total move() time 353.4 ms
+2026-04-28 15:21:25 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:25 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:25 [WS PROFILE] send_gcode_and_wait: 317.3 ms | M400
+2026-04-28 15:21:25 [WS PROFILE] wait_for_moves: 319.3 ms
+2026-04-28 15:21:25 [MOVE PROFILE] wait_for_moves took 321.3 ms
+2026-04-28 15:21:25 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:25 [WS PROFILE] get_z_positions: 12.9 ms | z1=25.0, z2=16.299999999999947
+2026-04-28 15:21:25 [WS PROFILE] get_z_position: 14.1 ms | axis=2, z=16.299999999999947
+2026-04-28 15:21:25 [MOVE PROFILE] z convergence loop took 15.0 ms (1 checks)
+2026-04-28 15:21:25 [MOVE PROFILE] total move() time 342.4 ms
+2026-04-28 15:21:25 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:25 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:26 [WS PROFILE] send_gcode_and_wait: 325.2 ms | M400
+2026-04-28 15:21:26 [WS PROFILE] wait_for_moves: 327.0 ms
+2026-04-28 15:21:26 [MOVE PROFILE] wait_for_moves took 328.6 ms
+2026-04-28 15:21:26 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:26 [WS PROFILE] get_z_positions: 231.6 ms | z1=25.0, z2=16.39999999999995
+2026-04-28 15:21:26 [WS PROFILE] get_z_position: 232.6 ms | axis=2, z=16.39999999999995
+2026-04-28 15:21:26 [MOVE PROFILE] z convergence loop took 233.3 ms (1 checks)
+2026-04-28 15:21:26 [MOVE PROFILE] total move() time 567.9 ms
+2026-04-28 15:21:26 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:26 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:26 [WS PROFILE] send_gcode_and_wait: 311.9 ms | M400
+2026-04-28 15:21:26 [WS PROFILE] wait_for_moves: 313.7 ms
+2026-04-28 15:21:26 [MOVE PROFILE] wait_for_moves took 315.3 ms
+2026-04-28 15:21:26 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:26 [WS PROFILE] get_z_positions: 217.6 ms | z1=25.0, z2=16.49999999999995
+2026-04-28 15:21:26 [WS PROFILE] get_z_position: 218.5 ms | axis=2, z=16.49999999999995
+2026-04-28 15:21:26 [MOVE PROFILE] z convergence loop took 219.6 ms (1 checks)
+2026-04-28 15:21:26 [MOVE PROFILE] total move() time 540.7 ms
+2026-04-28 15:21:27 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:27 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:28 [WS PROFILE] send_gcode_and_wait: 542.2 ms | M400
+2026-04-28 15:21:28 [WS PROFILE] wait_for_moves: 544.0 ms
+2026-04-28 15:21:28 [MOVE PROFILE] wait_for_moves took 545.6 ms
+2026-04-28 15:21:28 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:28 [WS PROFILE] get_z_positions: 140.1 ms | z1=25.0, z2=16.59999999999995
+2026-04-28 15:21:28 [WS PROFILE] get_z_position: 142.0 ms | axis=2, z=16.59999999999995
+2026-04-28 15:21:28 [MOVE PROFILE] z convergence loop took 143.7 ms (1 checks)
+2026-04-28 15:21:28 [MOVE PROFILE] total move() time 696.2 ms
+2026-04-28 15:21:28 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:28 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:28 [WS PROFILE] send_gcode_and_wait: 319.2 ms | M400
+2026-04-28 15:21:28 [WS PROFILE] wait_for_moves: 321.0 ms
+2026-04-28 15:21:28 [MOVE PROFILE] wait_for_moves took 322.7 ms
+2026-04-28 15:21:28 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:28 [WS PROFILE] get_z_positions: 62.5 ms | z1=25.0, z2=16.699999999999953
+2026-04-28 15:21:28 [WS PROFILE] get_z_position: 63.6 ms | axis=2, z=16.699999999999953
+2026-04-28 15:21:29 [MOVE PROFILE] z convergence loop took 64.4 ms (1 checks)
+2026-04-28 15:21:29 [MOVE PROFILE] total move() time 393.3 ms
+2026-04-28 15:21:29 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:29 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:29 [WS PROFILE] send_gcode_and_wait: 315.3 ms | M400
+2026-04-28 15:21:29 [WS PROFILE] wait_for_moves: 316.0 ms
+2026-04-28 15:21:29 [MOVE PROFILE] wait_for_moves took 316.7 ms
+2026-04-28 15:21:29 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:29 [WS PROFILE] get_z_positions: 204.4 ms | z1=25.0, z2=16.799999999999955
+2026-04-28 15:21:29 [WS PROFILE] get_z_position: 205.7 ms | axis=2, z=16.799999999999955
+2026-04-28 15:21:29 [MOVE PROFILE] z convergence loop took 206.2 ms (1 checks)
+2026-04-28 15:21:29 [MOVE PROFILE] total move() time 526.3 ms
+2026-04-28 15:21:30 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:30 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:30 [WS PROFILE] send_gcode_and_wait: 343.6 ms | M400
+2026-04-28 15:21:30 [WS PROFILE] wait_for_moves: 345.4 ms
+2026-04-28 15:21:30 [MOVE PROFILE] wait_for_moves took 347.1 ms
+2026-04-28 15:21:30 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:30 [WS PROFILE] get_z_positions: 72.3 ms | z1=25.0, z2=16.899999999999956
+2026-04-28 15:21:30 [WS PROFILE] get_z_position: 73.6 ms | axis=2, z=16.899999999999956
+2026-04-28 15:21:30 [MOVE PROFILE] z convergence loop took 75.0 ms (1 checks)
+2026-04-28 15:21:30 [MOVE PROFILE] total move() time 428.7 ms
+2026-04-28 15:21:31 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:31 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:31 [WS PROFILE] send_gcode_and_wait: 314.6 ms | M400
+2026-04-28 15:21:31 [WS PROFILE] wait_for_moves: 316.4 ms
+2026-04-28 15:21:31 [MOVE PROFILE] wait_for_moves took 318.0 ms
+2026-04-28 15:21:31 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:31 [WS PROFILE] get_z_positions: 69.2 ms | z1=25.0, z2=16.999999999999957
+2026-04-28 15:21:31 [WS PROFILE] get_z_position: 70.7 ms | axis=2, z=16.999999999999957
+2026-04-28 15:21:31 [MOVE PROFILE] z convergence loop took 72.2 ms (1 checks)
+2026-04-28 15:21:31 [MOVE PROFILE] total move() time 397.0 ms
+2026-04-28 15:21:31 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:31 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:32 [WS PROFILE] send_gcode_and_wait: 338.5 ms | M400
+2026-04-28 15:21:32 [WS PROFILE] wait_for_moves: 340.3 ms
+2026-04-28 15:21:32 [MOVE PROFILE] wait_for_moves took 342.0 ms
+2026-04-28 15:21:32 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:32 [WS PROFILE] get_z_positions: 220.7 ms | z1=25.0, z2=17.09999999999996
+2026-04-28 15:21:32 [WS PROFILE] get_z_position: 221.6 ms | axis=2, z=17.09999999999996
+2026-04-28 15:21:32 [MOVE PROFILE] z convergence loop took 222.4 ms (1 checks)
+2026-04-28 15:21:32 [MOVE PROFILE] total move() time 570.1 ms
+2026-04-28 15:21:32 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:32 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:32 [WS PROFILE] send_gcode_and_wait: 315.3 ms | M400
+2026-04-28 15:21:32 [WS PROFILE] wait_for_moves: 317.1 ms
+2026-04-28 15:21:32 [MOVE PROFILE] wait_for_moves took 318.7 ms
+2026-04-28 15:21:32 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:33 [WS PROFILE] get_z_positions: 125.0 ms | z1=25.0, z2=17.19999999999996
+2026-04-28 15:21:33 [WS PROFILE] get_z_position: 126.8 ms | axis=2, z=17.19999999999996
+2026-04-28 15:21:33 [MOVE PROFILE] z convergence loop took 128.4 ms (1 checks)
+2026-04-28 15:21:33 [MOVE PROFILE] total move() time 454.1 ms
+2026-04-28 15:21:33 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:33 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:33 [WS PROFILE] send_gcode_and_wait: 316.5 ms | M400
+2026-04-28 15:21:33 [WS PROFILE] wait_for_moves: 317.7 ms
+2026-04-28 15:21:33 [MOVE PROFILE] wait_for_moves took 318.7 ms
+2026-04-28 15:21:33 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:34 [WS PROFILE] get_z_positions: 107.3 ms | z1=25.0, z2=17.29999999999996
+2026-04-28 15:21:34 [WS PROFILE] get_z_position: 109.0 ms | axis=2, z=17.29999999999996
+2026-04-28 15:21:34 [MOVE PROFILE] z convergence loop took 110.6 ms (1 checks)
+2026-04-28 15:21:34 [MOVE PROFILE] total move() time 434.3 ms
+2026-04-28 15:21:34 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:34 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:34 [WS PROFILE] send_gcode_and_wait: 314.7 ms | M400
+2026-04-28 15:21:34 [WS PROFILE] wait_for_moves: 316.4 ms
+2026-04-28 15:21:34 [MOVE PROFILE] wait_for_moves took 318.0 ms
+2026-04-28 15:21:34 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:35 [WS PROFILE] get_z_positions: 226.4 ms | z1=25.0, z2=17.399999999999963
+2026-04-28 15:21:35 [WS PROFILE] get_z_position: 227.4 ms | axis=2, z=17.399999999999963
+2026-04-28 15:21:35 [MOVE PROFILE] z convergence loop took 228.4 ms (1 checks)
+2026-04-28 15:21:35 [MOVE PROFILE] total move() time 552.0 ms
+2026-04-28 15:21:35 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:35 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:21:35 [WS PROFILE] send_gcode_and_wait: 320.4 ms | M400
+2026-04-28 15:21:35 [WS PROFILE] wait_for_moves: 321.9 ms
+2026-04-28 15:21:35 [MOVE PROFILE] wait_for_moves took 323.6 ms
+2026-04-28 15:21:35 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:35 [WS PROFILE] get_z_positions: 244.5 ms | z1=25.0, z2=17.499999999999964
+2026-04-28 15:21:35 [WS PROFILE] get_z_position: 246.3 ms | axis=2, z=17.499999999999964
+2026-04-28 15:21:35 [MOVE PROFILE] z convergence loop took 247.8 ms (1 checks)
+2026-04-28 15:21:35 [MOVE PROFILE] total move() time 577.9 ms
+2026-04-28 15:21:35 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:35 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:36 [WS PROFILE] send_gcode_and_wait: 317.7 ms | M400
+2026-04-28 15:21:36 [WS PROFILE] wait_for_moves: 319.5 ms
+2026-04-28 15:21:36 [MOVE PROFILE] wait_for_moves took 321.1 ms
+2026-04-28 15:21:36 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:36 [WS PROFILE] get_z_positions: 204.7 ms | z1=25.0, z2=17.599999999999966
+2026-04-28 15:21:36 [WS PROFILE] get_z_position: 205.5 ms | axis=2, z=17.599999999999966
+2026-04-28 15:21:36 [MOVE PROFILE] z convergence loop took 206.1 ms (1 checks)
+2026-04-28 15:21:36 [MOVE PROFILE] total move() time 533.3 ms
+2026-04-28 15:21:36 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:36 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:37 [WS PROFILE] send_gcode_and_wait: 317.8 ms | M400
+2026-04-28 15:21:37 [WS PROFILE] wait_for_moves: 319.6 ms
+2026-04-28 15:21:37 [MOVE PROFILE] wait_for_moves took 321.1 ms
+2026-04-28 15:21:37 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:37 [WS PROFILE] get_z_positions: 235.4 ms | z1=25.0, z2=17.699999999999967
+2026-04-28 15:21:37 [WS PROFILE] get_z_position: 236.5 ms | axis=2, z=17.699999999999967
+2026-04-28 15:21:37 [MOVE PROFILE] z convergence loop took 237.4 ms (1 checks)
+2026-04-28 15:21:37 [MOVE PROFILE] total move() time 564.5 ms
+2026-04-28 15:21:37 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:37 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:37 [WS PROFILE] send_gcode_and_wait: 311.8 ms | M400
+2026-04-28 15:21:37 [WS PROFILE] wait_for_moves: 313.1 ms
+2026-04-28 15:21:37 [MOVE PROFILE] wait_for_moves took 314.2 ms
+2026-04-28 15:21:37 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:38 [WS PROFILE] get_z_positions: 229.6 ms | z1=25.0, z2=17.79999999999997
+2026-04-28 15:21:38 [WS PROFILE] get_z_position: 230.4 ms | axis=2, z=17.79999999999997
+2026-04-28 15:21:38 [MOVE PROFILE] z convergence loop took 231.0 ms (1 checks)
+2026-04-28 15:21:38 [MOVE PROFILE] total move() time 549.7 ms
+2026-04-28 15:21:38 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:38 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:38 [WS PROFILE] send_gcode_and_wait: 322.5 ms | M400
+2026-04-28 15:21:38 [WS PROFILE] wait_for_moves: 323.1 ms
+2026-04-28 15:21:38 [MOVE PROFILE] wait_for_moves took 323.7 ms
+2026-04-28 15:21:38 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:38 [WS PROFILE] get_z_positions: 200.4 ms | z1=25.0, z2=17.89999999999997
+2026-04-28 15:21:38 [WS PROFILE] get_z_position: 201.1 ms | axis=2, z=17.89999999999997
+2026-04-28 15:21:38 [MOVE PROFILE] z convergence loop took 201.6 ms (1 checks)
+2026-04-28 15:21:38 [MOVE PROFILE] total move() time 528.7 ms
+2026-04-28 15:21:38 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:38 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:39 [WS PROFILE] send_gcode_and_wait: 319.8 ms | M400
+2026-04-28 15:21:39 [WS PROFILE] wait_for_moves: 321.6 ms
+2026-04-28 15:21:39 [MOVE PROFILE] wait_for_moves took 323.2 ms
+2026-04-28 15:21:39 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:39 [WS PROFILE] get_z_positions: 206.8 ms | z1=25.0, z2=17.99999999999997
+2026-04-28 15:21:39 [WS PROFILE] get_z_position: 207.7 ms | axis=2, z=17.99999999999997
+2026-04-28 15:21:39 [MOVE PROFILE] z convergence loop took 208.4 ms (1 checks)
+2026-04-28 15:21:39 [MOVE PROFILE] total move() time 537.5 ms
+2026-04-28 15:21:39 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:39 [MOVE PROFILE] queue carriage2 cmd took 1.4 ms
+2026-04-28 15:21:40 [WS PROFILE] send_gcode_and_wait: 323.5 ms | M400
+2026-04-28 15:21:40 [WS PROFILE] wait_for_moves: 324.8 ms
+2026-04-28 15:21:40 [MOVE PROFILE] wait_for_moves took 325.8 ms
+2026-04-28 15:21:40 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:40 [WS PROFILE] get_z_positions: 245.8 ms | z1=25.0, z2=18.099999999999973
+2026-04-28 15:21:40 [WS PROFILE] get_z_position: 247.5 ms | axis=2, z=18.099999999999973
+2026-04-28 15:21:40 [MOVE PROFILE] z convergence loop took 249.0 ms (1 checks)
+2026-04-28 15:21:40 [MOVE PROFILE] total move() time 580.3 ms
+2026-04-28 15:21:40 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:40 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:40 [WS PROFILE] send_gcode_and_wait: 313.5 ms | M400
+2026-04-28 15:21:40 [WS PROFILE] wait_for_moves: 315.3 ms
+2026-04-28 15:21:40 [MOVE PROFILE] wait_for_moves took 317.0 ms
+2026-04-28 15:21:40 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:41 [WS PROFILE] get_z_positions: 212.5 ms | z1=25.0, z2=18.199999999999974
+2026-04-28 15:21:41 [WS PROFILE] get_z_position: 214.3 ms | axis=2, z=18.199999999999974
+2026-04-28 15:21:41 [MOVE PROFILE] z convergence loop took 215.0 ms (1 checks)
+2026-04-28 15:21:41 [MOVE PROFILE] total move() time 539.6 ms
+2026-04-28 15:21:41 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:41 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:41 [WS PROFILE] send_gcode_and_wait: 312.6 ms | M400
+2026-04-28 15:21:41 [WS PROFILE] wait_for_moves: 313.5 ms
+2026-04-28 15:21:41 [MOVE PROFILE] wait_for_moves took 314.2 ms
+2026-04-28 15:21:41 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:41 [WS PROFILE] get_z_positions: 221.4 ms | z1=25.0, z2=18.299999999999976
+2026-04-28 15:21:41 [WS PROFILE] get_z_position: 222.1 ms | axis=2, z=18.299999999999976
+2026-04-28 15:21:41 [MOVE PROFILE] z convergence loop took 222.7 ms (1 checks)
+2026-04-28 15:21:41 [MOVE PROFILE] total move() time 540.3 ms
+2026-04-28 15:21:42 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:42 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:42 [WS PROFILE] send_gcode_and_wait: 322.9 ms | M400
+2026-04-28 15:21:42 [WS PROFILE] wait_for_moves: 324.6 ms
+2026-04-28 15:21:42 [MOVE PROFILE] wait_for_moves took 326.1 ms
+2026-04-28 15:21:42 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:42 [WS PROFILE] get_z_positions: 193.2 ms | z1=25.0, z2=18.399999999999977
+2026-04-28 15:21:42 [WS PROFILE] get_z_position: 193.9 ms | axis=2, z=18.399999999999977
+2026-04-28 15:21:42 [MOVE PROFILE] z convergence loop took 195.2 ms (1 checks)
+2026-04-28 15:21:42 [MOVE PROFILE] total move() time 527.1 ms
+2026-04-28 15:21:42 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:42 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:43 [WS PROFILE] send_gcode_and_wait: 316.4 ms | M400
+2026-04-28 15:21:43 [WS PROFILE] wait_for_moves: 318.1 ms
+2026-04-28 15:21:43 [MOVE PROFILE] wait_for_moves took 321.2 ms
+2026-04-28 15:21:43 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:43 [WS PROFILE] get_z_positions: 235.8 ms | z1=25.0, z2=18.49999999999998
+2026-04-28 15:21:43 [WS PROFILE] get_z_position: 236.9 ms | axis=2, z=18.49999999999998
+2026-04-28 15:21:43 [MOVE PROFILE] z convergence loop took 238.1 ms (1 checks)
+2026-04-28 15:21:43 [MOVE PROFILE] total move() time 566.2 ms
+2026-04-28 15:21:43 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:43 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:43 [WS PROFILE] send_gcode_and_wait: 312.0 ms | M400
+2026-04-28 15:21:43 [WS PROFILE] wait_for_moves: 313.8 ms
+2026-04-28 15:21:43 [MOVE PROFILE] wait_for_moves took 315.4 ms
+2026-04-28 15:21:43 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:44 [WS PROFILE] get_z_positions: 231.9 ms | z1=25.0, z2=18.59999999999998
+2026-04-28 15:21:44 [WS PROFILE] get_z_position: 233.2 ms | axis=2, z=18.59999999999998
+2026-04-28 15:21:44 [MOVE PROFILE] z convergence loop took 234.8 ms (1 checks)
+2026-04-28 15:21:44 [MOVE PROFILE] total move() time 557.2 ms
+2026-04-28 15:21:44 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:44 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:44 [WS PROFILE] send_gcode_and_wait: 331.4 ms | M400
+2026-04-28 15:21:44 [WS PROFILE] wait_for_moves: 332.4 ms
+2026-04-28 15:21:44 [MOVE PROFILE] wait_for_moves took 333.2 ms
+2026-04-28 15:21:44 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:44 [WS PROFILE] get_z_positions: 187.8 ms | z1=25.0, z2=18.69999999999998
+2026-04-28 15:21:44 [WS PROFILE] get_z_position: 188.8 ms | axis=2, z=18.69999999999998
+2026-04-28 15:21:44 [MOVE PROFILE] z convergence loop took 189.5 ms (1 checks)
+2026-04-28 15:21:44 [MOVE PROFILE] total move() time 526.7 ms
+2026-04-28 15:21:45 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:45 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:45 [WS PROFILE] send_gcode_and_wait: 316.0 ms | M400
+2026-04-28 15:21:45 [WS PROFILE] wait_for_moves: 317.9 ms
+2026-04-28 15:21:45 [MOVE PROFILE] wait_for_moves took 319.5 ms
+2026-04-28 15:21:45 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:45 [WS PROFILE] get_z_positions: 216.3 ms | z1=25.0, z2=18.799999999999983
+2026-04-28 15:21:45 [WS PROFILE] get_z_position: 217.1 ms | axis=2, z=18.799999999999983
+2026-04-28 15:21:45 [MOVE PROFILE] z convergence loop took 217.6 ms (1 checks)
+2026-04-28 15:21:45 [MOVE PROFILE] total move() time 542.2 ms
+2026-04-28 15:21:45 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:45 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:46 [WS PROFILE] send_gcode_and_wait: 317.6 ms | M400
+2026-04-28 15:21:46 [WS PROFILE] wait_for_moves: 319.4 ms
+2026-04-28 15:21:46 [MOVE PROFILE] wait_for_moves took 321.1 ms
+2026-04-28 15:21:46 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:46 [WS PROFILE] get_z_positions: 228.4 ms | z1=25.0, z2=18.899999999999984
+2026-04-28 15:21:46 [WS PROFILE] get_z_position: 229.6 ms | axis=2, z=18.899999999999984
+2026-04-28 15:21:46 [MOVE PROFILE] z convergence loop took 230.3 ms (1 checks)
+2026-04-28 15:21:46 [MOVE PROFILE] total move() time 557.7 ms
+2026-04-28 15:21:46 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:46 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:46 [WS PROFILE] send_gcode_and_wait: 321.6 ms | M400
+2026-04-28 15:21:46 [WS PROFILE] wait_for_moves: 322.8 ms
+2026-04-28 15:21:46 [MOVE PROFILE] wait_for_moves took 324.2 ms
+2026-04-28 15:21:46 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:47 [WS PROFILE] get_z_positions: 209.0 ms | z1=25.0, z2=18.999999999999986
+2026-04-28 15:21:47 [WS PROFILE] get_z_position: 209.6 ms | axis=2, z=18.999999999999986
+2026-04-28 15:21:47 [MOVE PROFILE] z convergence loop took 210.2 ms (1 checks)
+2026-04-28 15:21:47 [MOVE PROFILE] total move() time 539.3 ms
+2026-04-28 15:21:47 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:47 [MOVE PROFILE] queue carriage2 cmd took 2.3 ms
+2026-04-28 15:21:47 [WS PROFILE] send_gcode_and_wait: 318.6 ms | M400
+2026-04-28 15:21:47 [WS PROFILE] wait_for_moves: 321.0 ms
+2026-04-28 15:21:47 [MOVE PROFILE] wait_for_moves took 322.8 ms
+2026-04-28 15:21:47 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:47 [WS PROFILE] get_z_positions: 202.1 ms | z1=25.0, z2=19.099999999999987
+2026-04-28 15:21:47 [WS PROFILE] get_z_position: 202.9 ms | axis=2, z=19.099999999999987
+2026-04-28 15:21:47 [MOVE PROFILE] z convergence loop took 203.5 ms (1 checks)
+2026-04-28 15:21:47 [MOVE PROFILE] total move() time 533.4 ms
+2026-04-28 15:21:48 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:48 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:48 [WS PROFILE] send_gcode_and_wait: 317.1 ms | M400
+2026-04-28 15:21:48 [WS PROFILE] wait_for_moves: 318.9 ms
+2026-04-28 15:21:48 [MOVE PROFILE] wait_for_moves took 320.5 ms
+2026-04-28 15:21:48 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:48 [WS PROFILE] get_z_positions: 227.4 ms | z1=25.0, z2=19.19999999999999
+2026-04-28 15:21:48 [WS PROFILE] get_z_position: 228.1 ms | axis=2, z=19.19999999999999
+2026-04-28 15:21:48 [MOVE PROFILE] z convergence loop took 228.7 ms (1 checks)
+2026-04-28 15:21:48 [MOVE PROFILE] total move() time 555.4 ms
+2026-04-28 15:21:48 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:48 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:49 [WS PROFILE] send_gcode_and_wait: 321.3 ms | M400
+2026-04-28 15:21:49 [WS PROFILE] wait_for_moves: 323.7 ms
+2026-04-28 15:21:49 [MOVE PROFILE] wait_for_moves took 325.3 ms
+2026-04-28 15:21:49 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:49 [WS PROFILE] get_z_positions: 202.8 ms | z1=25.0, z2=19.29999999999999
+2026-04-28 15:21:49 [WS PROFILE] get_z_position: 203.8 ms | axis=2, z=19.29999999999999
+2026-04-28 15:21:49 [MOVE PROFILE] z convergence loop took 204.6 ms (1 checks)
+2026-04-28 15:21:49 [MOVE PROFILE] total move() time 536.3 ms
+2026-04-28 15:21:49 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:49 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:49 [WS PROFILE] send_gcode_and_wait: 316.1 ms | M400
+2026-04-28 15:21:49 [WS PROFILE] wait_for_moves: 317.8 ms
+2026-04-28 15:21:49 [MOVE PROFILE] wait_for_moves took 319.3 ms
+2026-04-28 15:21:49 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:50 [WS PROFILE] get_z_positions: 221.5 ms | z1=25.0, z2=19.39999999999999
+2026-04-28 15:21:50 [WS PROFILE] get_z_position: 222.2 ms | axis=2, z=19.39999999999999
+2026-04-28 15:21:50 [MOVE PROFILE] z convergence loop took 222.8 ms (1 checks)
+2026-04-28 15:21:50 [MOVE PROFILE] total move() time 547.4 ms
+2026-04-28 15:21:50 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:50 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:50 [WS PROFILE] send_gcode_and_wait: 320.3 ms | M400
+2026-04-28 15:21:50 [WS PROFILE] wait_for_moves: 321.6 ms
+2026-04-28 15:21:50 [MOVE PROFILE] wait_for_moves took 323.7 ms
+2026-04-28 15:21:50 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:50 [WS PROFILE] get_z_positions: 207.5 ms | z1=25.0, z2=19.499999999999993
+2026-04-28 15:21:50 [WS PROFILE] get_z_position: 208.2 ms | axis=2, z=19.499999999999993
+2026-04-28 15:21:50 [MOVE PROFILE] z convergence loop took 208.8 ms (1 checks)
+2026-04-28 15:21:50 [MOVE PROFILE] total move() time 537.7 ms
+2026-04-28 15:21:51 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:51 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:51 [WS PROFILE] send_gcode_and_wait: 317.4 ms | M400
+2026-04-28 15:21:51 [WS PROFILE] wait_for_moves: 319.1 ms
+2026-04-28 15:21:51 [MOVE PROFILE] wait_for_moves took 320.7 ms
+2026-04-28 15:21:51 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:51 [WS PROFILE] get_z_positions: 216.6 ms | z1=25.0, z2=19.599999999999994
+2026-04-28 15:21:51 [WS PROFILE] get_z_position: 217.2 ms | axis=2, z=19.599999999999994
+2026-04-28 15:21:51 [MOVE PROFILE] z convergence loop took 217.8 ms (1 checks)
+2026-04-28 15:21:51 [MOVE PROFILE] total move() time 544.4 ms
+2026-04-28 15:21:51 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:51 [MOVE PROFILE] queue carriage2 cmd took 1.4 ms
+2026-04-28 15:21:52 [WS PROFILE] send_gcode_and_wait: 317.2 ms | M400
+2026-04-28 15:21:52 [WS PROFILE] wait_for_moves: 319.1 ms
+2026-04-28 15:21:52 [MOVE PROFILE] wait_for_moves took 320.8 ms
+2026-04-28 15:21:52 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:52 [WS PROFILE] get_z_positions: 184.3 ms | z1=25.0, z2=19.699999999999996
+2026-04-28 15:21:52 [WS PROFILE] get_z_position: 185.2 ms | axis=2, z=19.699999999999996
+2026-04-28 15:21:52 [MOVE PROFILE] z convergence loop took 186.8 ms (1 checks)
+2026-04-28 15:21:52 [MOVE PROFILE] total move() time 513.3 ms
+2026-04-28 15:21:52 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:52 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:21:52 [WS PROFILE] send_gcode_and_wait: 314.6 ms | M400
+2026-04-28 15:21:52 [WS PROFILE] wait_for_moves: 316.3 ms
+2026-04-28 15:21:52 [MOVE PROFILE] wait_for_moves took 317.9 ms
+2026-04-28 15:21:52 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:53 [WS PROFILE] get_z_positions: 214.6 ms | z1=25.0, z2=19.799999999999997
+2026-04-28 15:21:53 [WS PROFILE] get_z_position: 215.4 ms | axis=2, z=19.799999999999997
+2026-04-28 15:21:53 [MOVE PROFILE] z convergence loop took 216.0 ms (1 checks)
+2026-04-28 15:21:53 [MOVE PROFILE] total move() time 539.6 ms
+2026-04-28 15:21:53 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:53 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:21:53 [WS PROFILE] send_gcode_and_wait: 316.2 ms | M400
+2026-04-28 15:21:53 [WS PROFILE] wait_for_moves: 316.8 ms
+2026-04-28 15:21:53 [MOVE PROFILE] wait_for_moves took 317.4 ms
+2026-04-28 15:21:53 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:53 [WS PROFILE] get_z_positions: 231.1 ms | z1=25.0, z2=19.9
+2026-04-28 15:21:53 [WS PROFILE] get_z_position: 232.2 ms | axis=2, z=19.9
+2026-04-28 15:21:53 [MOVE PROFILE] z convergence loop took 233.1 ms (1 checks)
+2026-04-28 15:21:53 [MOVE PROFILE] total move() time 554.2 ms
+2026-04-28 15:21:54 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:54 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:21:54 [WS PROFILE] send_gcode_and_wait: 320.4 ms | M400
+2026-04-28 15:21:54 [WS PROFILE] wait_for_moves: 322.3 ms
+2026-04-28 15:21:54 [MOVE PROFILE] wait_for_moves took 323.8 ms
+2026-04-28 15:21:54 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:54 [WS PROFILE] get_z_positions: 202.7 ms | z1=25.0, z2=20.0
+2026-04-28 15:21:54 [WS PROFILE] get_z_position: 203.2 ms | axis=2, z=20.0
+2026-04-28 15:21:54 [MOVE PROFILE] z convergence loop took 204.0 ms (1 checks)
+2026-04-28 15:21:54 [MOVE PROFILE] total move() time 533.6 ms
+2026-04-28 15:21:54 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:54 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:21:56 [WS PROFILE] send_gcode_and_wait: 1757.9 ms | M400
+2026-04-28 15:21:56 [WS PROFILE] wait_for_moves: 1758.6 ms
+2026-04-28 15:21:56 [MOVE PROFILE] wait_for_moves took 1759.3 ms
+2026-04-28 15:21:56 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:56 [WS PROFILE] get_z_positions: 42.7 ms | z1=25.0, z2=12.9999999999999
+2026-04-28 15:21:56 [WS PROFILE] get_z_position: 43.5 ms | axis=2, z=12.9999999999999
+2026-04-28 15:21:56 [MOVE PROFILE] z convergence loop took 44.2 ms (1 checks)
+2026-04-28 15:21:56 [WS PROFILE] get_z_positions: 249.1 ms | z1=25.0, z2=12.9999999999999
+2026-04-28 15:21:56 [WS PROFILE] get_z_position: 251.1 ms | axis=2, z=12.9999999999999
+2026-04-28 15:21:56 [MOVE PROFILE] verify_mov took 252.7 ms
+2026-04-28 15:21:56 [MOVE PROFILE] total move() time 2061.1 ms
+2026-04-28 15:21:56 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:56 [MOVE PROFILE] queue carriage2 cmd took 2.1 ms
+2026-04-28 15:21:57 [WS PROFILE] send_gcode_and_wait: 418.0 ms | M400
+2026-04-28 15:21:57 [WS PROFILE] wait_for_moves: 419.8 ms
+2026-04-28 15:21:57 [MOVE PROFILE] wait_for_moves took 421.4 ms
+2026-04-28 15:21:57 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:57 [WS PROFILE] get_z_positions: 60.6 ms | z1=25.0, z2=12.899999999999904
+2026-04-28 15:21:57 [WS PROFILE] get_z_position: 62.3 ms | axis=2, z=12.899999999999904
+2026-04-28 15:21:57 [MOVE PROFILE] z convergence loop took 64.0 ms (1 checks)
+2026-04-28 15:21:57 [MOVE PROFILE] total move() time 496.0 ms
+2026-04-28 15:21:57 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:57 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:57 [WS PROFILE] send_gcode_and_wait: 315.0 ms | M400
+2026-04-28 15:21:57 [WS PROFILE] wait_for_moves: 316.8 ms
+2026-04-28 15:21:57 [MOVE PROFILE] wait_for_moves took 318.5 ms
+2026-04-28 15:21:57 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:58 [WS PROFILE] get_z_positions: 227.3 ms | z1=25.0, z2=12.909999999999904
+2026-04-28 15:21:58 [WS PROFILE] get_z_position: 228.3 ms | axis=2, z=12.909999999999904
+2026-04-28 15:21:58 [MOVE PROFILE] z convergence loop took 229.2 ms (1 checks)
+2026-04-28 15:21:58 [MOVE PROFILE] total move() time 553.9 ms
+2026-04-28 15:21:58 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:58 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:21:58 [WS PROFILE] send_gcode_and_wait: 320.3 ms | M400
+2026-04-28 15:21:58 [WS PROFILE] wait_for_moves: 321.1 ms
+2026-04-28 15:21:58 [MOVE PROFILE] wait_for_moves took 321.7 ms
+2026-04-28 15:21:58 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:58 [WS PROFILE] get_z_positions: 208.4 ms | z1=25.0, z2=12.919999999999904
+2026-04-28 15:21:58 [WS PROFILE] get_z_position: 209.0 ms | axis=2, z=12.919999999999904
+2026-04-28 15:21:58 [MOVE PROFILE] z convergence loop took 209.5 ms (1 checks)
+2026-04-28 15:21:58 [MOVE PROFILE] total move() time 534.3 ms
+2026-04-28 15:21:59 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:59 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:21:59 [WS PROFILE] send_gcode_and_wait: 319.9 ms | M400
+2026-04-28 15:21:59 [WS PROFILE] wait_for_moves: 321.7 ms
+2026-04-28 15:21:59 [MOVE PROFILE] wait_for_moves took 323.4 ms
+2026-04-28 15:21:59 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:21:59 [WS PROFILE] get_z_positions: 177.9 ms | z1=25.0, z2=12.929999999999904
+2026-04-28 15:21:59 [WS PROFILE] get_z_position: 178.5 ms | axis=2, z=12.929999999999904
+2026-04-28 15:21:59 [MOVE PROFILE] z convergence loop took 179.2 ms (1 checks)
+2026-04-28 15:21:59 [MOVE PROFILE] total move() time 509.6 ms
+2026-04-28 15:21:59 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:21:59 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:00 [WS PROFILE] send_gcode_and_wait: 317.4 ms | M400
+2026-04-28 15:22:00 [WS PROFILE] wait_for_moves: 319.2 ms
+2026-04-28 15:22:00 [MOVE PROFILE] wait_for_moves took 320.8 ms
+2026-04-28 15:22:00 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:00 [WS PROFILE] get_z_positions: 238.1 ms | z1=25.0, z2=12.939999999999904
+2026-04-28 15:22:00 [WS PROFILE] get_z_position: 239.2 ms | axis=2, z=12.939999999999904
+2026-04-28 15:22:00 [MOVE PROFILE] z convergence loop took 240.2 ms (1 checks)
+2026-04-28 15:22:00 [MOVE PROFILE] total move() time 567.5 ms
+2026-04-28 15:22:00 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:00 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:01 [WS PROFILE] send_gcode_and_wait: 319.9 ms | M400
+2026-04-28 15:22:01 [WS PROFILE] wait_for_moves: 321.7 ms
+2026-04-28 15:22:01 [MOVE PROFILE] wait_for_moves took 323.3 ms
+2026-04-28 15:22:01 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:01 [WS PROFILE] get_z_positions: 221.7 ms | z1=25.0, z2=12.949999999999903
+2026-04-28 15:22:01 [WS PROFILE] get_z_position: 222.6 ms | axis=2, z=12.949999999999903
+2026-04-28 15:22:01 [MOVE PROFILE] z convergence loop took 223.4 ms (1 checks)
+2026-04-28 15:22:01 [MOVE PROFILE] total move() time 553.0 ms
+2026-04-28 15:22:01 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:01 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:22:02 [WS PROFILE] send_gcode_and_wait: 314.8 ms | M400
+2026-04-28 15:22:02 [WS PROFILE] wait_for_moves: 315.6 ms
+2026-04-28 15:22:02 [MOVE PROFILE] wait_for_moves took 316.2 ms
+2026-04-28 15:22:02 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:02 [WS PROFILE] get_z_positions: 127.0 ms | z1=25.0, z2=12.959999999999903
+2026-04-28 15:22:02 [WS PROFILE] get_z_position: 128.8 ms | axis=2, z=12.959999999999903
+2026-04-28 15:22:02 [MOVE PROFILE] z convergence loop took 130.5 ms (1 checks)
+2026-04-28 15:22:02 [MOVE PROFILE] total move() time 451.3 ms
+2026-04-28 15:22:02 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:02 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:02 [WS PROFILE] send_gcode_and_wait: 312.7 ms | M400
+2026-04-28 15:22:02 [WS PROFILE] wait_for_moves: 314.5 ms
+2026-04-28 15:22:02 [MOVE PROFILE] wait_for_moves took 316.2 ms
+2026-04-28 15:22:02 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:03 [WS PROFILE] get_z_positions: 236.6 ms | z1=25.0, z2=12.969999999999903
+2026-04-28 15:22:03 [WS PROFILE] get_z_position: 237.5 ms | axis=2, z=12.969999999999903
+2026-04-28 15:22:03 [MOVE PROFILE] z convergence loop took 238.3 ms (1 checks)
+2026-04-28 15:22:03 [MOVE PROFILE] total move() time 560.7 ms
+2026-04-28 15:22:03 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:03 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:03 [WS PROFILE] send_gcode_and_wait: 316.9 ms | M400
+2026-04-28 15:22:03 [WS PROFILE] wait_for_moves: 318.0 ms
+2026-04-28 15:22:03 [MOVE PROFILE] wait_for_moves took 318.8 ms
+2026-04-28 15:22:03 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:03 [WS PROFILE] get_z_positions: 218.1 ms | z1=25.0, z2=12.979999999999903
+2026-04-28 15:22:03 [WS PROFILE] get_z_position: 219.1 ms | axis=2, z=12.979999999999903
+2026-04-28 15:22:03 [MOVE PROFILE] z convergence loop took 219.8 ms (1 checks)
+2026-04-28 15:22:03 [MOVE PROFILE] total move() time 542.7 ms
+2026-04-28 15:22:04 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:04 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:22:04 [WS PROFILE] send_gcode_and_wait: 318.2 ms | M400
+2026-04-28 15:22:04 [WS PROFILE] wait_for_moves: 320.0 ms
+2026-04-28 15:22:04 [MOVE PROFILE] wait_for_moves took 321.7 ms
+2026-04-28 15:22:04 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:04 [WS PROFILE] get_z_positions: 217.0 ms | z1=25.0, z2=12.989999999999903
+2026-04-28 15:22:04 [WS PROFILE] get_z_position: 217.9 ms | axis=2, z=12.989999999999903
+2026-04-28 15:22:04 [MOVE PROFILE] z convergence loop took 218.4 ms (1 checks)
+2026-04-28 15:22:04 [MOVE PROFILE] total move() time 546.3 ms
+2026-04-28 15:22:04 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:04 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:05 [WS PROFILE] send_gcode_and_wait: 317.1 ms | M400
+2026-04-28 15:22:05 [WS PROFILE] wait_for_moves: 318.8 ms
+2026-04-28 15:22:05 [MOVE PROFILE] wait_for_moves took 320.3 ms
+2026-04-28 15:22:05 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:05 [WS PROFILE] get_z_positions: 136.0 ms | z1=25.0, z2=12.999999999999902
+2026-04-28 15:22:05 [WS PROFILE] get_z_position: 137.7 ms | axis=2, z=12.999999999999902
+2026-04-28 15:22:05 [MOVE PROFILE] z convergence loop took 139.3 ms (1 checks)
+2026-04-28 15:22:05 [MOVE PROFILE] total move() time 466.1 ms
+2026-04-28 15:22:05 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:05 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:06 [WS PROFILE] send_gcode_and_wait: 411.1 ms | M400
+2026-04-28 15:22:06 [WS PROFILE] wait_for_moves: 412.8 ms
+2026-04-28 15:22:06 [MOVE PROFILE] wait_for_moves took 414.5 ms
+2026-04-28 15:22:06 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:06 [WS PROFILE] get_z_positions: 254.6 ms | z1=25.0, z2=13.009999999999902
+2026-04-28 15:22:06 [WS PROFILE] get_z_position: 256.0 ms | axis=2, z=13.009999999999902
+2026-04-28 15:22:06 [MOVE PROFILE] z convergence loop took 257.2 ms (1 checks)
+2026-04-28 15:22:06 [MOVE PROFILE] total move() time 678.2 ms
+2026-04-28 15:22:07 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:07 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:07 [WS PROFILE] send_gcode_and_wait: 327.5 ms | M400
+2026-04-28 15:22:07 [WS PROFILE] wait_for_moves: 329.3 ms
+2026-04-28 15:22:07 [MOVE PROFILE] wait_for_moves took 331.0 ms
+2026-04-28 15:22:07 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:07 [WS PROFILE] get_z_positions: 251.8 ms | z1=25.0, z2=13.019999999999902
+2026-04-28 15:22:07 [WS PROFILE] get_z_position: 253.5 ms | axis=2, z=13.019999999999902
+2026-04-28 15:22:07 [MOVE PROFILE] z convergence loop took 255.0 ms (1 checks)
+2026-04-28 15:22:07 [MOVE PROFILE] total move() time 592.3 ms
+2026-04-28 15:22:08 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:08 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:08 [WS PROFILE] send_gcode_and_wait: 319.8 ms | M400
+2026-04-28 15:22:08 [WS PROFILE] wait_for_moves: 321.5 ms
+2026-04-28 15:22:08 [MOVE PROFILE] wait_for_moves took 323.3 ms
+2026-04-28 15:22:08 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:08 [WS PROFILE] get_z_positions: 199.4 ms | z1=25.0, z2=13.029999999999902
+2026-04-28 15:22:08 [WS PROFILE] get_z_position: 200.2 ms | axis=2, z=13.029999999999902
+2026-04-28 15:22:08 [MOVE PROFILE] z convergence loop took 200.9 ms (1 checks)
+2026-04-28 15:22:08 [MOVE PROFILE] total move() time 529.9 ms
+2026-04-28 15:22:08 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:08 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:22:09 [WS PROFILE] send_gcode_and_wait: 320.9 ms | M400
+2026-04-28 15:22:09 [WS PROFILE] wait_for_moves: 322.6 ms
+2026-04-28 15:22:09 [MOVE PROFILE] wait_for_moves took 325.4 ms
+2026-04-28 15:22:09 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:09 [WS PROFILE] get_z_positions: 22.7 ms | z1=25.0, z2=13.039999999999901
+2026-04-28 15:22:09 [WS PROFILE] get_z_position: 24.9 ms | axis=2, z=13.039999999999901
+2026-04-28 15:22:09 [MOVE PROFILE] z convergence loop took 26.5 ms (1 checks)
+2026-04-28 15:22:09 [MOVE PROFILE] total move() time 359.3 ms
+2026-04-28 15:22:09 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:09 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:22:09 [WS PROFILE] send_gcode_and_wait: 314.3 ms | M400
+2026-04-28 15:22:09 [WS PROFILE] wait_for_moves: 316.0 ms
+2026-04-28 15:22:09 [MOVE PROFILE] wait_for_moves took 317.5 ms
+2026-04-28 15:22:09 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:09 [WS PROFILE] get_z_positions: 169.0 ms | z1=25.0, z2=13.049999999999901
+2026-04-28 15:22:09 [WS PROFILE] get_z_position: 169.8 ms | axis=2, z=13.049999999999901
+2026-04-28 15:22:09 [MOVE PROFILE] z convergence loop took 170.5 ms (1 checks)
+2026-04-28 15:22:09 [MOVE PROFILE] total move() time 493.9 ms
+2026-04-28 15:22:10 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:10 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:22:10 [WS PROFILE] send_gcode_and_wait: 325.7 ms | M400
+2026-04-28 15:22:10 [WS PROFILE] wait_for_moves: 327.7 ms
+2026-04-28 15:22:10 [MOVE PROFILE] wait_for_moves took 329.3 ms
+2026-04-28 15:22:10 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:10 [WS PROFILE] get_z_positions: 249.7 ms | z1=25.0, z2=13.059999999999901
+2026-04-28 15:22:10 [WS PROFILE] get_z_position: 251.4 ms | axis=2, z=13.059999999999901
+2026-04-28 15:22:10 [MOVE PROFILE] z convergence loop took 252.9 ms (1 checks)
+2026-04-28 15:22:10 [MOVE PROFILE] total move() time 589.3 ms
+2026-04-28 15:22:10 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:10 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:11 [WS PROFILE] send_gcode_and_wait: 318.2 ms | M400
+2026-04-28 15:22:11 [WS PROFILE] wait_for_moves: 319.0 ms
+2026-04-28 15:22:11 [MOVE PROFILE] wait_for_moves took 319.5 ms
+2026-04-28 15:22:11 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:11 [WS PROFILE] get_z_positions: 223.6 ms | z1=25.0, z2=13.0699999999999
+2026-04-28 15:22:11 [WS PROFILE] get_z_position: 224.3 ms | axis=2, z=13.0699999999999
+2026-04-28 15:22:11 [MOVE PROFILE] z convergence loop took 224.9 ms (1 checks)
+2026-04-28 15:22:11 [MOVE PROFILE] total move() time 547.5 ms
+2026-04-28 15:22:11 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:11 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:22:11 [WS PROFILE] send_gcode_and_wait: 318.1 ms | M400
+2026-04-28 15:22:11 [WS PROFILE] wait_for_moves: 319.9 ms
+2026-04-28 15:22:11 [MOVE PROFILE] wait_for_moves took 321.6 ms
+2026-04-28 15:22:11 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:12 [WS PROFILE] get_z_positions: 236.8 ms | z1=25.0, z2=13.0799999999999
+2026-04-28 15:22:12 [WS PROFILE] get_z_position: 237.6 ms | axis=2, z=13.0799999999999
+2026-04-28 15:22:12 [MOVE PROFILE] z convergence loop took 238.2 ms (1 checks)
+2026-04-28 15:22:12 [MOVE PROFILE] total move() time 566.1 ms
+2026-04-28 15:22:12 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:12 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:12 [WS PROFILE] send_gcode_and_wait: 316.7 ms | M400
+2026-04-28 15:22:12 [WS PROFILE] wait_for_moves: 318.5 ms
+2026-04-28 15:22:12 [MOVE PROFILE] wait_for_moves took 321.0 ms
+2026-04-28 15:22:12 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:12 [WS PROFILE] get_z_positions: 232.5 ms | z1=25.0, z2=13.0899999999999
+2026-04-28 15:22:12 [WS PROFILE] get_z_position: 233.6 ms | axis=2, z=13.0899999999999
+2026-04-28 15:22:12 [MOVE PROFILE] z convergence loop took 234.6 ms (1 checks)
+2026-04-28 15:22:12 [MOVE PROFILE] total move() time 561.3 ms
+2026-04-28 15:22:13 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:13 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:22:13 [WS PROFILE] send_gcode_and_wait: 319.5 ms | M400
+2026-04-28 15:22:13 [WS PROFILE] wait_for_moves: 321.3 ms
+2026-04-28 15:22:13 [MOVE PROFILE] wait_for_moves took 322.9 ms
+2026-04-28 15:22:13 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:13 [WS PROFILE] get_z_positions: 199.6 ms | z1=25.0, z2=13.0999999999999
+2026-04-28 15:22:13 [WS PROFILE] get_z_position: 200.3 ms | axis=2, z=13.0999999999999
+2026-04-28 15:22:13 [MOVE PROFILE] z convergence loop took 200.9 ms (1 checks)
+2026-04-28 15:22:13 [MOVE PROFILE] total move() time 529.9 ms
+2026-04-28 15:22:13 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:13 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:22:14 [WS PROFILE] send_gcode_and_wait: 437.6 ms | M400
+2026-04-28 15:22:14 [WS PROFILE] wait_for_moves: 439.3 ms
+2026-04-28 15:22:14 [MOVE PROFILE] wait_for_moves took 441.1 ms
+2026-04-28 15:22:14 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:14 [WS PROFILE] get_z_positions: 99.0 ms | z1=25.0, z2=13.0799999999999
+2026-04-28 15:22:14 [WS PROFILE] get_z_position: 101.8 ms | axis=2, z=13.0799999999999
+2026-04-28 15:22:14 [MOVE PROFILE] z convergence loop took 103.7 ms (1 checks)
+2026-04-28 15:22:14 [WS PROFILE] get_z_positions: 248.2 ms | z1=25.0, z2=13.0799999999999
+2026-04-28 15:22:14 [WS PROFILE] get_z_position: 250.0 ms | axis=2, z=13.0799999999999
+2026-04-28 15:22:14 [MOVE PROFILE] verify_mov took 251.7 ms
+2026-04-28 15:22:14 [MOVE PROFILE] total move() time 805.9 ms
+2026-04-28 15:22:37 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:37 [MOVE PROFILE] queue carriage2 cmd took 0.7 ms
+2026-04-28 15:22:37 [WS PROFILE] send_gcode_and_wait: 429.8 ms | M400
+2026-04-28 15:22:37 [WS PROFILE] wait_for_moves: 431.5 ms
+2026-04-28 15:22:37 [MOVE PROFILE] wait_for_moves took 433.1 ms
+2026-04-28 15:22:37 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:37 [WS PROFILE] get_z_positions: 57.4 ms | z1=25.0, z2=13.069999999999911
+2026-04-28 15:22:37 [WS PROFILE] get_z_position: 58.4 ms | axis=2, z=13.069999999999911
+2026-04-28 15:22:37 [MOVE PROFILE] z convergence loop took 59.2 ms (1 checks)
+2026-04-28 15:22:37 [MOVE PROFILE] total move() time 498.0 ms
+2026-04-28 15:22:37 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:37 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:38 [WS PROFILE] send_gcode_and_wait: 315.9 ms | M400
+2026-04-28 15:22:38 [WS PROFILE] wait_for_moves: 316.6 ms
+2026-04-28 15:22:38 [MOVE PROFILE] wait_for_moves took 317.2 ms
+2026-04-28 15:22:38 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:38 [WS PROFILE] get_z_positions: 222.7 ms | z1=25.0, z2=13.070999999999911
+2026-04-28 15:22:38 [WS PROFILE] get_z_position: 240.3 ms | axis=2, z=13.070999999999911
+2026-04-28 15:22:38 [MOVE PROFILE] z convergence loop took 242.2 ms (1 checks)
+2026-04-28 15:22:38 [MOVE PROFILE] total move() time 564.8 ms
+2026-04-28 15:22:38 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:38 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:22:38 [WS PROFILE] send_gcode_and_wait: 315.7 ms | M400
+2026-04-28 15:22:38 [WS PROFILE] wait_for_moves: 317.5 ms
+2026-04-28 15:22:38 [MOVE PROFILE] wait_for_moves took 319.2 ms
+2026-04-28 15:22:38 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:39 [WS PROFILE] get_z_positions: 195.9 ms | z1=25.0, z2=13.07199999999991
+2026-04-28 15:22:39 [WS PROFILE] get_z_position: 197.0 ms | axis=2, z=13.07199999999991
+2026-04-28 15:22:39 [MOVE PROFILE] z convergence loop took 198.0 ms (1 checks)
+2026-04-28 15:22:39 [MOVE PROFILE] total move() time 523.7 ms
+2026-04-28 15:22:39 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:39 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:39 [WS PROFILE] send_gcode_and_wait: 317.9 ms | M400
+2026-04-28 15:22:39 [WS PROFILE] wait_for_moves: 319.7 ms
+2026-04-28 15:22:39 [MOVE PROFILE] wait_for_moves took 321.2 ms
+2026-04-28 15:22:39 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:39 [WS PROFILE] get_z_positions: 220.6 ms | z1=25.0, z2=13.07299999999991
+2026-04-28 15:22:39 [WS PROFILE] get_z_position: 221.5 ms | axis=2, z=13.07299999999991
+2026-04-28 15:22:39 [MOVE PROFILE] z convergence loop took 222.2 ms (1 checks)
+2026-04-28 15:22:39 [MOVE PROFILE] total move() time 549.0 ms
+2026-04-28 15:22:40 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:40 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:22:40 [WS PROFILE] send_gcode_and_wait: 328.1 ms | M400
+2026-04-28 15:22:40 [WS PROFILE] wait_for_moves: 329.9 ms
+2026-04-28 15:22:40 [MOVE PROFILE] wait_for_moves took 331.6 ms
+2026-04-28 15:22:40 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:40 [WS PROFILE] get_z_positions: 207.0 ms | z1=25.0, z2=13.07399999999991
+2026-04-28 15:22:40 [WS PROFILE] get_z_position: 207.7 ms | axis=2, z=13.07399999999991
+2026-04-28 15:22:40 [MOVE PROFILE] z convergence loop took 208.4 ms (1 checks)
+2026-04-28 15:22:40 [MOVE PROFILE] total move() time 545.7 ms
+2026-04-28 15:22:40 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:40 [MOVE PROFILE] queue carriage2 cmd took 1.5 ms
+2026-04-28 15:22:41 [WS PROFILE] send_gcode_and_wait: 317.8 ms | M400
+2026-04-28 15:22:41 [WS PROFILE] wait_for_moves: 318.7 ms
+2026-04-28 15:22:41 [MOVE PROFILE] wait_for_moves took 319.2 ms
+2026-04-28 15:22:41 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:41 [WS PROFILE] get_z_positions: 237.7 ms | z1=25.0, z2=13.074999999999909
+2026-04-28 15:22:41 [WS PROFILE] get_z_position: 238.5 ms | axis=2, z=13.074999999999909
+2026-04-28 15:22:41 [MOVE PROFILE] z convergence loop took 239.0 ms (1 checks)
+2026-04-28 15:22:41 [MOVE PROFILE] total move() time 562.4 ms
+2026-04-28 15:22:41 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:41 [MOVE PROFILE] queue carriage2 cmd took 1.1 ms
+2026-04-28 15:22:41 [WS PROFILE] send_gcode_and_wait: 318.8 ms | M400
+2026-04-28 15:22:41 [WS PROFILE] wait_for_moves: 320.7 ms
+2026-04-28 15:22:41 [MOVE PROFILE] wait_for_moves took 323.4 ms
+2026-04-28 15:22:41 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:42 [WS PROFILE] get_z_positions: 234.0 ms | z1=25.0, z2=13.075999999999908
+2026-04-28 15:22:42 [WS PROFILE] get_z_position: 234.9 ms | axis=2, z=13.075999999999908
+2026-04-28 15:22:42 [MOVE PROFILE] z convergence loop took 235.6 ms (1 checks)
+2026-04-28 15:22:42 [MOVE PROFILE] total move() time 565.1 ms
+2026-04-28 15:22:42 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:42 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:42 [WS PROFILE] send_gcode_and_wait: 316.2 ms | M400
+2026-04-28 15:22:42 [WS PROFILE] wait_for_moves: 318.0 ms
+2026-04-28 15:22:42 [MOVE PROFILE] wait_for_moves took 319.6 ms
+2026-04-28 15:22:42 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:42 [WS PROFILE] get_z_positions: 231.3 ms | z1=25.0, z2=13.076999999999908
+2026-04-28 15:22:42 [WS PROFILE] get_z_position: 232.3 ms | axis=2, z=13.076999999999908
+2026-04-28 15:22:42 [MOVE PROFILE] z convergence loop took 233.0 ms (1 checks)
+2026-04-28 15:22:42 [MOVE PROFILE] total move() time 558.0 ms
+2026-04-28 15:22:43 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:43 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:22:43 [WS PROFILE] send_gcode_and_wait: 322.6 ms | M400
+2026-04-28 15:22:43 [WS PROFILE] wait_for_moves: 324.4 ms
+2026-04-28 15:22:43 [MOVE PROFILE] wait_for_moves took 326.2 ms
+2026-04-28 15:22:43 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:43 [WS PROFILE] get_z_positions: 186.3 ms | z1=25.0, z2=13.077999999999907
+2026-04-28 15:22:43 [WS PROFILE] get_z_position: 187.0 ms | axis=2, z=13.077999999999907
+2026-04-28 15:22:43 [MOVE PROFILE] z convergence loop took 187.5 ms (1 checks)
+2026-04-28 15:22:43 [MOVE PROFILE] total move() time 520.1 ms
+2026-04-28 15:22:43 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:43 [MOVE PROFILE] queue carriage2 cmd took 1.3 ms
+2026-04-28 15:22:44 [WS PROFILE] send_gcode_and_wait: 316.3 ms | M400
+2026-04-28 15:22:44 [WS PROFILE] wait_for_moves: 317.9 ms
+2026-04-28 15:22:44 [MOVE PROFILE] wait_for_moves took 319.5 ms
+2026-04-28 15:22:44 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:44 [WS PROFILE] get_z_positions: 234.9 ms | z1=25.0, z2=13.078999999999906
+2026-04-28 15:22:44 [WS PROFILE] get_z_position: 236.2 ms | axis=2, z=13.078999999999906
+2026-04-28 15:22:44 [MOVE PROFILE] z convergence loop took 236.7 ms (1 checks)
+2026-04-28 15:22:44 [MOVE PROFILE] total move() time 562.1 ms
+2026-04-28 15:22:44 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:44 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:22:44 [WS PROFILE] send_gcode_and_wait: 315.6 ms | M400
+2026-04-28 15:22:44 [WS PROFILE] wait_for_moves: 318.7 ms
+2026-04-28 15:22:44 [MOVE PROFILE] wait_for_moves took 320.4 ms
+2026-04-28 15:22:44 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:45 [WS PROFILE] get_z_positions: 233.6 ms | z1=25.0, z2=13.079999999999906
+2026-04-28 15:22:45 [WS PROFILE] get_z_position: 234.3 ms | axis=2, z=13.079999999999906
+2026-04-28 15:22:45 [MOVE PROFILE] z convergence loop took 235.0 ms (1 checks)
+2026-04-28 15:22:45 [MOVE PROFILE] total move() time 562.0 ms
+2026-04-28 15:22:45 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:45 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:45 [WS PROFILE] send_gcode_and_wait: 318.9 ms | M400
+2026-04-28 15:22:45 [WS PROFILE] wait_for_moves: 320.7 ms
+2026-04-28 15:22:45 [MOVE PROFILE] wait_for_moves took 322.3 ms
+2026-04-28 15:22:45 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:45 [WS PROFILE] get_z_positions: 220.8 ms | z1=25.0, z2=13.080999999999905
+2026-04-28 15:22:45 [WS PROFILE] get_z_position: 221.5 ms | axis=2, z=13.080999999999905
+2026-04-28 15:22:45 [MOVE PROFILE] z convergence loop took 222.1 ms (1 checks)
+2026-04-28 15:22:45 [MOVE PROFILE] total move() time 551.9 ms
+2026-04-28 15:22:46 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:46 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:46 [WS PROFILE] send_gcode_and_wait: 331.8 ms | M400
+2026-04-28 15:22:46 [WS PROFILE] wait_for_moves: 333.6 ms
+2026-04-28 15:22:46 [MOVE PROFILE] wait_for_moves took 335.1 ms
+2026-04-28 15:22:46 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:46 [WS PROFILE] get_z_positions: 206.7 ms | z1=25.0, z2=13.081999999999905
+2026-04-28 15:22:46 [WS PROFILE] get_z_position: 207.7 ms | axis=2, z=13.081999999999905
+2026-04-28 15:22:46 [MOVE PROFILE] z convergence loop took 208.7 ms (1 checks)
+2026-04-28 15:22:46 [MOVE PROFILE] total move() time 550.0 ms
+2026-04-28 15:22:46 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:46 [MOVE PROFILE] queue carriage2 cmd took 1.2 ms
+2026-04-28 15:22:47 [WS PROFILE] send_gcode_and_wait: 316.4 ms | M400
+2026-04-28 15:22:47 [WS PROFILE] wait_for_moves: 317.5 ms
+2026-04-28 15:22:47 [MOVE PROFILE] wait_for_moves took 318.4 ms
+2026-04-28 15:22:47 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:47 [WS PROFILE] get_z_positions: 243.8 ms | z1=25.0, z2=13.082999999999904
+2026-04-28 15:22:47 [WS PROFILE] get_z_position: 245.5 ms | axis=2, z=13.082999999999904
+2026-04-28 15:22:47 [MOVE PROFILE] z convergence loop took 247.2 ms (1 checks)
+2026-04-28 15:22:47 [MOVE PROFILE] total move() time 571.6 ms
+2026-04-28 15:22:47 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:47 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:47 [WS PROFILE] send_gcode_and_wait: 318.4 ms | M400
+2026-04-28 15:22:47 [WS PROFILE] wait_for_moves: 321.2 ms
+2026-04-28 15:22:48 [MOVE PROFILE] wait_for_moves took 323.2 ms
+2026-04-28 15:22:48 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:48 [WS PROFILE] get_z_positions: 208.9 ms | z1=25.0, z2=13.083999999999904
+2026-04-28 15:22:48 [WS PROFILE] get_z_position: 209.5 ms | axis=2, z=13.083999999999904
+2026-04-28 15:22:48 [MOVE PROFILE] z convergence loop took 209.9 ms (1 checks)
+2026-04-28 15:22:48 [MOVE PROFILE] total move() time 539.3 ms
+2026-04-28 15:22:48 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:48 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:22:48 [WS PROFILE] send_gcode_and_wait: 318.2 ms | M400
+2026-04-28 15:22:48 [WS PROFILE] wait_for_moves: 320.0 ms
+2026-04-28 15:22:48 [MOVE PROFILE] wait_for_moves took 321.5 ms
+2026-04-28 15:22:48 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:48 [WS PROFILE] get_z_positions: 235.9 ms | z1=25.0, z2=13.084999999999903
+2026-04-28 15:22:48 [WS PROFILE] get_z_position: 236.8 ms | axis=2, z=13.084999999999903
+2026-04-28 15:22:48 [MOVE PROFILE] z convergence loop took 237.6 ms (1 checks)
+2026-04-28 15:22:48 [MOVE PROFILE] total move() time 565.1 ms
+2026-04-28 15:22:49 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:49 [MOVE PROFILE] queue carriage2 cmd took 1.0 ms
+2026-04-28 15:22:49 [WS PROFILE] send_gcode_and_wait: 316.4 ms | M400
+2026-04-28 15:22:49 [WS PROFILE] wait_for_moves: 318.2 ms
+2026-04-28 15:22:49 [MOVE PROFILE] wait_for_moves took 319.9 ms
+2026-04-28 15:22:49 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:49 [WS PROFILE] get_z_positions: 211.2 ms | z1=25.0, z2=13.085999999999903
+2026-04-28 15:22:49 [WS PROFILE] get_z_position: 213.9 ms | axis=2, z=13.085999999999903
+2026-04-28 15:22:49 [MOVE PROFILE] z convergence loop took 214.7 ms (1 checks)
+2026-04-28 15:22:49 [MOVE PROFILE] total move() time 541.5 ms
+2026-04-28 15:22:49 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:49 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:50 [WS PROFILE] send_gcode_and_wait: 317.4 ms | M400
+2026-04-28 15:22:50 [WS PROFILE] wait_for_moves: 319.3 ms
+2026-04-28 15:22:50 [MOVE PROFILE] wait_for_moves took 320.9 ms
+2026-04-28 15:22:50 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:50 [WS PROFILE] get_z_positions: 224.1 ms | z1=25.0, z2=13.086999999999902
+2026-04-28 15:22:50 [WS PROFILE] get_z_position: 224.7 ms | axis=2, z=13.086999999999902
+2026-04-28 15:22:50 [MOVE PROFILE] z convergence loop took 225.4 ms (1 checks)
+2026-04-28 15:22:50 [MOVE PROFILE] total move() time 552.2 ms
+2026-04-28 15:22:50 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:50 [MOVE PROFILE] queue carriage2 cmd took 0.9 ms
+2026-04-28 15:22:50 [WS PROFILE] send_gcode_and_wait: 317.4 ms | M400
+2026-04-28 15:22:50 [WS PROFILE] wait_for_moves: 319.2 ms
+2026-04-28 15:22:50 [MOVE PROFILE] wait_for_moves took 321.2 ms
+2026-04-28 15:22:51 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:51 [WS PROFILE] get_z_positions: 217.4 ms | z1=25.0, z2=13.087999999999901
+2026-04-28 15:22:51 [WS PROFILE] get_z_position: 218.3 ms | axis=2, z=13.087999999999901
+2026-04-28 15:22:51 [MOVE PROFILE] z convergence loop took 219.2 ms (1 checks)
+2026-04-28 15:22:51 [MOVE PROFILE] total move() time 548.4 ms
+2026-04-28 15:22:51 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:51 [MOVE PROFILE] queue carriage2 cmd took 2.1 ms
+2026-04-28 15:22:51 [WS PROFILE] send_gcode_and_wait: 312.4 ms | M400
+2026-04-28 15:22:51 [WS PROFILE] wait_for_moves: 314.2 ms
+2026-04-28 15:22:51 [MOVE PROFILE] wait_for_moves took 315.8 ms
+2026-04-28 15:22:51 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:51 [WS PROFILE] get_z_positions: 229.3 ms | z1=25.0, z2=13.088999999999901
+2026-04-28 15:22:51 [WS PROFILE] get_z_position: 230.0 ms | axis=2, z=13.088999999999901
+2026-04-28 15:22:51 [MOVE PROFILE] z convergence loop took 230.6 ms (1 checks)
+2026-04-28 15:22:51 [MOVE PROFILE] total move() time 554.9 ms
+2026-04-28 15:22:52 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:52 [MOVE PROFILE] queue carriage2 cmd took 1.6 ms
+2026-04-28 15:22:52 [WS PROFILE] send_gcode_and_wait: 322.5 ms | M400
+2026-04-28 15:22:52 [WS PROFILE] wait_for_moves: 324.3 ms
+2026-04-28 15:22:52 [MOVE PROFILE] wait_for_moves took 326.0 ms
+2026-04-28 15:22:52 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:52 [WS PROFILE] get_z_positions: 225.9 ms | z1=25.0, z2=13.0899999999999
+2026-04-28 15:22:52 [WS PROFILE] get_z_position: 226.6 ms | axis=2, z=13.0899999999999
+2026-04-28 15:22:52 [MOVE PROFILE] z convergence loop took 227.1 ms (1 checks)
+2026-04-28 15:22:52 [MOVE PROFILE] total move() time 559.4 ms
+2026-04-28 15:22:52 [WS PROFILE] select_carriage: 0.0 ms | 2 -> 2 (skipped)
+2026-04-28 15:22:52 [MOVE PROFILE] queue carriage2 cmd took 0.8 ms
+2026-04-28 15:22:53 [WS PROFILE] send_gcode_and_wait: 422.3 ms | M400
+2026-04-28 15:22:53 [WS PROFILE] wait_for_moves: 424.1 ms
+2026-04-28 15:22:53 [MOVE PROFILE] wait_for_moves took 425.7 ms
+2026-04-28 15:22:53 [MOVE PROFILE] velocity settle loop skipped for z-only move
+2026-04-28 15:22:53 [WS PROFILE] get_z_positions: 137.4 ms | z1=25.0, z2=13.069999999999911
+2026-04-28 15:22:53 [WS PROFILE] get_z_position: 139.2 ms | axis=2, z=13.069999999999911
+2026-04-28 15:22:53 [MOVE PROFILE] z convergence loop took 140.9 ms (1 checks)
+2026-04-28 15:22:53 [WS PROFILE] get_z_positions: 241.8 ms | z1=25.0, z2=13.069999999999911
+2026-04-28 15:22:53 [WS PROFILE] get_z_position: 243.8 ms | axis=2, z=13.069999999999911
+2026-04-28 15:22:53 [MOVE PROFILE] verify_mov took 245.5 ms
+2026-04-28 15:22:53 [MOVE PROFILE] total move() time 820.9 ms
