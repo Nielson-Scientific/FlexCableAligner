@@ -9,10 +9,26 @@ from PositionSchema import Position
 # The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program
 # This is enabled by easy access to the movement ToolController vial the ToolController singleton 
 
+HIGH = 20
+LOW = 10
+BROAD_STEP = 0.05
+FINE_STEP = 0.01
+FINER_STEP = 0.001
+
 class Autofocus:
     @staticmethod
-    def fast_autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step = 0.1, fine_pass_step = 0.01,  finer_pass_step = None, show_plots = False):
-        print(f"Beginning Fast AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
+    def thorough_autofocus(
+        cam_handle, 
+        tool_handle, 
+        carriage, 
+        high=HIGH, 
+        low=LOW, 
+        broad_pass_step = BROAD_STEP, 
+        fine_pass_step = FINE_STEP,  
+        finer_pass_step = FINER_STEP, 
+        show_plots = False
+    ):
+        print(f"Beginning Thorough AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
         broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step, show_plot = show_plots)
         fine_high = broad_best + broad_pass_step
         fine_low = broad_best - broad_pass_step
@@ -28,7 +44,15 @@ class Autofocus:
 
 
     @staticmethod
-    def autofocus(cam_handle, tool_handle, carriage, high, low, step_size, show_plot = False ):
+    def autofocus(
+        cam_handle, 
+        tool_handle, 
+        carriage, 
+        high, 
+        low, 
+        step_size = FINER_STEP, 
+        show_plot = False
+    ):
         print(f"Beginning AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Step Size = {step_size}")        # Initialize data for loop
         focus_dict = {}
         heights = Autofocus.generate_heights(high, low, step_size)
@@ -42,7 +66,7 @@ class Autofocus:
         try:
             # Start stepping through heights
             for position in reversed(positions):
-                tool_handle.move(position, verify_mov=False)
+                tool_handle.move(position)
                 time.sleep(0.5)
                 frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
                 time.sleep(0.5)
@@ -66,7 +90,31 @@ class Autofocus:
         finally:
             if show_plot: Autofocus.plot_focus_curve(focus_dict)
         return optimal_height
+    
+    def fast_autofocus(
+        tool_handle, 
+        cam_handle, 
+        carriage, 
+        high=HIGH, 
+        low=LOW, 
+    ):
+        # Conceptually this one is different:
+        # Rather than sending one g code per move, we are going to continuously move at a slow speed and capture frames in a loop until we reach the target low/high positions.
+        print(f"Beginning Fast AutoFocus, Carriage = {carriage}, High = {high}, Low = {low}")
+        # Go to starting position
+        if carriage == 1:
+            tool_handle.move(Position(z1 = LOW))
+        else:
+            tool_handle.move(Position(z2 = LOW))
 
+        # Start NonBlocking move
+        if carriage == 1:
+            tool_handle.move_non_blocking(Position(z1 = HIGH), speed=0.5)
+        else:
+            tool_handle.move_non_blocking(Position(z2 = HIGH), speed=0.5)
+        
+        # Start camera feed loop (the dict is a time stamped log of images )
+        pics_dict = {}
 
 
     ##########################
