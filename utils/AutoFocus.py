@@ -16,8 +16,8 @@ BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
 
-FAST_AF_SAMPLES_PER_SECOND = 25
-FAST_AF_FEEDRATE = 250
+FAST_AF_SAMPLES_PER_SECOND = 12.5
+FAST_AF_FEEDRATE = 125
 
 
 class Autofocus:
@@ -102,18 +102,16 @@ class Autofocus:
         tool_handle.move(start_pos)
         time.sleep(1.0)  # Allow time to settle
 
-        # Calculate Times
+
+        # Start moving towards target at slow speed
+        tool_handle.move(target_pos, set_speed=AF_speed, blocking = False)
+
+        # Start timing
         FUDGEFACTOR = 10  # I think our real feed values are wrong)
         estimated_time_to_complete = 60 * (abs(end_z - start_z) / AF_speed) * FUDGEFACTOR
         print(f"Estimated time to complete move: {estimated_time_to_complete:.2f} seconds")
         t_start = time.time()
         t_end = t_start + estimated_time_to_complete
-
-        print(t_start)
-        print(t_end)
-
-        # Start moving towards target at slow speed
-        tool_handle.move(target_pos, set_speed=AF_speed, blocking = False)
 
         # Frame Capture Loop
         samples = []
@@ -159,7 +157,7 @@ class Autofocus:
             tool_handle.move(Position(z1=est_best_z))
         else:
             tool_handle.move(Position(z2=est_best_z))
-        return est_best_z
+        return est_best_z, estimated_time_to_complete
     
     @staticmethod
     def fast_autofocus(
@@ -168,27 +166,38 @@ class Autofocus:
         carriage,
         high=HIGH, 
         low=LOW,
-        AF_speed = AF_FEEDRATE , # Feedrate (mm/min)
-        fine_pass_range = 0.5,  
-        fine_pass_AF_speed = AF_FEEDRATE/10, 
+        AF_speed = FAST_AF_FEEDRATE , # Feedrate (mm/min)
+        fine_factor = 0.1,
         show_plots = False,
         save_samples = False,
     ):
-        pass1_z = Autofocus.fast_autofocus_singlepass(
+        fast_pass1_z, pass_1_duration = Autofocus.fast_autofocus_singlepass(
             cam_handle=cam_handle,
             tool_handle=tool_handle,
             carriage=carriage,
             high=high,
             low=low,
+            AF_speed = AF_speed,
         )
-        pass2_z = Autofocus.percise_autofocus_singlepass(
+        fast_pass2_z, pass_2_duration = Autofocus.fast_autofocus_singlepass(
             cam_handle=cam_handle,
             tool_handle=tool_handle,
             carriage=carriage,
-            high=min(high, pass1_z + fine_pass_range/2),
-            low=max(low, pass1_z - fine_pass_range/2),
-            step_size = FINE_STEP/2
+            high=min(high, fast_pass1_z + (high - low)*fine_factor/2),
+            low=max(low, fast_pass1_z - (high - low)*fine_factor/2),
+            AF_speed = AF_speed * fine_factor, 
         )
+        return fast_pass2_z, pass_1_duration + pass_2_duration    
+
+
+        # pass2_z = Autofocus.percise_autofocus_singlepass(
+        #     cam_handle=cam_handle,
+        #     tool_handle=tool_handle,
+        #     carriage=carriage,
+        #     high=min(high, pass1_z + fine_pass_range/2),
+        #     low=max(low, pass1_z - fine_pass_range/2),
+        #     step_size = FINE_STEP/2
+        # )
 
 
 
