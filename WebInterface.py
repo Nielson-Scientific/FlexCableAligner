@@ -179,36 +179,23 @@ class WebInterface(QWidget):
         self.tool_wrapper.refresh_position()
 
     def handle_autofocus(self):
-        print("Autofocus button clicked! (Implement autofocus logic here)")
         current_carriage = self.tool_wrapper.current_carriage
         af_cam = self.camera1 if current_carriage == 1 else self.camera2
         z_pos = self.tool_wrapper.get_absolute_position().z1 if current_carriage == 1 else self.tool_wrapper.refresh_absolute_position().z2
-        Autofocus.autofocus(
+        Autofocus.quick_autofocus_routine(
             af_cam, 
             self.tool_wrapper, 
             current_carriage,
-            high = z_pos + 0.05,
-            low  = z_pos - 0.05,
-            )
+            current_height=z_pos
+        )
 
     def handle_thorough_autofocus(self):
-        print("Thorough Autofocus button clicked! (Implement thorough autofocus logic here)")
         current_carriage = self.tool_wrapper.current_carriage
         af_cam = self.camera1 if current_carriage == 1 else self.camera2
-        
-        #goofy debug
-        if af_cam == self.camera1:
-            print("Using Camera 1 for Autofocus")
-        else:
-            print("Using Camera 2 for Autofocus")
-
-
-        Autofocus.fast_autofocus(
+        Autofocus.thorough_autofocus_routine(
             af_cam, 
             self.tool_wrapper, 
             current_carriage, 
-            show_plots=True,
-            save_samples=True
         )
 
     def handle_run_process(self):

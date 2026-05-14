@@ -19,7 +19,7 @@ FINE_STEP = 0.01
 FINER_STEP = 0.001
 
 FAST_AF_SAMPLES_PER_SECOND = 12.5
-FAST_AF_FEEDRATE = 125
+FAST_AF_FEEDRATE = 400
 
 TYPICAL_FAST_ERROR = 0.5
 
@@ -184,6 +184,7 @@ class Autofocus:
             high=high,
             low=low,
             AF_speed = AF_speed,
+            show_plots=show_plots,
         )
         
         percise_pass1_z = Autofocus.percise_autofocus_singlepass(
@@ -193,6 +194,7 @@ class Autofocus:
             high=min(high, fast_pass1_z + TYPICAL_FAST_ERROR),
             low=max(low, fast_pass1_z - TYPICAL_FAST_ERROR),
             step_size = BROAD_STEP,
+            show_plot=show_plots
         )
         percise_pass2_z = Autofocus.percise_autofocus_singlepass(
             cam_handle=cam_handle,
@@ -201,7 +203,7 @@ class Autofocus:
             high=min(high, percise_pass1_z + BROAD_STEP),
             low=max(low, percise_pass1_z - BROAD_STEP),
             step_size = FINE_STEP,
-            show_plot=True
+            show_plot=show_plots
         )
         return    
 
@@ -211,29 +213,25 @@ class Autofocus:
         tool_handle, 
         carriage,
         current_height,
-        high=HIGH, 
-        low=LOW,
-        AF_speed = FAST_AF_FEEDRATE , # Feedrate (mm/min)
-        fine_factor = 0.1,
         show_plots = False,
-        save_samples = False,
     ):
         percise_pass1_z = Autofocus.percise_autofocus_singlepass(
             cam_handle=cam_handle,
             tool_handle=tool_handle,
             carriage=carriage,
-            high=min(high, current_height + TYPICAL_QUICK_ERROR),
-            low=max(low, current_height - TYPICAL_QUICK_ERROR),
+            high=current_height + TYPICAL_QUICK_ERROR,
+            low=current_height - TYPICAL_QUICK_ERROR,
             step_size = BROAD_STEP,
+            show_plot=show_plots
         )
         percise_pass2_z = Autofocus.percise_autofocus_singlepass(
             cam_handle=cam_handle,
             tool_handle=tool_handle,
             carriage=carriage,
-            high=min(high, percise_pass1_z + BROAD_STEP),
-            low=max(low, percise_pass1_z - BROAD_STEP),
+            high= percise_pass1_z + BROAD_STEP,
+            low= percise_pass1_z - BROAD_STEP,
             step_size = FINE_STEP,
-            show_plot=True
+            show_plot=show_plots
         )
 
 
