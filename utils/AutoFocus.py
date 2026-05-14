@@ -110,6 +110,7 @@ class Autofocus:
         fine_pass_step = FINE_STEP,  
         finer_pass_step = FINER_STEP, 
         show_plots = False,
+        save_samples = False,
     ):
         # Conceptually this one is different:
         # Rather than sending one g code per move, we are going to continuously move at a slow speed and capture frames in a loop until we reach the target low/high positions.
@@ -144,8 +145,18 @@ class Autofocus:
         samples = []
         while time.time() < t_end:
             frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
-            samples.append((time.time(), frame.image_bgr))
+            if frame is not None:
+                samples.append((time.time(), frame.image_bgr))
         print(f"Completed capturing frames. Total frames: {len(samples)}")
+
+        if save_samples and samples:
+            sample_dir = Path("af_fast_samples")
+            sample_dir.mkdir(parents=True, exist_ok=True)
+            for ts, img in samples:
+                cv2.imwrite(str(sample_dir / f"{ts:.6f}.png"), img)
+
+        if not samples:
+            raise RuntimeError("No samples collected during fast_autofocus")
         # Score image sharpness, find best
         scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
         best_ts, _ = max(scored, key=lambda s: s[1])
