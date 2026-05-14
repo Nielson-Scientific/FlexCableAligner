@@ -16,8 +16,8 @@ BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
 
-IMAGES_PER_SECOND = 25
-AF_FEEDRATE = 250
+FAST_AF_SAMPLES_PER_SECOND = 25
+FAST_AF_FEEDRATE = 250
 
 
 class Autofocus:
@@ -81,7 +81,8 @@ class Autofocus:
         carriage,
         high=HIGH, 
         low=LOW,
-        AF_speed = AF_FEEDRATE , # Feedrate (mm/min)
+        AF_speed = FAST_AF_FEEDRATE , # Feedrate (mm/min)
+        samples_per_second = FAST_AF_SAMPLES_PER_SECOND,
         show_plots = False,
         save_samples = False,
     ):
@@ -122,7 +123,7 @@ class Autofocus:
             if frame is not None:
                 # Copy to decouple from any underlying camera buffer reuse.
                 samples.append((time.time(), frame.image_bgr.copy()))
-            time.sleep(1.0 / IMAGES_PER_SECOND)
+            time.sleep(1.0 / samples_per_second)
         print(f"Completed capturing frames. Total frames: {len(samples)}")
 
         if save_samples and samples:
