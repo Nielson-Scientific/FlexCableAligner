@@ -2,9 +2,11 @@ import cv2
 import numpy as np
 import time
 import threading
+import os
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
-from PositionSchema import Position
+if __name__ != "__main__": from PositionSchema import Position
 
 # Perhaps it would be best to move this insdie of the Camera Control class.
 # The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program
@@ -18,6 +20,24 @@ FINER_STEP = 0.001
 
 FAST_AF_SAMPLES_PER_SECOND = 25
 FAST_AF_FEEDRATE = 250
+
+
+def _score_laplacian(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    lap = cv2.Laplacian(gray, cv2.CV_64F)
+    return float(lap.var())
+
+
+def _score_tenengrad(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+    g2 = gx**2 + gy**2
+    tau = np.percentile(g2, 90)
+    strong = g2[g2 > tau]
+    if not strong.size:
+        return 0.0
+    return float(np.mean(strong))
 
 
 class Autofocus:
@@ -168,9 +188,9 @@ class Autofocus:
         carriage,
         high=HIGH, 
         low=LOW,
-        AF_speed = AF_FEEDRATE , # Feedrate (mm/min)
+        AF_speed = FAST_AF_FEEDRATE , # Feedrate (mm/min)
         fine_pass_range = 0.5,  
-        fine_pass_AF_speed = AF_FEEDRATE/10, 
+        fine_pass_AF_speed = FAST_AF_FEEDRATE/10, 
         show_plots = False,
         save_samples = False,
     ):
@@ -289,11 +309,100 @@ class Autofocus:
         return str(output_path)
     
     @staticmethod
-    def fast_af_score(samples: list[tuple[float, "object"]]) -> list[tuple[float, float]]:
-        scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
+    def fast_af_score(
+        samples: list[tuple[float, "object"]],
+        workers: int = 1,
+        refine_top_fraction: float = 0.10,
+    ) -> list[tuple[float, float]]:
+        if not samples:
+            return []
+
+        ts_list = [ts for ts, _ in samples]
+        imgs = [img for _, img in samples]
+        max_workers = max(1, min(int(workers), os.cpu_count() or 1))
+
+        if max_workers == 1 or len(imgs) < 8:
+            coarse_scores = [_score_laplacian(img) for img in imgs]
+        else:
+            with ProcessPoolExecutor(max_workers=max_workers) as ex:
+                coarse_scores = list(ex.map(_score_laplacian, imgs, chunksize=8))
+
+        scored = list(zip(ts_list, coarse_scores))
+
+        if refine_top_fraction <= 0:
+            return scored
+
+        refine_n = max(1, int(len(scored) * refine_top_fraction))
+        top_idxs = sorted(range(len(scored)), key=lambda i: scored[i][1], reverse=True)[:refine_n]
+        top_imgs = [imgs[i] for i in top_idxs]
+
+        if max_workers == 1 or len(top_imgs) < 8:
+            refined_scores = [_score_tenengrad(img) for img in top_imgs]
+        else:
+            with ProcessPoolExecutor(max_workers=max_workers) as ex:
+                refined_scores = list(ex.map(_score_tenengrad, top_imgs, chunksize=4))
+
+        for idx, refined in zip(top_idxs, refined_scores):
+            scored[idx] = (scored[idx][0], float(refined))
+
         return scored
     
-    
-    
+def test_speed_metrics():
+    def slow_af_score (samples):
+        return [(sample[0], Autofocus.get_sharpness_tenengrad(sample[1])) for sample in samples]
 
+    image_root = Path(__file__).resolve().parent.parent / "test_images"
+    image_paths = []
+    for bucket in ("focused", "semifocused", "unfocused"):
+        image_paths.extend((image_root / bucket).glob("*"))
+
+    imgs = []
+    for p in image_paths:
+        img = cv2.imread(str(p))
+        if img is not None:
+            imgs.append(img)
+
+    if not imgs:
+        raise RuntimeError(f"No readable images found under: {image_root}")
+
+    rng = np.random.default_rng(42)
+    ts = rng.uniform(0.0, 10_000.0, size=len(imgs))
+    samples = list(zip(ts.tolist(), imgs))
+
+    # make data set bigger for better test
+    for i in range(6):
+        samples.extend(samples)
+
+    t0 = time.perf_counter()
+    slow_scores = slow_af_score(samples)
+    slow_elapsed = time.perf_counter() - t0
+
+    t1 = time.perf_counter()
+    w1_fast_scores = Autofocus.fast_af_score(samples, workers=1)
+    w1_fast_elapsed = time.perf_counter() - t1
+
+    t1 = time.perf_counter()
+    w2_fast_scores = Autofocus.fast_af_score(samples, workers=2)
+    w2_fast_elapsed = time.perf_counter() - t1
+
+    t1 = time.perf_counter()
+    w3_fast_scores = Autofocus.fast_af_score(samples, workers=3)
+    w3_fast_elapsed = time.perf_counter() - t1
+
+    t1 = time.perf_counter()
+    w4_fast_scores = Autofocus.fast_af_score(samples, workers=4)
+    w4_fast_elapsed = time.perf_counter() - t1
+
+    print(f"Images: {len(samples)}")
+    print(f"slow_af_score: {slow_elapsed:.4f}s")
+    print(f"fast_af_score (workers=1): {w1_fast_elapsed:.4f}s")
+    print(f"fast_af_score (workers=2): {w2_fast_elapsed:.4f}s")
+    print(f"fast_af_score (workers=3): {w3_fast_elapsed:.4f}s")
+    print(f"fast_af_score (workers=4): {w4_fast_elapsed:.4f}s")
+
+
+    print(f"Outputs: slow={len(slow_scores)}, fast={len(w4_fast_scores)}")
+
+if __name__ == "__main__":
+    test_speed_metrics()
     
