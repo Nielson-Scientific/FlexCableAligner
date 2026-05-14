@@ -23,6 +23,8 @@ FAST_AF_FEEDRATE = 125
 
 TYPICAL_FAST_ERROR = 0.5
 
+TYPICAL_QUICK_ERROR = 0.2
+
 
 class Autofocus:
 
@@ -164,7 +166,7 @@ class Autofocus:
         return est_best_z, estimated_time_to_complete
     
     @staticmethod
-    def fast_autofocus(
+    def thorough_autofocus_routine(
         cam_handle, 
         tool_handle, 
         carriage,
@@ -204,14 +206,35 @@ class Autofocus:
         return    
 
 
-        # pass2_z = Autofocus.percise_autofocus_singlepass(
-        #     cam_handle=cam_handle,
-        #     tool_handle=tool_handle,
-        #     carriage=carriage,
-        #     high=min(high, pass1_z + fine_pass_range/2),
-        #     low=max(low, pass1_z - fine_pass_range/2),
-        #     step_size = FINE_STEP/2
-        # )
+    def quick_autofocus_routine(
+        cam_handle, 
+        tool_handle, 
+        carriage,
+        current_height,
+        high=HIGH, 
+        low=LOW,
+        AF_speed = FAST_AF_FEEDRATE , # Feedrate (mm/min)
+        fine_factor = 0.1,
+        show_plots = False,
+        save_samples = False,
+    ):
+        percise_pass1_z = Autofocus.percise_autofocus_singlepass(
+            cam_handle=cam_handle,
+            tool_handle=tool_handle,
+            carriage=carriage,
+            high=min(high, current_height + TYPICAL_QUICK_ERROR),
+            low=max(low, current_height - TYPICAL_QUICK_ERROR),
+            step_size = BROAD_STEP,
+        )
+        percise_pass2_z = Autofocus.percise_autofocus_singlepass(
+            cam_handle=cam_handle,
+            tool_handle=tool_handle,
+            carriage=carriage,
+            high=min(high, percise_pass1_z + BROAD_STEP),
+            low=max(low, percise_pass1_z - BROAD_STEP),
+            step_size = FINE_STEP,
+            show_plot=True
+        )
 
 
 
