@@ -10,46 +10,20 @@ from PositionSchema import Position
 # The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program
 # This is enabled by easy access to the movement ToolController vial the ToolController singleton 
 
-HIGH = 20
-LOW = 10
+HIGH = 16
+LOW = 11
 BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
 
+IMAGES_PER_SECOND = 25
+AF_FEEDRATE = 250
+
 
 class Autofocus:
-    @staticmethod
-    def thorough_autofocus(
-        cam_handle, 
-        tool_handle, 
-        carriage, 
-        high=HIGH, 
-        low=LOW, 
-        broad_pass_step = BROAD_STEP, 
-        fine_pass_step = FINE_STEP,  
-        finer_pass_step = FINER_STEP, 
-        show_plots = False
-    ):
-        print(f"Beginning Thorough AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
-        if cam_handle is None:
-            raise ValueError("cam_handle cannot be None")
-        
-        broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step, show_plot = show_plots)
-        fine_high = broad_best + broad_pass_step
-        fine_low = broad_best - broad_pass_step
-        fine_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, fine_high, fine_low, fine_pass_step, show_plot=show_plots)
-        if finer_pass_step is None:
-            best = fine_best
-        else:
-            finer_high = fine_best + fine_pass_step
-            finer_low = fine_best - fine_pass_step
-            best =  Autofocus.autofocus(cam_handle, tool_handle, carriage, finer_high, finer_low, finer_pass_step, show_plot=show_plots)        
-        return best
-
-
 
     @staticmethod
-    def autofocus(
+    def percise_autofocus_singlepass(
         cam_handle, 
         tool_handle, 
         carriage, 
@@ -100,15 +74,14 @@ class Autofocus:
             if show_plot: Autofocus.plot_focus_curve(focus_dict)
         return optimal_height
     
-    def fast_autofocus(
+    @staticmethod
+    def fast_autofocus_singlepass(
         cam_handle, 
         tool_handle, 
         carriage,
         high=HIGH, 
         low=LOW,
-        AF_speed = 50 , # Feedrate (mm/min)
-        fine_pass_step = FINE_STEP,  
-        finer_pass_step = FINER_STEP, 
+        AF_speed = AF_FEEDRATE , # Feedrate (mm/min)
         show_plots = False,
         save_samples = False,
     ):
@@ -143,10 +116,13 @@ class Autofocus:
 
         # Frame Capture Loop
         samples = []
+        print(f"Start Capturing frames for Fast AutoFocus...")
         while time.time() < t_end:
             frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
             if frame is not None:
-                samples.append((time.time(), frame.image_bgr))
+                # Copy to decouple from any underlying camera buffer reuse.
+                samples.append((time.time(), frame.image_bgr.copy()))
+            time.sleep(1.0 / IMAGES_PER_SECOND)
         print(f"Completed capturing frames. Total frames: {len(samples)}")
 
         if save_samples and samples:
@@ -158,7 +134,7 @@ class Autofocus:
         if not samples:
             raise RuntimeError("No samples collected during fast_autofocus")
         # Score image sharpness, find best
-        scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
+        scored = Autofocus.fast_af_score(samples)
         best_ts, _ = max(scored, key=lambda s: s[1])
 
         if show_plots:
@@ -182,36 +158,38 @@ class Autofocus:
             tool_handle.move(Position(z1=est_best_z))
         else:
             tool_handle.move(Position(z2=est_best_z))
+        return est_best_z
+    
+    @staticmethod
+    def fast_autofocus(
+        cam_handle, 
+        tool_handle, 
+        carriage,
+        high=HIGH, 
+        low=LOW,
+        AF_speed = AF_FEEDRATE , # Feedrate (mm/min)
+        fine_pass_range = 0.5,  
+        fine_pass_AF_speed = AF_FEEDRATE/10, 
+        show_plots = False,
+        save_samples = False,
+    ):
+        pass1_z = Autofocus.fast_autofocus_singlepass(
+            cam_handle=cam_handle,
+            tool_handle=tool_handle,
+            carriage=carriage,
+            high=high,
+            low=low,
+        )
+        pass2_z = Autofocus.percise_autofocus_singlepass(
+            cam_handle=cam_handle,
+            tool_handle=tool_handle,
+            carriage=carriage,
+            high=min(high, pass1_z + fine_pass_range/2),
+            low=max(low, pass1_z - fine_pass_range/2),
+            step_size = FINE_STEP/2
+        )
 
-        # # Find Z Distance Covered by each sample
-        # z_distance_per_sample = (abs(end_z - start_z) / len(samples))
 
-        # # Fine Pass
-        # fine_half_window = max(z_distance_per_sample, FINE_STEP * 2.0)
-        # fine_high = est_best_z + fine_half_window
-        # fine_low = est_best_z - fine_half_window
-        # fine_best = Autofocus.autofocus(
-        #     cam_handle,
-        #     tool_handle,
-        #     carriage,
-        #     fine_high,
-        #     fine_low,
-        #     step_size=fine_pass_step,
-        #     show_plot=show_plots,
-        # )
-        # finer_high = fine_best + fine_pass_step
-        # finer_low = fine_best - fine_pass_step
-
-        # # Finer Pass
-        # return Autofocus.autofocus(
-        #     cam_handle,
-        #     tool_handle,
-        #     carriage,
-        #     finer_high,
-        #     finer_low,
-        #     step_size=finer_pass_step,
-        #     show_plot=show_plots,
-        # )
 
 
     ##########################
@@ -308,6 +286,11 @@ class Autofocus:
             raise RuntimeError(f"Failed to save image to: {output_path}")
 
         return str(output_path)
+    
+    @staticmethod
+    def fast_af_score(samples: list[tuple[float, "object"]]) -> list[tuple[float, float]]:
+        scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
+        return scored
     
     
     

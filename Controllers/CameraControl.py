@@ -213,7 +213,10 @@ class CameraControl:
 				else:
 					display = frame.convert_pixel_format(PixelFormat.Bgr8)
 
-				image = display.as_opencv_image()
+				# IMPORTANT: vmbpy frames are recycled after we call cam.queue_frame(frame).
+				# display.as_opencv_image() returns a numpy view into the underlying frame buffer,
+				# so we must copy here before handing the image to another thread.
+				image = display.as_opencv_image().copy()
 				self._frame_queue.put_nowait(image)
 				# with self._frame_lock:
 				# 	self._latest_frame = CameraFrame(image_bgr=image, timestamp_s=time.time())

@@ -195,11 +195,20 @@ class WebInterface(QWidget):
         print("Thorough Autofocus button clicked! (Implement thorough autofocus logic here)")
         current_carriage = self.tool_wrapper.current_carriage
         af_cam = self.camera1 if current_carriage == 1 else self.camera2
+        
+        #goofy debug
+        if af_cam == self.camera1:
+            print("Using Camera 1 for Autofocus")
+        else:
+            print("Using Camera 2 for Autofocus")
+
+
         Autofocus.fast_autofocus(
             af_cam, 
             self.tool_wrapper, 
             current_carriage, 
-            show_plots=True
+            show_plots=True,
+            save_samples=True
         )
 
     def handle_run_process(self):
