@@ -313,10 +313,10 @@ class Autofocus:
         max_workers = max(1, min(int(workers), os.cpu_count() or 1))
 
         if max_workers == 1 or len(imgs) < 8:
-            coarse_scores = [_score_laplacian(img) for img in imgs]
+            coarse_scores = [Autofocus.get_sharpness_laplacian(img) for img in imgs]
         else:
             with ProcessPoolExecutor(max_workers=max_workers) as ex:
-                coarse_scores = list(ex.map(_score_laplacian, imgs, chunksize=8))
+                coarse_scores = list(ex.map(Autofocus.get_sharpness_laplacian, imgs, chunksize=8))
 
         scored = list(zip(ts_list, coarse_scores))
 
@@ -328,10 +328,10 @@ class Autofocus:
         top_imgs = [imgs[i] for i in top_idxs]
 
         if max_workers == 1 or len(top_imgs) < 8:
-            refined_scores = [_score_tenengrad(img) for img in top_imgs]
+            refined_scores = [Autofocus.get_sharpness_tenengrad(img) for img in top_imgs]
         else:
             with ProcessPoolExecutor(max_workers=max_workers) as ex:
-                refined_scores = list(ex.map(_score_tenengrad, top_imgs, chunksize=4))
+                refined_scores = list(ex.map(Autofocus.get_sharpness_tenengrad, top_imgs, chunksize=4))
 
         for idx, refined in zip(top_idxs, refined_scores):
             scored[idx] = (scored[idx][0], float(refined))
