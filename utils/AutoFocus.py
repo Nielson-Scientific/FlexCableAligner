@@ -15,6 +15,7 @@ BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
 
+
 class Autofocus:
     @staticmethod
     def thorough_autofocus(
@@ -92,12 +93,12 @@ class Autofocus:
         return optimal_height
     
     def fast_autofocus(
-        tool_handle, 
         cam_handle, 
+        tool_handle, 
         carriage,
         high=HIGH, 
         low=LOW,
-        fast_AF_speed = 1000 ,
+        AF_speed = 300 ,
         fine_pass_step = FINE_STEP,  
         finer_pass_step = FINER_STEP, 
         show_plots = False,
@@ -118,7 +119,7 @@ class Autofocus:
 
         # Start non-blocking move and collect timestamped images while in motion.
         t_start = time.perf_counter()
-        tool_handle.move(target, blocking=False, speed = fast_AF_speed)
+        tool_handle.move(target, blocking=False, set_speed = AF_speed)
         samples = []
 
         while True:
