@@ -74,7 +74,7 @@ class ToolWrapper(ToolController):
         else:
             print("Invalid carriage index. Must be 1 or 2.")
 
-    def move(self, move: Position, absolute=True, blocking=True):
+    def move(self, move: Position, absolute=True, blocking=True, set_speed = None):
         if absolute:
             target = Position(
                 x1=move.x1 + self.offsets.x1 if move.x1 is not None else None,
@@ -87,7 +87,7 @@ class ToolWrapper(ToolController):
         else:
             target = move
 
-        return super().move(target, absolute, blocking)
+        return super().move(target, absolute, blocking, set_speed = set_speed)
     
     def set_position_as_point(self, point: Point, carriage_index: float):
         if carriage_index not in [1, 2]:

@@ -94,9 +94,13 @@ class Autofocus:
     def fast_autofocus(
         tool_handle, 
         cam_handle, 
-        carriage, 
+        carriage,
         high=HIGH, 
-        low=LOW, 
+        low=LOW,
+        fast_AF_speed = 1000 ,
+        fine_pass_step = FINE_STEP,  
+        finer_pass_step = FINER_STEP, 
+        show_plots = False,
     ):
         # Conceptually this one is different:
         # Rather than sending one g code per move, we are going to continuously move at a slow speed and capture frames in a loop until we reach the target low/high positions.
@@ -107,14 +111,87 @@ class Autofocus:
         else:
             tool_handle.move(Position(z2 = LOW))
 
-        # Start NonBlocking move
+
+        start_z = float(low)
+        end_z = float(high)
+        target = Position(z1=end_z) if carriage == 1 else Position(z2=end_z)
+
+        # Start non-blocking move and collect timestamped images while in motion.
+        t_start = time.perf_counter()
+        tool_handle.move(target, blocking=False, speed = fast_AF_speed)
+        samples = []
+
+        while True:
+            frame = cam_handle.get_latest_frame()
+            if frame is not None:
+                ts = time.perf_counter()
+                samples.append((ts, frame.image_bgr))
+
+            if not tool_handle.is_moving():
+                break
+            time.sleep(0.005)
+
+        t_end = time.perf_counter()
+
+        # Safety Fallback
+        if not samples or t_end <= t_start:
+            fallback = (start_z + end_z) * 0.5
+            if carriage == 1:
+                tool_handle.move(Position(z1=fallback))
+            else:
+                tool_handle.move(Position(z2=fallback))
+            return fallback
+
+        # Score image sharpness, find best
+        scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
+        best_ts, _ = max(scored, key=lambda s: s[1])
+
+        if show_plots:
+            z_to_focus = {}
+            span_t = t_end - t_start
+            for ts, focus_val in scored:
+                sample_frac = (ts - t_start) / span_t
+                sample_frac = 0.0 if sample_frac < 0.0 else 1.0 if sample_frac > 1.0 else sample_frac
+                z = start_z + (end_z - start_z) * sample_frac
+                z_to_focus[float(z)] = float(focus_val)
+            if z_to_focus:
+                Autofocus.plot_focus_curve(z_to_focus, title="Fast Autofocus Focus vs Z")
+
+        # EStimate Z based on best time stamp, start time, end time, start pos, end pos
+        frac = (best_ts - t_start) / (t_end - t_start)
+        frac = 0.0 if frac < 0.0 else 1.0 if frac > 1.0 else frac
+        est_best_z = start_z + (end_z - start_z) * frac
+
+        # Go to best estimated Z
         if carriage == 1:
-            tool_handle.move_non_blocking(Position(z1 = HIGH), speed=0.5)
+            tool_handle.move(Position(z1=est_best_z))
         else:
-            tool_handle.move_non_blocking(Position(z2 = HIGH), speed=0.5)
+            tool_handle.move(Position(z2=est_best_z))
+
         
-        # Start camera feed loop (the dict is a time stamped log of images )
-        pics_dict = {}
+        fine_half_window = max(abs(end_z - start_z) * 0.1, FINE_STEP * 2.0)
+        fine_high = est_best_z + fine_half_window
+        fine_low = est_best_z - fine_half_window
+        fine_best = Autofocus.autofocus(
+            cam_handle,
+            tool_handle,
+            carriage,
+            fine_high,
+            fine_low,
+            step_size=fine_pass_step,
+            show_plot=show_plots,
+        )
+        finer_high = fine_best + fine_pass_step
+        finer_low = fine_best - fine_pass_step
+        return Autofocus.autofocus(
+            cam_handle,
+            tool_handle,
+            carriage,
+            finer_high,
+            finer_low,
+            step_size=finer_pass_step,
+            show_plot=show_plots,
+        )
 
 
     ##########################

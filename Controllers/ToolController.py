@@ -40,7 +40,7 @@ class ToolController:
         self.ws_wrapper.select_carriage(carriage_number)
         self.current_carriage = carriage_number
     
-    def move(self, move: Position, absolute=True, blocking=True, verify_mov = True):
+    def move(self, move: Position, absolute=True, blocking=True, verify_mov = True, set_speed = None):
         move_t0 = time.perf_counter()
         xy_move_requested = any(v is not None for v in (move.x1, move.y1, move.x2, move.y2))
         z_move_requested = move.z1 is not None or move.z2 is not None
@@ -55,6 +55,10 @@ class ToolController:
                 z2=move.z2 + self.position.z2 if move.z2 is not None else None
             )
 
+        # Set the movement speed manually, otherwise default to the FEEDRATE
+        move_speed = FEEDRATE if set_speed is None else set_speed
+
+
         if move.x1 is not None or move.y1 is not None or move.z1 is not None:
             t0 = time.perf_counter()
             self.ws_wrapper.select_carriage(1)
@@ -65,7 +69,7 @@ class ToolController:
                 gcode += f" Y={move.y1}"
             if move.z1 is not None:
                 gcode += f" Z={move.z1} Z_AXIS=1"
-            gcode += f" F={FEEDRATE}"
+            gcode += f" F={move_speed}"
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] queue carriage1 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
@@ -80,7 +84,7 @@ class ToolController:
                 gcode += f" Y={move.y2}"
             if move.z2 is not None:
                 gcode += f" Z={move.z2} Z_AXIS=2"
-            gcode += f" F={FEEDRATE}"
+            gcode += f" F={move_speed}"
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] queue carriage2 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
