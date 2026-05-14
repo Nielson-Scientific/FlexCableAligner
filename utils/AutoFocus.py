@@ -130,6 +130,7 @@ class Autofocus:
             if not tool_handle.is_moving():
                 break
             time.sleep(0.005)
+        print(f"Completed Autofocus loop, collected {len(samples)} samples")
 
         t_end = time.perf_counter()
 
