@@ -9,6 +9,11 @@ if __name__ == "__main__": import matplotlib.pyplot as plt
 
 APRIL_TEST_IMG_DIR = Path("test_images/tag_imgs")
 
+PIXELS_TO_MM = float(930 / 20)
+
+CENTER_X_PXL = 1296
+CENTER_Y_PXL = 972
+
 
 class AprilTagDetector:
     def __init__(self):
@@ -61,6 +66,14 @@ class AprilTagDetector:
         x = (a[0] + b[0] + c[0] + d[0]) / 4
         y = (a[1] + b[1] + c[1] + d[1]) / 4
         return x,y
+    
+    def get_tag_offset_from_center_mm(self, detection):
+        x_pxl, y_pxl = self.get_detection_center(detection)
+        x_pxl_offset = x_pxl - CENTER_X_PXL
+        y_pxl_offset = y_pxl - CENTER_Y_PXL
+        x_mm_offset = x_mm_offset * PIXELS_TO_MM
+        y_mm_offset = y_mm_offset * PIXELS_TO_MM
+        return x_mm_offset, y_mm_offset
 
     @staticmethod
     def _april_tag_preprocessing(img):
