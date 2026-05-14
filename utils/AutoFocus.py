@@ -129,22 +129,22 @@ class Autofocus:
                     samples.append((time.perf_counter(), frame.image_bgr))
 
         def _monitor_motion(t0):
-            seen_motion = False
-            while not stop_sampling.is_set():
-                moving = tool_handle.is_moving()
+            # Z moves are queued through macros/manual steppers, and is_moving() can be
+            # unreliable/late for this path. Prefer queue completion when available.
+            try:
+                if hasattr(tool_handle, "ws_wrapper") and hasattr(tool_handle.ws_wrapper, "wait_for_moves"):
+                    tool_handle.ws_wrapper.wait_for_moves()
+                else:
+                    while tool_handle.is_moving():
+                        time.sleep(0.01)
+            finally:
                 now = time.perf_counter()
-                if moving:
-                    seen_motion = True
-                if seen_motion and not moving:
-                    end_time["t"] = now
-                    stop_sampling.set()
-                    return
-                # If motion state never flips true, avoid hanging forever.
-                if not seen_motion and (now - t0) > 0.5 and not moving:
-                    end_time["t"] = now
-                    stop_sampling.set()
-                    return
-                time.sleep(0.002)
+                min_window_s = 0.35
+                if now - t0 < min_window_s:
+                    time.sleep(min_window_s - (now - t0))
+                    now = time.perf_counter()
+                end_time["t"] = now
+                stop_sampling.set()
 
         sampler_thread = threading.Thread(target=_sample_frames, daemon=True)
         sampler_thread.start()
