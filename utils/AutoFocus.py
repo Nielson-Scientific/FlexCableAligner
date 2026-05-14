@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import time
+import threading
 from datetime import datetime
 from pathlib import Path
 from PositionSchema import Position
@@ -116,23 +117,47 @@ class Autofocus:
         end_z = float(high)
         target = Position(z1=end_z) if carriage == 1 else Position(z2=end_z)
 
-        # Start non-blocking move and collect timestamped images while in motion.
-        t_start = time.perf_counter()
-        tool_handle.move(target, blocking=False, speed = fast_AF_speed)
         samples = []
+        stop_sampling = threading.Event()
+        end_time = {"t": None}
 
-        while True:
-            frame = cam_handle.get_latest_frame()
-            if frame is not None:
-                ts = time.perf_counter()
-                samples.append((ts, frame.image_bgr))
+        def _sample_frames():
+            while not stop_sampling.is_set():
+                frame = cam_handle.get_latest_frame()
+                if frame is not None:
+                    samples.append((time.perf_counter(), frame.image_bgr))
 
-            if not tool_handle.is_moving():
-                break
-            time.sleep(0.005)
+        def _monitor_motion(t0):
+            seen_motion = False
+            while not stop_sampling.is_set():
+                moving = tool_handle.is_moving()
+                now = time.perf_counter()
+                if moving:
+                    seen_motion = True
+                if seen_motion and not moving:
+                    end_time["t"] = now
+                    stop_sampling.set()
+                    return
+                # If motion state never flips true, avoid hanging forever.
+                if not seen_motion and (now - t0) > 0.5 and not moving:
+                    end_time["t"] = now
+                    stop_sampling.set()
+                    return
+                time.sleep(0.002)
+
+        sampler_thread = threading.Thread(target=_sample_frames, daemon=True)
+        sampler_thread.start()
+        t_start = time.perf_counter()
+        tool_handle.move(target, blocking=False, speed=fast_AF_speed)
+        monitor_thread = threading.Thread(target=_monitor_motion, args=(t_start,), daemon=True)
+        monitor_thread.start()
+        monitor_thread.join(timeout=30.0)
+        if not stop_sampling.is_set():
+            end_time["t"] = time.perf_counter()
+            stop_sampling.set()
+        sampler_thread.join(timeout=1.0)
         print(f"Completed Autofocus loop, collected {len(samples)} samples")
-
-        t_end = time.perf_counter()
+        t_end = end_time["t"] if end_time["t"] is not None else time.perf_counter()
 
         # Safety Fallback
         if not samples or t_end <= t_start:
@@ -169,8 +194,11 @@ class Autofocus:
         else:
             tool_handle.move(Position(z2=est_best_z))
 
-        
-        fine_half_window = max(abs(end_z - start_z) * 0.1, FINE_STEP * 2.0)
+        # Find Z Distance Covered by each sample
+        z_distance_per_sample = (abs(end_z - start_z) / len(samples))
+
+        # Fine Pass
+        fine_half_window = max(z_distance_per_sample, FINE_STEP * 2.0)
         fine_high = est_best_z + fine_half_window
         fine_low = est_best_z - fine_half_window
         fine_best = Autofocus.autofocus(
@@ -184,6 +212,8 @@ class Autofocus:
         )
         finer_high = fine_best + fine_pass_step
         finer_low = fine_best - fine_pass_step
+
+        # Finer Pass
         return Autofocus.autofocus(
             cam_handle,
             tool_handle,
