@@ -31,6 +31,9 @@ class Autofocus:
         show_plots = False
     ):
         print(f"Beginning Thorough AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Broad Step = {broad_pass_step}, Fine Step = {fine_pass_step}")
+        if cam_handle is None:
+            raise ValueError("cam_handle cannot be None")
+        
         broad_best = Autofocus.autofocus(cam_handle, tool_handle, carriage, high, low, broad_pass_step, show_plot = show_plots)
         fine_high = broad_best + broad_pass_step
         fine_low = broad_best - broad_pass_step
@@ -56,6 +59,10 @@ class Autofocus:
         show_plot = False
     ):
         print(f"Beginning AutoFocus Test, Carriage = {carriage}, High = {high}, Low = {low}, Step Size = {step_size}")        # Initialize data for loop
+        
+        if cam_handle is None:
+            raise ValueError("cam_handle cannot be None")
+        
         focus_dict = {}
         heights = Autofocus.generate_heights(high, low, step_size)
         if carriage == 1:
@@ -99,7 +106,7 @@ class Autofocus:
         carriage,
         high=HIGH, 
         low=LOW,
-        AF_speed = 300 ,
+        AF_speed = 50 , # Feedrate (mm/min)
         fine_pass_step = FINE_STEP,  
         finer_pass_step = FINER_STEP, 
         show_plots = False,
@@ -107,68 +114,38 @@ class Autofocus:
         # Conceptually this one is different:
         # Rather than sending one g code per move, we are going to continuously move at a slow speed and capture frames in a loop until we reach the target low/high positions.
         print(f"Beginning Fast AutoFocus, Carriage = {carriage}, High = {high}, Low = {low}")
-        # Go to starting position
-        if carriage == 1:
-            tool_handle.move(Position(z1 = LOW))
-        else:
-            tool_handle.move(Position(z2 = LOW))
-
+       
+        if cam_handle is None:
+            raise ValueError("cam_handle cannot be None")
 
         start_z = float(low)
         end_z = float(high)
-        target = Position(z1=end_z) if carriage == 1 else Position(z2=end_z)
+        start_pos = Position(z1=start_z) if carriage == 1 else Position(z2=start_z)
+        target_pos = Position(z1=end_z) if carriage == 1 else Position(z2=end_z)
 
+         # Go to starting position
+        tool_handle.move(start_pos)
+        time.sleep(1.0)  # Allow time to settle
+
+        # Calculate Times
+        FUDGEFACTOR = 10  # I think our real feed values are wrong)
+        estimated_time_to_complete = 60 * (abs(end_z - start_z) / AF_speed) * FUDGEFACTOR
+        print(f"Estimated time to complete move: {estimated_time_to_complete:.2f} seconds")
+        t_start = time.time()
+        t_end = t_start + estimated_time_to_complete
+
+        print(t_start)
+        print(t_end)
+
+        # Start moving towards target at slow speed
+        tool_handle.move(target_pos, set_speed=AF_speed, blocking = False)
+
+        # Frame Capture Loop
         samples = []
-        stop_sampling = threading.Event()
-        end_time = {"t": None}
-
-        def _sample_frames():
-            while not stop_sampling.is_set():
-                frame = cam_handle.get_latest_frame()
-                if frame is not None:
-                    samples.append((time.perf_counter(), frame.image_bgr))
-
-        def _monitor_motion(t0):
-            # Z moves are queued through macros/manual steppers, and is_moving() can be
-            # unreliable/late for this path. Prefer queue completion when available.
-            try:
-                if hasattr(tool_handle, "ws_wrapper") and hasattr(tool_handle.ws_wrapper, "wait_for_moves"):
-                    tool_handle.ws_wrapper.wait_for_moves()
-                else:
-                    while tool_handle.is_moving():
-                        time.sleep(0.01)
-            finally:
-                now = time.perf_counter()
-                min_window_s = 0.35
-                if now - t0 < min_window_s:
-                    time.sleep(min_window_s - (now - t0))
-                    now = time.perf_counter()
-                end_time["t"] = now
-                stop_sampling.set()
-
-        sampler_thread = threading.Thread(target=_sample_frames, daemon=True)
-        sampler_thread.start()
-        t_start = time.perf_counter()
-        tool_handle.move(target, blocking=False, set_speed=AF_speed)
-        monitor_thread = threading.Thread(target=_monitor_motion, args=(t_start,), daemon=True)
-        monitor_thread.start()
-        monitor_thread.join(timeout=30.0)
-        if not stop_sampling.is_set():
-            end_time["t"] = time.perf_counter()
-            stop_sampling.set()
-        sampler_thread.join(timeout=1.0)
-        print(f"Completed Autofocus loop, collected {len(samples)} samples")
-        t_end = end_time["t"] if end_time["t"] is not None else time.perf_counter()
-
-        # Safety Fallback
-        if not samples or t_end <= t_start:
-            fallback = (start_z + end_z) * 0.5
-            if carriage == 1:
-                tool_handle.move(Position(z1=fallback))
-            else:
-                tool_handle.move(Position(z2=fallback))
-            return fallback
-
+        while time.time() < t_end:
+            frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
+            samples.append((time.time(), frame.image_bgr))
+        print(f"Completed capturing frames. Total frames: {len(samples)}")
         # Score image sharpness, find best
         scored = [(ts, Autofocus.get_sharpness_tenengrad(img)) for ts, img in samples]
         best_ts, _ = max(scored, key=lambda s: s[1])
@@ -195,35 +172,35 @@ class Autofocus:
         else:
             tool_handle.move(Position(z2=est_best_z))
 
-        # Find Z Distance Covered by each sample
-        z_distance_per_sample = (abs(end_z - start_z) / len(samples))
+        # # Find Z Distance Covered by each sample
+        # z_distance_per_sample = (abs(end_z - start_z) / len(samples))
 
-        # Fine Pass
-        fine_half_window = max(z_distance_per_sample, FINE_STEP * 2.0)
-        fine_high = est_best_z + fine_half_window
-        fine_low = est_best_z - fine_half_window
-        fine_best = Autofocus.autofocus(
-            cam_handle,
-            tool_handle,
-            carriage,
-            fine_high,
-            fine_low,
-            step_size=fine_pass_step,
-            show_plot=show_plots,
-        )
-        finer_high = fine_best + fine_pass_step
-        finer_low = fine_best - fine_pass_step
+        # # Fine Pass
+        # fine_half_window = max(z_distance_per_sample, FINE_STEP * 2.0)
+        # fine_high = est_best_z + fine_half_window
+        # fine_low = est_best_z - fine_half_window
+        # fine_best = Autofocus.autofocus(
+        #     cam_handle,
+        #     tool_handle,
+        #     carriage,
+        #     fine_high,
+        #     fine_low,
+        #     step_size=fine_pass_step,
+        #     show_plot=show_plots,
+        # )
+        # finer_high = fine_best + fine_pass_step
+        # finer_low = fine_best - fine_pass_step
 
-        # Finer Pass
-        return Autofocus.autofocus(
-            cam_handle,
-            tool_handle,
-            carriage,
-            finer_high,
-            finer_low,
-            step_size=finer_pass_step,
-            show_plot=show_plots,
-        )
+        # # Finer Pass
+        # return Autofocus.autofocus(
+        #     cam_handle,
+        #     tool_handle,
+        #     carriage,
+        #     finer_high,
+        #     finer_low,
+        #     step_size=finer_pass_step,
+        #     show_plot=show_plots,
+        # )
 
 
     ##########################
