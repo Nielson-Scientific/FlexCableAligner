@@ -35,15 +35,20 @@ if __name__ == "__main__":
     cam_handle_1 = CameraControl(CAM_ID_1)
     cam_handle_1.start()
 
-    test_feeds = [50, 100, 150, 200, 250, 300, 350, 400]
-    test_fine_factors = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+    # best setting
+    best_feed = 400
+    best_fine_factor = 0.5
+
+
+    test_feeds = [best_feed]
+    test_fine_factors = [best_fine_factor]
     
     experiment_results = []
 
     for i_feed in test_feeds:
         for i_fine_factor in test_fine_factors:
             print(f"Testing feedrate: {i_feed} mm/min, fine_factor: {i_fine_factor}")
-            z_val, duration = Autofocus.fast_autofocus(
+            Autofocus.fast_autofocus(
                 tool_handle=tool_handle, 
                 cam_handle=cam_handle_1,
                 carriage=1,
@@ -52,12 +57,6 @@ if __name__ == "__main__":
                 AF_speed         =i_feed, # Feedrate (mm/min)
                 fine_factor      =i_fine_factor
             )
-            experiment_results.append(exp_result(feedrate=i_feed, fine_factor=i_fine_factor, z_val=z_val, duration=duration))
-
-
-    print("Experiment completed. Results:")
-    for result in experiment_results:
-        print(f"{result.get_result()}\n")
 
 
 

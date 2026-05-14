@@ -21,6 +21,8 @@ FINER_STEP = 0.001
 FAST_AF_SAMPLES_PER_SECOND = 12.5
 FAST_AF_FEEDRATE = 125
 
+TYPICAL_FAST_ERROR = 0.5
+
 
 class Autofocus:
 
@@ -52,9 +54,9 @@ class Autofocus:
             # Start stepping through heights
             for position in reversed(positions):
                 tool_handle.move(position)
-                time.sleep(0.5)
+                time.sleep(0.25)
                 frame = Autofocus.wait_for_fresh_frame(cam_handle, timeout_s=2.0)
-                time.sleep(0.5)
+                time.sleep(0.25)
                 if frame is None:
                     z_target = position.z1 if carriage == 1 else position.z2
                     raise RuntimeError(f"No camera frame received at z={z_target:.3f}mm within timeout.")
@@ -181,15 +183,25 @@ class Autofocus:
             low=low,
             AF_speed = AF_speed,
         )
-        fast_pass2_z, pass_2_duration = Autofocus.fast_autofocus_singlepass(
+        
+        percise_pass1_z = Autofocus.percise_autofocus_singlepass(
             cam_handle=cam_handle,
             tool_handle=tool_handle,
             carriage=carriage,
-            high=min(high, fast_pass1_z + (high - low)*fine_factor/2),
-            low=max(low, fast_pass1_z - (high - low)*fine_factor/2),
-            AF_speed = AF_speed * fine_factor, 
+            high=min(high, fast_pass1_z + TYPICAL_FAST_ERROR),
+            low=max(low, fast_pass1_z - TYPICAL_FAST_ERROR),
+            step_size = BROAD_STEP,
         )
-        return fast_pass2_z, pass_1_duration + pass_2_duration    
+        percise_pass2_z = Autofocus.percise_autofocus_singlepass(
+            cam_handle=cam_handle,
+            tool_handle=tool_handle,
+            carriage=carriage,
+            high=min(high, percise_pass1_z + BROAD_STEP),
+            low=max(low, percise_pass1_z - BROAD_STEP),
+            step_size = FINE_STEP,
+            show_plot=True
+        )
+        return    
 
 
         # pass2_z = Autofocus.percise_autofocus_singlepass(
