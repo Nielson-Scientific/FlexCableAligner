@@ -11,7 +11,7 @@ from CSVInterface import CSVInterface
 from JogModeDialog import JogModeDialog
 from Controllers.CameraControl import CameraControl, CameraControlError
 
-from localization import LocalizationInterface
+from localization.LocalizationInterface import LocalizationInterface
 
 from utils.AutoFocus import Autofocus
 
