@@ -27,22 +27,25 @@ class SearchRoutines:
                 return True
             return False
 
-        for i in depth:
+        for i in range(depth):
             # move up 2 * i + 1
             offset = (2 * i + 1) * step_size_mm
             tool_handle.move(next_position(offset_x = 0, offset_y = offset))
             # check for tag
-            if scan_position(): break
+            if scan_position(): return True
             # move right 2 * i + 1
             tool_handle.move(next_position(offset_x = offset, offset_y = 0))
             # check for tag
-            if scan_position(): break
+            if scan_position(): return True
             # move down 2 * i + 2
             offset = -1 * (2 * i + 2) * step_size_mm
             tool_handle.move(next_position(offset_x = 0, offset_y = offset))
             # check for tag
-            if scan_position(): break
+            if scan_position(): return True
             # move left 2 * i + 2
             tool_handle.move(next_position(offset_x = offset, offset_y = 0))
             # check for tag
-            if scan_position(): break
+            if scan_position(): return True
+            #final check
+        return False
+
