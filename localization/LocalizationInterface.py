@@ -77,24 +77,36 @@ class LocalizationInterface(QWidget):
 
         self.btn_set_c1_p1 = QPushButton("Set Carriage 1 P1")
         self.btn_set_c1_p1.clicked.connect(lambda: self._save_slot_from_scan("c1_p1"))
+        self.lbl_c1_p1 = QLabel("")
+        self.lbl_c1_p1.setWordWrap(True)
 
         self.btn_set_c1_p2 = QPushButton("Set Carriage 1 P2")
         self.btn_set_c1_p2.clicked.connect(lambda: self._save_slot_from_scan("c1_p2"))
+        self.lbl_c1_p2 = QLabel("")
+        self.lbl_c1_p2.setWordWrap(True)
 
         self.btn_set_c2_p1 = QPushButton("Set Carriage 2 P1")
         self.btn_set_c2_p1.clicked.connect(lambda: self._save_slot_from_scan("c2_p1"))
+        self.lbl_c2_p1 = QLabel("")
+        self.lbl_c2_p1.setWordWrap(True)
 
         self.btn_set_c2_p2 = QPushButton("Set Carriage 2 P2")
         self.btn_set_c2_p2.clicked.connect(lambda: self._save_slot_from_scan("c2_p2"))
+        self.lbl_c2_p2 = QLabel("")
+        self.lbl_c2_p2.setWordWrap(True)
 
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
 
         layout.addWidget(self.load_csv_btn)
         layout.addWidget(self.btn_set_c1_p1)
+        layout.addWidget(self.lbl_c1_p1)
         layout.addWidget(self.btn_set_c1_p2)
+        layout.addWidget(self.lbl_c1_p2)
         layout.addWidget(self.btn_set_c2_p1)
+        layout.addWidget(self.lbl_c2_p1)
         layout.addWidget(self.btn_set_c2_p2)
+        layout.addWidget(self.lbl_c2_p2)
         layout.addWidget(self.scan_status)
         layout.addStretch()
         return box
@@ -130,19 +142,37 @@ class LocalizationInterface(QWidget):
             return
 
         rows = FU.csv_to_array(str(csv_path))
+        if not rows:
+            self.points_table.setRowCount(0)
+            self.scan_status.setText(f"Loaded 0 tag points from {csv_path.name}")
+            return
+        header = [h.strip().lower() for h in rows[0]]
         csv_points = rows[1:]
         self.tag_coordinates_by_id = {}
 
         points = []
         for row in csv_points:
-            if len(row) < 6:
+            if len(row) < 5:
                 continue
-            tag_id, _, _, x, y, test = row[:6]
-            tag_id_int = int(tag_id)
-            x_m = float(x) / 1000
-            y_m = float(y) / 1000
-            self.tag_coordinates_by_id[tag_id_int] = (x_m, y_m)
-            points.append((tag_id_int, f"{x_m:.6f}", f"{y_m:.6f}", test))
+            try:
+                if "tag_id" in header and "center_x_mm" in header and "center_y_mm" in header:
+                    tag_id = row[header.index("tag_id")]
+                    x = row[header.index("center_x_mm")]
+                    y = row[header.index("center_y_mm")]
+                    test = row[header.index("test")] if "test" in header and header.index("test") < len(row) else ""
+                else:
+                    tag_id = row[0]
+                    x = row[3]
+                    y = row[4]
+                    test = row[5] if len(row) > 5 else ""
+
+                tag_id_int = int(tag_id)
+                x_mm = float(x) / 1000
+                y_mm = float(y) / 1000
+            except (ValueError, IndexError):
+                continue
+            self.tag_coordinates_by_id[tag_id_int] = (x_mm, y_mm)
+            points.append((tag_id_int, f"{x_mm:.6f}", f"{y_mm:.6f}", test))
 
         self.points_table.setRowCount(len(points))
         for r, (tag_id, x_m, y_m, test) in enumerate(points):
@@ -226,8 +256,19 @@ class LocalizationInterface(QWidget):
             return
 
         self.slot_data[slot_key] = saved
+        slot_labels = {
+            "c1_p1": self.lbl_c1_p1,
+            "c1_p2": self.lbl_c1_p2,
+            "c2_p1": self.lbl_c2_p1,
+            "c2_p2": self.lbl_c2_p2,
+        }
         cable_xy = saved["position_cable_xy"]
         cable_str = "N/A (load CSV with this tag ID)" if cable_xy is None else f"({cable_xy[0]:.6f}, {cable_xy[1]:.6f})"
+        slot_labels[slot_key].setText(
+            f"ID: {saved['tag_id']}\n"
+            f"Stage XY: ({saved['position_stage_xy'][0]:.3f}, {saved['position_stage_xy'][1]:.3f})\n"
+            f"Cable XY: {cable_str}"
+        )
         self.scan_status.setText(
             f"{slot_key.upper()} saved | Tag ID={saved['tag_id']} | "
             f"Stage XY=({saved['position_stage_xy'][0]:.3f}, {saved['position_stage_xy'][1]:.3f}) | "
