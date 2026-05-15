@@ -1,8 +1,8 @@
 from img_processing.AprilTagDetector import AprilTagDetector
 from schema.PositionSchema import Position
 import time
-TAG_SIDE_LENGTH_MM = 500
-STEP_SIZE_MM = TAG_SIDE_LENGTH_MM
+TAG_SIDE_LENGTH_MM = 0.5
+STEP_SIZE_MM = TAG_SIDE_LENGTH_MM/2
 
 class SearchRoutines:
     @staticmethod
@@ -48,5 +48,7 @@ class SearchRoutines:
             tool_handle.move(next_position(offset_x = offset, offset_y = 0))
             # check for tag
             if scan_position(): return True
-            #final check
+            
+        # return to starting position
+        tool_handle.move(start_pos)
         return False

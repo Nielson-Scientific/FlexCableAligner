@@ -12,8 +12,8 @@ if __name__ != "__main__": from schema.PositionSchema import Position
 # The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program
 # This is enabled by easy access to the movement ToolController vial the ToolController singleton 
 
-HIGH = 16
-LOW = 11
+HIGH = 23
+LOW = 13
 BROAD_STEP = 0.05
 FINE_STEP = 0.01
 FINER_STEP = 0.001
