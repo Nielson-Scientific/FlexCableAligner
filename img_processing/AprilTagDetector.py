@@ -71,8 +71,8 @@ class AprilTagDetector:
         x_pxl, y_pxl = self.get_detection_center(detection)
         x_pxl_offset = x_pxl - CENTER_X_PXL
         y_pxl_offset = y_pxl - CENTER_Y_PXL
-        x_mm_offset = x_mm_offset * PIXELS_TO_MM
-        y_mm_offset = y_mm_offset * PIXELS_TO_MM
+        x_mm_offset = x_pxl_offset * PIXELS_TO_MM
+        y_mm_offset = y_pxl_offset * PIXELS_TO_MM
         return x_mm_offset, y_mm_offset
 
     @staticmethod
