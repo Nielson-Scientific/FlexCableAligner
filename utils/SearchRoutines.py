@@ -1,8 +1,8 @@
 from img_processing.AprilTagDetector import AprilTagDetector
 from schema.PositionSchema import Position
 import time
-TAG_SIDE_LENGTH_MM = 500
-STEP_SIZE_MM = TAG_SIDE_LENGTH_MM
+TAG_SIDE_LENGTH_MM = 0.5
+STEP_SIZE_MM = TAG_SIDE_LENGTH_MM/2
 
 class SearchRoutines:
     @staticmethod
@@ -12,12 +12,29 @@ class SearchRoutines:
         start_x = start_pos.x1 if carriage_index == 1 else start_pos.x2
         start_y = start_pos.y1 if carriage_index == 1 else start_pos.y2
 
+        current_x = start_x
+        current_y = start_y
+
         def next_position(offset_x, offset_y):
             if carriage_index == 1:
                 return Position(x1 = start_x + offset_x, y1 = start_y + offset_y)
             if carriage_index == 2:
                 return Position(x2 = start_x + offset_x, y2 = start_y + offset_y) 
             raise ValueError(f"Carriage index must be 1 or 2, carraige index was :{carriage_index}")
+        
+        def scan_row(start_x, start_y, segments, up = True):
+            x = start_x
+            for i in segments:
+                if up:
+                    x += STEP_SIZE_MM 
+                else:
+                    x -= STEP_SIZE_MM
+
+                tool_handle.move(
+                if scan_position():return True
+            return False
+
+        def scan_column(segments):
         
         def scan_position():
             if pause_at_each_point > 0:
