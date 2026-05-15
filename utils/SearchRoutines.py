@@ -22,8 +22,10 @@ class SearchRoutines:
         def scan_position():
             if pause_at_each_point > 0:
                 time.sleep(pause_at_each_point)
-            img = cam_handle.get_latest_frame()
-            if len(detector.check_for_april_tag(img)) > 0:
+            frame = cam_handle.get_latest_frame()
+            if frame is None:
+                return False
+            if len(detector.check_for_april_tag(frame.image_bgr)) > 0:
                 return True
             return False
 
@@ -48,4 +50,3 @@ class SearchRoutines:
             if scan_position(): return True
             #final check
         return False
-
