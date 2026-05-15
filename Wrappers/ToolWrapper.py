@@ -1,5 +1,5 @@
 from Controllers.ToolController import ToolController
-from PositionSchema import Position, ParkPosition
+from schema.PositionSchema import Position, ParkPosition
 import numpy as np
 from Wrappers.CSVWrapper import Point
 
@@ -51,8 +51,8 @@ class ToolWrapper(ToolController):
     def refresh_absolute_position(self):
         return super().refresh_position()
     
-    def move_absolute(self, move: Position, blocking=True):
-        return super().move(move, absolute=True, blocking=blocking)
+    def move_absolute(self, move: Position, blocking=True, set_speed=None):
+        return super().move(move, absolute=True, blocking=blocking, set_speed=set_speed)
     
     def move_pcb_space(self, move: Position, absolute=True, blocking=True):
         self.move(move, absolute=absolute, blocking=blocking)

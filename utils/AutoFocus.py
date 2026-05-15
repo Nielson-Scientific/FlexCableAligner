@@ -6,7 +6,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from pathlib import Path
-if __name__ != "__main__": from PositionSchema import Position
+if __name__ != "__main__": from schema.PositionSchema import Position
 
 # Perhaps it would be best to move this insdie of the Camera Control class.
 # The main advantage of doing so is that it enables us to use the same camera feed as the rest of the program

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel
-from PositionSchema import Position
+from schema.PositionSchema import Position
 
 # Expected Schema: index, x1, y1, x2, y2, manual
 class TestPair(BaseModel):

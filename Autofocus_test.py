@@ -1,7 +1,7 @@
 from utils.AutoFocus import Autofocus
 from Controllers.ToolController import ToolController
 from Controllers.CameraControl import CameraControl, CAM_ID_1, CAM_ID_2
-from PositionSchema import Position
+from schema.PositionSchema import Position
 
 HIGH = 16
 LOW = 11

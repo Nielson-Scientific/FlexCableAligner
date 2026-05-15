@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout
 
-from PositionSchema import Position
+from schema.PositionSchema import Position
 from Wrappers.ToolWrapper import ToolWrapper
 
 class JogModeDialog(QDialog):

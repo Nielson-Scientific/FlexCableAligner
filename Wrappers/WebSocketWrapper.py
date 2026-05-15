@@ -1,7 +1,7 @@
 import json
 import time
 from pathlib import Path
-from PositionSchema import Position
+from schema.PositionSchema import Position
 from Wrappers.WebSocketClient import WebSocketClient
 
 PROFILE_WS = False
@@ -13,7 +13,6 @@ class WebSocketWrapper:
         self.url = url
         self.ws = None
         self.connected = False
-        self.selected_carriage = 1 # Only one carriage can be accessed at a time, so we track which one is currently selected
         self._next_request_id = 10
 
     def _new_request_id(self):
@@ -42,26 +41,6 @@ class WebSocketWrapper:
             self.connected = True
         except Exception as e:
             print(f"Error connecting to WebSocket: {e}")
-
-    def select_carriage(self, carriage_number):
-        if carriage_number not in [1, 2]:
-            print("Invalid carriage number. Must be 1 or 2.")
-            return
-
-        if carriage_number == self.selected_carriage:
-            self._log_timing("select_carriage", 0.0, f"{self.selected_carriage} -> {carriage_number} (skipped)")
-            return
-
-        t0 = time.perf_counter()
-        prev = self.selected_carriage
-        self.selected_carriage = carriage_number
-        if self.selected_carriage == 2:
-            self.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x2")
-            self.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y2")
-        else:
-            self.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=x")
-            self.send_gcode_and_wait("SET_DUAL_CARRIAGE CARRIAGE=y")
-        self._log_timing("select_carriage", time.perf_counter() - t0, f"{prev} -> {carriage_number}")
 
     def send_gcode(self, gcode):
         if not self.connected:
@@ -97,12 +76,6 @@ class WebSocketWrapper:
         reply = self.ws.send_and_wait_for(json.dumps(gcode_req), req_id, timeout)
         self._log_timing("send_gcode_and_wait", time.perf_counter() - t0, gcode)
         return reply
-
-    def wait_for_moves(self):
-        # M400 blocks until all queued planner moves are completed.
-        t0 = time.perf_counter()
-        self.send_gcode_and_wait("M400", timeout=30)
-        self._log_timing("wait_for_moves", time.perf_counter() - t0)
 
     def get_z_positions(self):
         t0 = time.perf_counter()
@@ -142,7 +115,7 @@ class WebSocketWrapper:
         self._log_timing("get_z_position", time.perf_counter() - t0, f"axis={axis}, z={z_val}")
         return z_val
 
-    def get_position(self):
+    def get_position_data(self):
         t0 = time.perf_counter()
         req_id = self._new_request_id()
         subscribe_req = {
@@ -160,19 +133,20 @@ class WebSocketWrapper:
             pos = data.get('result', {}).get('status', {}).get('toolhead', {}).get('position', [None, None, None])
             return pos[:3]
         
-        self.select_carriage(1)
-        x1, y1, _ = get_carriage_pos()
-        self.select_carriage(2)
-        x2, y2, _ = get_carriage_pos()
-
+        x, y, _ = get_carriage_pos()
         z1, z2, z3, z4 = self.get_z_positions()
         
-        pos = Position(x1=x1, y1=y1, z1=z1, x2=x2, y2=y2, z2=z2)
+        pos = Position(
+            x1 = x,
+            y1 = y,
+            z1 = z1,
+            z2 = z2,
+        )
+
         self._log_timing("get_position", time.perf_counter() - t0, str(pos))
         return pos
-    
-    def is_toolhead_moving(self):
-        t0 = time.perf_counter()
+
+    def get_velocity_data(self):
         req_id = self._new_request_id()
         subscribe_req = {
             "jsonrpc": "2.0",
@@ -184,16 +158,12 @@ class WebSocketWrapper:
             },
             "id": req_id
         }
-        def get_velocity(carriage):
-            t_car = time.perf_counter()
-            self.select_carriage(carriage)
-            data = self.ws.send_and_wait_for(json.dumps(subscribe_req), req_id, 10)
-            velocity = data.get('result', {}).get('status', {}).get('motion_report', {}).get('live_velocity', 0)
-            self._log_timing("is_toolhead_moving:get_velocity", time.perf_counter() - t_car, f"carriage={carriage}, v={velocity}")
-            return velocity > 0
-        moving = get_velocity(1) or get_velocity(2)
-        self._log_timing("is_toolhead_moving", time.perf_counter() - t0, f"moving={moving}")
-        return moving
+        data = self.ws.send_and_wait_for(json.dumps(subscribe_req), req_id, 10)
+        velocity = data.get('result', {}).get('status', {}).get('motion_report', {}).get('live_velocity', 0)
+        return velocity
+
+    
+        
 
 
 
@@ -211,7 +181,6 @@ if __name__ == "__main__":
         it = 5
         for i in range(it):
             t = time.time()
-            ws_wrapper.get_position()
+            ws_wrapper.get_position_data()
             tt += time.time() - t
         print(f"Average time taken to get position: {tt/it:.2f} seconds")
-        print(ws_wrapper.is_toolhead_moving())

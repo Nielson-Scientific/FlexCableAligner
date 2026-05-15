@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
 from PySide6.QtCore import Qt
 from Wrappers.ToolSingleton import ToolSingleton
-from PositionSchema import Position
+from schema.PositionSchema import Position
 
 class TooCloseInterface(QWidget):
     def __init__(self, parent=None, pos1=None, pos2=None):
