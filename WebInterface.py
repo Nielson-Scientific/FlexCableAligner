@@ -11,6 +11,8 @@ from CSVInterface import CSVInterface
 from JogModeDialog import JogModeDialog
 from Controllers.CameraControl import CameraControl, CameraControlError
 
+from localization import LocalizationInterface
+
 from utils.AutoFocus import Autofocus
 
 with open('config/base_url.txt', 'r') as f:
@@ -160,6 +162,11 @@ class WebInterface(QWidget):
         self._camera_timer = QTimer(self)
         self._camera_timer.setInterval(CAMERA_UI_REFRESH_MS)
         self._camera_timer.timeout.connect(self._update_camera_previews)
+
+
+        # --- Tab 3: Localization Interface ---
+        tab_localization = LocalizationInterface(self)
+        tabs.addTab(tab_localization, "Localization")
 
     def handle_jog_mode(self):
         dlg = JogModeDialog(self.tool_wrapper, parent=self)
