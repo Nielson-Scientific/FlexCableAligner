@@ -2,6 +2,7 @@ from Controllers.ToolController import ToolController
 from schema.PositionSchema import Position, ParkPosition
 import numpy as np
 from Wrappers.CSVWrapper import Point
+from utils.Translator import Translator
 
 """
 This wraps ToolController and adds the functionality of having a seperate local coordinate system that can be set and used for moves.
@@ -14,6 +15,8 @@ class ToolWrapper(ToolController):
         self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
         super().__init__(ws_url)
         self.park_positions = ParkPosition(CONFIG_PATH)
+        self.carriage_1_translator = None
+        self.carriage_2_translator = None
 
     @staticmethod
     def _sub_optional(value, offset):
@@ -60,6 +63,36 @@ class ToolWrapper(ToolController):
     def get_position_pcb_space(self):
         return self.get_position()
     
+    def get_position_cable_space(self, carriage_index):
+        if carriage_index == 1:
+            if self.carriage_1_translator is None:
+                print("Carriage 1 translator not set. Cannot get position in cable space.")
+                return None
+            return self.carriage_1_translator.get_cable_point_from_stage_point(self.get_position())
+        elif carriage_index == 2:
+            if self.carriage_2_translator is None:
+                print("Carriage 2 translator not set. Cannot get position in cable space.")
+                return None
+            return self.carriage_2_translator.get_cable_point_from_stage_point(self.get_position())
+        else:
+            print("Invalid carriage index. Must be 1 or 2.")
+            return None
+        
+    def move_cable_space(self, move: Position, carriage_index, absolute=True, blocking=True):
+        if carriage_index == 1:
+            if self.carriage_1_translator is None:
+                print("Carriage 1 translator not set. Cannot get position in cable space.")
+                return None
+            return self.move(self.carriage_1_translator.get_stage_point_from_cable_point((move.x1, move.y1)), absolute=absolute, blocking=blocking)
+        elif carriage_index == 2:
+            if self.carriage_2_translator is None:
+                print("Carriage 2 translator not set. Cannot get position in cable space.")
+                return None
+            return self.move(self.carriage_2_translator.get_stage_point_from_cable_point((move.x2, move.y2)), absolute=absolute, blocking=blocking)
+        else:
+            print("Invalid carriage index. Must be 1 or 2.")
+            return None
+
     def refresh_position_pcb_space(self):
         return self.refresh_position()
     
@@ -118,6 +151,15 @@ class ToolWrapper(ToolController):
 
     def set_offsets_to_zero(self):
         self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
+
+    def set_carriage_translator(self, carriage_index, c1, c2, s1, s2):
+        translator = Translator(c1, c2, s1, s2)
+        if carriage_index == 1:
+            self.carriage_1_translator = translator
+        elif carriage_index == 2:
+            self.carriage_2_translator = translator
+        else:
+            print("Invalid carriage index. Must be 1 or 2.")
 
 
 if __name__ == "__main__":
