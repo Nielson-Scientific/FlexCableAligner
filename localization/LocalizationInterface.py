@@ -61,7 +61,7 @@ class LocalizationInterface(QWidget):
         layout = QVBoxLayout(box)
 
         self.points_table = QTableWidget(0, 4)
-        self.points_table.setHorizontalHeaderLabels(["Tag ID", "X (m)", "Y (m)", "Test"])
+        self.points_table.setHorizontalHeaderLabels(["Tag ID", "X (mm)", "Y (mm)", "Test"])
         self.points_table.horizontalHeader().setStretchLastSection(True)
         self.points_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 

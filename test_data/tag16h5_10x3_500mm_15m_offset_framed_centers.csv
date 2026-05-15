@@ -1,4 +1,4 @@
-tag_id,row,col,center_x_mm,center_y_mm
+tag_id,row,col,center_x_um,center_y_um
 0,0,0,312.500,312.500
 1,0,1,15312.500,312.500
 2,0,2,30312.500,312.500
