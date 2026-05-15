@@ -130,8 +130,14 @@ class WebSocketWrapper:
         }
         def get_carriage_pos():
             data = self.ws.send_and_wait_for(json.dumps(subscribe_req), req_id, 10)
-            pos = data.get('result', {}).get('status', {}).get('toolhead', {}).get('position', [None, None, None])
-            return pos[:3]
+            if not data:
+                return [None, None, None]
+            pos = data.get('result', {}).get('status', {}).get('toolhead', {}).get('position')
+            if not isinstance(pos, (list, tuple)):
+                return [None, None, None]
+            if len(pos) < 3:
+                pos = list(pos) + [None] * (3 - len(pos))
+            return list(pos[:3])
         
         x, y, _ = get_carriage_pos()
         z1, z2, z3, z4 = self.get_z_positions()
