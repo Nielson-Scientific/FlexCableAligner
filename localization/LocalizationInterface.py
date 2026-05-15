@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from Wrappers.ToolSingleton import ToolSingleton
 from img_processing.AprilTagDetector import AprilTagDetector
 from utils.FileUtils import FileUtils as FU
+from utils.SearchRoutines import SearchRoutines
 
 
 TAG_CSV_PATH = Path("test_data/tag16h5_10x3_500mm_15m_offset_framed_centers.csv")
@@ -75,6 +76,9 @@ class LocalizationInterface(QWidget):
         self.load_csv_btn = QPushButton("Load CSV")
         self.load_csv_btn.clicked.connect(self._load_csv_from_dialog)
 
+        self.spiral_search_btn = QPushButton("Run Spiral Search")
+        self.spiral_search_btn.clicked.connect(self._run_spiral_search)
+
         self.btn_set_c1_p1 = QPushButton("Set Carriage 1 P1")
         self.btn_set_c1_p1.clicked.connect(lambda: self._save_slot_from_scan("c1_p1"))
         self.lbl_c1_p1 = QLabel("")
@@ -99,6 +103,7 @@ class LocalizationInterface(QWidget):
         self.scan_status.setWordWrap(True)
 
         layout.addWidget(self.load_csv_btn)
+        layout.addWidget(self.spiral_search_btn)
         layout.addWidget(self.btn_set_c1_p1)
         layout.addWidget(self.lbl_c1_p1)
         layout.addWidget(self.btn_set_c1_p2)
@@ -185,6 +190,24 @@ class LocalizationInterface(QWidget):
     def _selected_camera(self):
         idx = self.camera_selector.currentIndex()
         return self.parent_ui.camera1 if idx == 0 else self.parent_ui.camera2
+
+    def _run_spiral_search(self):
+        camera = self._selected_camera()
+        if camera is None or not camera.is_running:
+            self.scan_status.setText("Selected camera is not running")
+            return
+
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            self.scan_status.setText("Tool handle unavailable")
+            return
+
+        carriage_index = self.camera_selector.currentIndex() + 1
+        try:
+            SearchRoutines.spiral_search(camera, tool, carriage_index)
+            self.scan_status.setText(f"Spiral search finished for carriage {carriage_index}")
+        except Exception as exc:
+            self.scan_status.setText(f"Spiral search failed: {type(exc).__name__}: {exc}")
 
     def _update_camera_preview(self):
         camera = self._selected_camera()

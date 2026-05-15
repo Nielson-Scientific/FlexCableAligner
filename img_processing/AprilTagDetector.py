@@ -9,7 +9,9 @@ if __name__ == "__main__": import matplotlib.pyplot as plt
 
 APRIL_TEST_IMG_DIR = Path("test_images/tag_imgs")
 
-MM_PER_PIXEL = float(20 / 930)
+TAG_LENGTH_MM = 500
+TAG_LENGTH_PXL = 930
+MM_PER_PIXEL = float(TAG_LENGTH_MM / TAG_LENGTH_PXL)
 
 CENTER_X_PXL = 1296
 CENTER_Y_PXL = 972
@@ -79,6 +81,7 @@ class AprilTagDetector:
             y_mm_offset = -y_mm_offset
 
         return x_mm_offset, y_mm_offset
+    
 
     @staticmethod
     def _april_tag_preprocessing(img):
