@@ -4,7 +4,7 @@ from PySide6.QtGui import QPainter, QColor, QBrush
 from PySide6.QtCore import Qt, QPointF, QTimer
 from Wrappers.CSVWrapper import CSVWrapper, Point
 from Wrappers.ToolSingleton import ToolSingleton
-from PositionSchema import Position, dist_between_points
+from schema.PositionSchema import Position, dist_between_points
 from TooCloseInterface import TooCloseInterface
 from CalibrationInterface import CalibrationInterface
 import os

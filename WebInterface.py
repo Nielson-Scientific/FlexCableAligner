@@ -11,6 +11,8 @@ from CSVInterface import CSVInterface
 from JogModeDialog import JogModeDialog
 from Controllers.CameraControl import CameraControl, CameraControlError
 
+from utils.AutoFocus import Autofocus
+
 with open('config/base_url.txt', 'r') as f:
     BASE_URL = f.read().strip()
 
@@ -62,7 +64,15 @@ class WebInterface(QWidget):
         self.btn_avoid_home.clicked.connect(self.handle_avoid_home)
         side_panel.addWidget(self.btn_avoid_home)
 
-        self.current_carriage_label = QLabel(f"Current Carriage: {self.tool_wrapper.current_carriage}")
+        self.btn_autofocus = QPushButton("Autofocus")
+        self.btn_autofocus.clicked.connect(self.handle_autofocus)
+        side_panel.addWidget(self.btn_autofocus)
+
+        self.btn_thorough_autofocus = QPushButton("Thorough Autofocus")
+        self.btn_thorough_autofocus.clicked.connect(self.handle_thorough_autofocus)
+        side_panel.addWidget(self.btn_thorough_autofocus)
+
+        self.current_carriage_label = QLabel(f"Current Carriage: {self.tool_wrapper.selected_carriage}")
         side_panel.addWidget(self.current_carriage_label)
 
         self.btn_add_position = QPushButton("Save Current Position")
@@ -157,17 +167,36 @@ class WebInterface(QWidget):
 
     def handle_carriage_1(self):
         self.tool_wrapper.select_carriage(1)
-        self.current_carriage_label.setText(f"Current Carriage: {self.tool_wrapper.current_carriage}")
+        self.current_carriage_label.setText(f"Current Carriage: {self.tool_wrapper.selected_carriage}")
 
     def handle_carriage_2(self):
         self.tool_wrapper.select_carriage(2)
-        self.current_carriage_label.setText(f"Current Carriage: {self.tool_wrapper.current_carriage}")
+        self.current_carriage_label.setText(f"Current Carriage: {self.tool_wrapper.selected_carriage}")
 
     def handle_avoid_home(self):
         self.tool_wrapper.avoid_home()
         # After sending the avoid home command, we can refresh the position to update the UI
         self.tool_wrapper.refresh_position()
 
+    def handle_autofocus(self):
+        current_carriage = self.tool_wrapper.selected_carriage
+        af_cam = self.camera1 if current_carriage == 1 else self.camera2
+        z_pos = self.tool_wrapper.get_absolute_position().z1 if current_carriage == 1 else self.tool_wrapper.refresh_absolute_position().z2
+        Autofocus.quick_autofocus_routine(
+            af_cam, 
+            self.tool_wrapper, 
+            current_carriage,
+            current_height=z_pos
+        )
+
+    def handle_thorough_autofocus(self):
+        current_carriage = self.tool_wrapper.selected_carriage
+        af_cam = self.camera1 if current_carriage == 1 else self.camera2
+        Autofocus.thorough_autofocus_routine(
+            af_cam, 
+            self.tool_wrapper, 
+            current_carriage, 
+        )
 
     def handle_run_process(self):
         project_name = self.input_project_name.text()

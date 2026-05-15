@@ -3,3 +3,4 @@ __pycache__/*
 .venv
 base_url.txt
 .codex
+af_fast_samples/

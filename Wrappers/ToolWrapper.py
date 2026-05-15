@@ -1,5 +1,5 @@
 from Controllers.ToolController import ToolController
-from PositionSchema import Position, ParkPosition
+from schema.PositionSchema import Position, ParkPosition
 import numpy as np
 from Wrappers.CSVWrapper import Point
 
@@ -11,8 +11,8 @@ CONFIG_PATH = "config/config.json"
 
 class ToolWrapper(ToolController):
     def __init__(self, ws_url):
-        super().__init__(ws_url)
         self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
+        super().__init__(ws_url)
         self.park_positions = ParkPosition(CONFIG_PATH)
 
     @staticmethod
@@ -51,8 +51,8 @@ class ToolWrapper(ToolController):
     def refresh_absolute_position(self):
         return super().refresh_position()
     
-    def move_absolute(self, move: Position, blocking=True):
-        return super().move(move, absolute=True, blocking=blocking)
+    def move_absolute(self, move: Position, blocking=True, set_speed=None):
+        return super().move(move, absolute=True, blocking=blocking, set_speed=set_speed)
     
     def move_pcb_space(self, move: Position, absolute=True, blocking=True):
         self.move(move, absolute=absolute, blocking=blocking)
@@ -74,7 +74,7 @@ class ToolWrapper(ToolController):
         else:
             print("Invalid carriage index. Must be 1 or 2.")
 
-    def move(self, move: Position, absolute=True, blocking=True):
+    def move(self, move: Position, absolute=True, blocking=True, set_speed = None):
         if absolute:
             target = Position(
                 x1=move.x1 + self.offsets.x1 if move.x1 is not None else None,
@@ -87,7 +87,7 @@ class ToolWrapper(ToolController):
         else:
             target = move
 
-        return super().move(target, absolute, blocking)
+        return super().move(target, absolute, blocking, set_speed = set_speed)
     
     def set_position_as_point(self, point: Point, carriage_index: float):
         if carriage_index not in [1, 2]:

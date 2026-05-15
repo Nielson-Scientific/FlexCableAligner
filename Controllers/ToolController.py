@@ -1,7 +1,9 @@
-from Wrappers.WebSocketWrapper import WebSocketWrapper
-from PositionSchema import Position
 import time
 from pathlib import Path
+
+from Wrappers.WebSocketWrapper import WebSocketWrapper
+from schema.PositionSchema import Position
+from Controllers.GCodeCommands import GCodeCMD
 
 FEEDRATE = 3000
 DEF_URL = "ws://10.34.243.54:7125/websocket"
@@ -13,10 +15,12 @@ class ToolController:
     def __init__(self, ws_url = DEF_URL):
         self.ws_wrapper = WebSocketWrapper(ws_url)
         self.ws_wrapper.connect()
-        self.position: Position = self.ws_wrapper.get_position()
-        self.ws_wrapper.send_gcode('G90')  # Set to absolute positioning
-        self.ws_wrapper.select_carriage(1) # Default to carriage 1
-        self.current_carriage = 1
+        self.selected_carriage = 1
+        self.select_carriage(self.selected_carriage, force = True) # Default to carriage 1
+        self.ws_wrapper.send_gcode(GCodeCMD.ABSOLUTE_POSITIONING())  # Set to absolute positioning
+        self.position: Position = self.refresh_position()
+
+        
 
     def wait_for(self, seconds):
         time.sleep(seconds)
@@ -33,14 +37,35 @@ class ToolController:
         return self.position
     
     def refresh_position(self):
-        self.position = self.ws_wrapper.get_position()
+        current_carriage = self.selected_carriage
+        self.select_carriage(1)
+        carriage_1_pos = self.ws_wrapper.get_position_data()
+        self.select_carriage(2)
+        carriage_2_pos = self.ws_wrapper.get_position_data()
+        self.select_carriage(current_carriage)
+
+        # This code is a little wierd, but trust :)
+        self.position = Position(
+            x1 = carriage_1_pos.x1,
+            y1 = carriage_1_pos.y1,
+            z1 = carriage_1_pos.z1,
+            x2 = carriage_2_pos.x1,
+            y2 = carriage_2_pos.y1,
+            z2 = carriage_2_pos.z2,
+        )
         return self.position
     
-    def select_carriage(self, carriage_number):
-        self.ws_wrapper.select_carriage(carriage_number)
-        self.current_carriage = carriage_number
+    def select_carriage(self, carriage_number, force = False):
+        if carriage_number not in [1, 2]:
+            print("Invalid carriage number. Must be 1 or 2.")
+            return
+        if carriage_number == self.selected_carriage and not force:
+            return
+        gcode = GCodeCMD.SELECT_CARRAIGE(carriage_number)
+        self.selected_carriage = carriage_number
+        self.ws_wrapper.send_gcode_and_wait(gcode)
     
-    def move(self, move: Position, absolute=True, blocking=True, verify_mov = True):
+    def move(self, move: Position, absolute=True, blocking=True, verify_mov = True, set_speed = None):
         move_t0 = time.perf_counter()
         xy_move_requested = any(v is not None for v in (move.x1, move.y1, move.x2, move.y2))
         z_move_requested = move.z1 is not None or move.z2 is not None
@@ -55,32 +80,22 @@ class ToolController:
                 z2=move.z2 + self.position.z2 if move.z2 is not None else None
             )
 
+        # Set the movement speed manually, otherwise default to the FEEDRATE
+        move_speed = FEEDRATE if set_speed is None else set_speed
+
+
         if move.x1 is not None or move.y1 is not None or move.z1 is not None:
             t0 = time.perf_counter()
-            self.ws_wrapper.select_carriage(1)
-            gcode = "COMPENSATED_ABS_MV"
-            if move.x1 is not None:
-                gcode += f" X={move.x1}"
-            if move.y1 is not None:
-                gcode += f" Y={move.y1}"
-            if move.z1 is not None:
-                gcode += f" Z={move.z1} Z_AXIS=1"
-            gcode += f" F={FEEDRATE}"
+            self.select_carriage(1)
+            gcode = GCodeCMD.MOVE(move, carriage = 1, feed = move_speed)
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] queue carriage1 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
 
         if move.x2 is not None or move.y2 is not None or move.z2 is not None:
             t0 = time.perf_counter()
-            self.ws_wrapper.select_carriage(2)
-            gcode = "COMPENSATED_ABS_MV"
-            if move.x2 is not None:
-                gcode += f" X={move.x2}"
-            if move.y2 is not None:
-                gcode += f" Y={move.y2}"
-            if move.z2 is not None:
-                gcode += f" Z={move.z2} Z_AXIS=2"
-            gcode += f" F={FEEDRATE}"
+            self.select_carriage(2)
+            gcode = GCodeCMD.MOVE(move, carriage = 2, feed = move_speed)
             self.ws_wrapper.send_gcode(gcode)
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] queue carriage2 cmd took {(time.perf_counter() - t0)*1000:.1f} ms")
@@ -90,14 +105,14 @@ class ToolController:
         if blocking:
             # Always block on queued motion completion; this also catches manual_stepper macro moves.
             t_wait = time.perf_counter()
-            self.ws_wrapper.wait_for_moves()
+            self.wait_for_moves()
             if PROFILE_MOVE:
                 self._profile_log(f"[MOVE PROFILE] wait_for_moves took {(time.perf_counter() - t_wait)*1000:.1f} ms")
 
             if not z_only_move:
                 t_vel = time.perf_counter()
                 vel_checks = 0
-                while self.ws_wrapper.is_toolhead_moving():
+                while self.is_toolhead_moving():
                     vel_checks += 1
                     time.sleep(0.01)
                 if PROFILE_MOVE:
@@ -160,28 +175,31 @@ class ToolController:
             return True # Don't verify position for relative moves
     
     def home(self):
-        self.ws_wrapper.send_gcode("HOME_ALL")
+        gcode = GCodeCMD.HOME_ALL()
+        self.ws_wrapper.send_gcode(gcode)
         # self.wait_for(5)
-        while self.ws_wrapper.is_toolhead_moving():
+        while self.is_toolhead_moving():
             time.sleep(0.1)
         self.refresh_position()
 
     def avoid_home(self):
-        gcode = "SET_DUAL_CARRIAGE CARRIAGE=x\nSET_DUAL_CARRIAGE CARRIAGE=y\n"
-        gcode += f"SET_KINEMATIC_POSITION X={self.position.x1} Y={self.position.y1}"
-        if self.position.z1 is not None:
-            gcode += f" Z={self.position.z1}"
-        gcode += "\n"
-        gcode += "SET_DUAL_CARRIAGE CARRIAGE=x2\nSET_DUAL_CARRIAGE CARRIAGE=y2\n"
-        gcode += f"SET_KINEMATIC_POSITION X={self.position.x2} Y={self.position.y2}"
-        if self.position.z2 is not None:
-            gcode += f" Z={self.position.z2}"
-        gcode += "\n"
+        gcode = GCodeCMD.AVOID_HOME(self.position)
         self.ws_wrapper.send_gcode(gcode)
 
-    def is_moving(self):
-        return self.ws_wrapper.is_toolhead_moving()
+    def is_toolhead_moving(self):
+        current_carriage = self.selected_carriage
+        moving = False
+        self.select_carriage(1)
+        if self.ws_wrapper.get_velocity_data() > 0:
+            moving = True
+        self.select_carriage(2)
+        if moving or self.ws_wrapper.get_velocity_data() > 0:
+            moving = True
+        self.select_carriage(current_carriage)
+        return moving
     
+    def wait_for_moves(self):
+        self.ws_wrapper.send_gcode_and_wait(GCodeCMD.WAIT_FOR_MOVES(), timeout=30)    
 
 if __name__ == "__main__":
     url = "ws://10.34.243.54:7125/websocket"
