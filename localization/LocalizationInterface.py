@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -30,6 +31,13 @@ class LocalizationInterface(QWidget):
         self.parent_ui = parent
         self.detector = AprilTagDetector()
         self.saved_scans = []
+        self.tag_coordinates_by_id = {}
+        self.slot_data = {
+            "c1_p1": None,
+            "c1_p2": None,
+            "c2_p1": None,
+            "c2_p2": None,
+        }
 
         outer = QHBoxLayout(self)
 
@@ -64,13 +72,29 @@ class LocalizationInterface(QWidget):
         box = QGroupBox("Localization Actions")
         layout = QVBoxLayout(box)
 
-        self.scan_btn = QPushButton("Scan Tag and Save Position")
-        self.scan_btn.clicked.connect(self._scan_tag_and_save_position)
+        self.load_csv_btn = QPushButton("Load CSV")
+        self.load_csv_btn.clicked.connect(self._load_csv_from_dialog)
+
+        self.btn_set_c1_p1 = QPushButton("Set Carriage 1 P1")
+        self.btn_set_c1_p1.clicked.connect(lambda: self._save_slot_from_scan("c1_p1"))
+
+        self.btn_set_c1_p2 = QPushButton("Set Carriage 1 P2")
+        self.btn_set_c1_p2.clicked.connect(lambda: self._save_slot_from_scan("c1_p2"))
+
+        self.btn_set_c2_p1 = QPushButton("Set Carriage 2 P1")
+        self.btn_set_c2_p1.clicked.connect(lambda: self._save_slot_from_scan("c2_p1"))
+
+        self.btn_set_c2_p2 = QPushButton("Set Carriage 2 P2")
+        self.btn_set_c2_p2.clicked.connect(lambda: self._save_slot_from_scan("c2_p2"))
 
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
 
-        layout.addWidget(self.scan_btn)
+        layout.addWidget(self.load_csv_btn)
+        layout.addWidget(self.btn_set_c1_p1)
+        layout.addWidget(self.btn_set_c1_p2)
+        layout.addWidget(self.btn_set_c2_p1)
+        layout.addWidget(self.btn_set_c2_p2)
         layout.addWidget(self.scan_status)
         layout.addStretch()
         return box
@@ -92,19 +116,33 @@ class LocalizationInterface(QWidget):
         return box
 
     def _load_points_table(self):
-        if not TAG_CSV_PATH.exists():
-            self.scan_status.setText(f"Missing CSV: {TAG_CSV_PATH}")
+        self._load_points_from_csv(TAG_CSV_PATH)
+
+    def _load_csv_from_dialog(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open Tag CSV", "test_data", "CSV Files (*.csv)")
+        if not file_path:
+            return
+        self._load_points_from_csv(Path(file_path))
+
+    def _load_points_from_csv(self, csv_path: Path):
+        if not csv_path.exists():
+            self.scan_status.setText(f"Missing CSV: {csv_path}")
             return
 
-        rows = FU.csv_to_array(str(TAG_CSV_PATH))
+        rows = FU.csv_to_array(str(csv_path))
         csv_points = rows[1:]
+        self.tag_coordinates_by_id = {}
 
         points = []
         for row in csv_points:
             if len(row) < 6:
                 continue
             tag_id, _, _, x, y, test = row[:6]
-            points.append((tag_id, f"{float(x)/1000:.6f}", f"{float(y)/1000:.6f}", test))
+            tag_id_int = int(tag_id)
+            x_m = float(x) / 1000
+            y_m = float(y) / 1000
+            self.tag_coordinates_by_id[tag_id_int] = (x_m, y_m)
+            points.append((tag_id_int, f"{x_m:.6f}", f"{y_m:.6f}", test))
 
         self.points_table.setRowCount(len(points))
         for r, (tag_id, x_m, y_m, test) in enumerate(points):
@@ -112,6 +150,7 @@ class LocalizationInterface(QWidget):
             self.points_table.setItem(r, 1, QTableWidgetItem(x_m))
             self.points_table.setItem(r, 2, QTableWidgetItem(y_m))
             self.points_table.setItem(r, 3, QTableWidgetItem(str(test)))
+        self.scan_status.setText(f"Loaded {len(points)} tag points from {csv_path.name}")
 
     def _selected_camera(self):
         idx = self.camera_selector.currentIndex()
@@ -136,40 +175,61 @@ class LocalizationInterface(QWidget):
             pix.scaled(self.camera_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
         )
 
-    def _scan_tag_and_save_position(self):
+    def _capture_tag_observation(self):
         camera = self._selected_camera()
         if camera is None or not camera.is_running:
             self.scan_status.setText("Selected camera is not running")
-            return
+            return None
 
         frame = camera.get_latest_frame()
         if frame is None:
             self.scan_status.setText("No frame available from selected camera")
-            return
+            return None
 
         detections = self.detector.check_for_april_tag(frame.image_bgr)
         if not detections:
             self.scan_status.setText("No AprilTag detected")
-            return
+            return None
 
         detection = detections[0]
+        tag_offsets_from_center_xy = self.detector.get_tag_offset_from_center_mm(detection)
         tool = ToolSingleton.tool_wrapper
         pos = tool.refresh_absolute_position() if tool is not None else None
 
+        if pos is None:
+            self.scan_status.setText("Tool position unavailable")
+            return None
+
+        dx, dy = tag_offsets_from_center_xy
+        if self.camera_selector.currentIndex() == 0:
+            tag_position_xy = (pos.x1 + dx, pos.y1 + dy)
+        else:
+            tag_position_xy = (pos.x2 + dx, pos.y2 + dy)
+
+        tag_id = int(detection.tag_id)
+        cable_xy = self.tag_coordinates_by_id.get(tag_id)
+
         saved = {
-            "tag_id": int(detection.tag_id),
-            "position": pos,
+            "tag_id": tag_id,
+            "position_stage_xy": tag_position_xy,
+            "position_absolute": pos,
+            "position_cable_xy": cable_xy,
+            "tag_offsets_from_center_xy": tag_offsets_from_center_xy,
             "camera": self.camera_selector.currentText(),
         }
         self.saved_scans.append(saved)
+        return saved
 
-        if pos is None:
-            self.scan_status.setText(
-                f"Saved tag {saved['tag_id']} from {saved['camera']} (tool position unavailable)"
-            )
+    def _save_slot_from_scan(self, slot_key: str):
+        saved = self._capture_tag_observation()
+        if saved is None:
             return
 
+        self.slot_data[slot_key] = saved
+        cable_xy = saved["position_cable_xy"]
+        cable_str = "N/A (load CSV with this tag ID)" if cable_xy is None else f"({cable_xy[0]:.6f}, {cable_xy[1]:.6f})"
         self.scan_status.setText(
-            f"Saved tag {saved['tag_id']} from {saved['camera']} at "
-            f"C1({pos.x1}, {pos.y1}, {pos.z1}) C2({pos.x2}, {pos.y2}, {pos.z2})"
+            f"{slot_key.upper()} saved | Tag ID={saved['tag_id']} | "
+            f"Stage XY=({saved['position_stage_xy'][0]:.3f}, {saved['position_stage_xy'][1]:.3f}) | "
+            f"Cable XY={cable_str}"
         )
