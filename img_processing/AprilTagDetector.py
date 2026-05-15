@@ -9,7 +9,7 @@ if __name__ == "__main__": import matplotlib.pyplot as plt
 
 APRIL_TEST_IMG_DIR = Path("test_images/tag_imgs")
 
-TAG_LENGTH_MM = 500
+TAG_LENGTH_MM = 0.5  # physical size of the AprilTag in millimeters (for real-world measurements)
 TAG_LENGTH_PXL = 930
 MM_PER_PIXEL = float(TAG_LENGTH_MM / TAG_LENGTH_PXL)
 

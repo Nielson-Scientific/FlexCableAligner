@@ -65,5 +65,7 @@ class SearchRoutines:
             tool_handle.move(next_position(offset_x = offset, offset_y = 0))
             # check for tag
             if scan_position(): return True
-            #final check
+            
+        # return to starting position
+        tool_handle.move(start_pos)
         return False
