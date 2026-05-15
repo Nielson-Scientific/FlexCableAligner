@@ -11,8 +11,8 @@ CONFIG_PATH = "config/config.json"
 
 class ToolWrapper(ToolController):
     def __init__(self, ws_url):
-        super().__init__(ws_url)
         self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
+        super().__init__(ws_url)
         self.park_positions = ParkPosition(CONFIG_PATH)
 
     @staticmethod
