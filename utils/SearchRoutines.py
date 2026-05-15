@@ -12,29 +12,15 @@ class SearchRoutines:
         start_x = start_pos.x1 if carriage_index == 1 else start_pos.x2
         start_y = start_pos.y1 if carriage_index == 1 else start_pos.y2
 
-        current_x = start_x
-        current_y = start_y
+        x = start_x
+        y = start_y
 
-        def next_position(offset_x, offset_y):
+        def next_position(x,y):
             if carriage_index == 1:
-                return Position(x1 = start_x + offset_x, y1 = start_y + offset_y)
+                return Position(x1 = x, y1 = y)
             if carriage_index == 2:
-                return Position(x2 = start_x + offset_x, y2 = start_y + offset_y) 
+                return Position(x2 = x, y2 = y) 
             raise ValueError(f"Carriage index must be 1 or 2, carraige index was :{carriage_index}")
-        
-        def scan_row(start_x, start_y, segments, up = True):
-            x = start_x
-            for i in segments:
-                if up:
-                    x += STEP_SIZE_MM 
-                else:
-                    x -= STEP_SIZE_MM
-
-                tool_handle.move(
-                if scan_position():return True
-            return False
-
-        def scan_column(segments):
         
         def scan_position():
             if pause_at_each_point > 0:
@@ -45,26 +31,44 @@ class SearchRoutines:
             if len(detector.check_for_april_tag(frame.image_bgr)) > 0:
                 return True
             return False
+        
+        def scan_row(x, y, segments, scan_up = True):
+            for i in segments:
+                if scan_up:
+                    x += STEP_SIZE_MM 
+                else:
+                    x -= STEP_SIZE_MM
+
+                tool_handle.move(next_position(x, y))
+                if scan_position():return True, x, y
+            return False, x, y
+
+        def scan_column(x, y, segments, scan_right = True):
+            for i in segments:
+                if scan_right:
+                    y += STEP_SIZE_MM 
+                else:
+                    y -= STEP_SIZE_MM
+                tool_handle.move(next_position(x, y))
+                if scan_position():return True, x, y
+            return False, x, y
+        
+        
 
         for i in range(depth):
-            # move up 2 * i + 1
-            offset = (2 * i + 1) * step_size_mm
-            tool_handle.move(next_position(offset_x = 0, offset_y = offset))
-            # check for tag
-            if scan_position(): return True
-            # move right 2 * i + 1
-            tool_handle.move(next_position(offset_x = offset, offset_y = 0))
-            # check for tag
-            if scan_position(): return True
-            # move down 2 * i + 2
-            offset = -1 * (2 * i + 2) * step_size_mm
-            tool_handle.move(next_position(offset_x = 0, offset_y = offset))
-            # check for tag
-            if scan_position(): return True
-            # move left 2 * i + 2
-            tool_handle.move(next_position(offset_x = offset, offset_y = 0))
-            # check for tag
-            if scan_position(): return True
+            # SCAN UP AND RIGHT: 2 * i + 1
+            segments = 2 * i + 1
+            found, x, y = scan_row(segments, x, y)
+            if found: return True
+            found, x, y = scan_column(segments, x, y)
+            if found: return True
+            
+            # SCAN DOWN AND LEFT: 2 * i + 2
+            segments = 2 * i + 2
+            found, x, y = scan_row(segments, x, y, scan_up=False)
+            if found: return True
+            found, x, y = scan_column(segments, x, y, sacn_right=False)
+            if found: return True
             
         # return to starting position
         tool_handle.move(start_pos)
