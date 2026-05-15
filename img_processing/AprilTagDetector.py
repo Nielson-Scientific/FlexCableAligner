@@ -67,12 +67,17 @@ class AprilTagDetector:
         y = (a[1] + b[1] + c[1] + d[1]) / 4
         return x,y
     
-    def get_tag_offset_from_center_mm(self, detection):
+    def get_tag_offset_from_center_mm(self, detection, invert_y = False, invert_x = False):
         x_pxl, y_pxl = self.get_detection_center(detection)
         x_pxl_offset = x_pxl - CENTER_X_PXL
         y_pxl_offset = y_pxl - CENTER_Y_PXL
-        x_mm_offset = x_pxl_offset * PIXELS_TO_MM
-        y_mm_offset = y_pxl_offset * PIXELS_TO_MM
+        x_mm_offset  = x_pxl_offset * PIXELS_TO_MM
+        y_mm_offset  = y_pxl_offset * PIXELS_TO_MM
+        if invert_x:
+            x_mm_offset = -x_mm_offset
+        if invert_y:
+            y_mm_offset = -y_mm_offset
+
         return x_mm_offset, y_mm_offset
 
     @staticmethod
