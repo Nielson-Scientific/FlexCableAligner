@@ -109,16 +109,24 @@ class SearchRoutines:
             # SCAN UP AND RIGHT: 2 * i + 1
             segments = 2 * i + 1
             found, x, y = scan_row(x, y, segments)
-            if found: return True
+            if found: 
+                tool_handle.move(next_position(x,y))
+                return True
             found, x, y = scan_column(x, y, segments)
-            if found: return True
+            if found: 
+                tool_handle.move(next_position(x,y))
+                return True
             
             # SCAN DOWN AND LEFT: 2 * i + 2
             segments = 2 * i + 2
             found, x, y = scan_row(x, y, segments, scan_up=False)
-            if found: return True
+            if found: 
+                tool_handle.move(next_position(x,y))
+                return True
             found, x, y = scan_column(x, y, segments, scan_right=False)
-            if found: return True
+            if found: 
+                tool_handle.move(next_position(x,y))
+                return True
             
         # return to starting position
         tool_handle.move(start_pos)
