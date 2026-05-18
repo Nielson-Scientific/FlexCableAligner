@@ -6,7 +6,6 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
-    QCheckBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -106,8 +105,6 @@ class LocalizationInterface(QWidget):
 
         self.btn_cal_c1 = QPushButton("Calibrate Carraige 1")
         self.btn_cal_c1.clicked.connect(lambda: self._run_calibration(1))
-        self.chk_inv_y_c1 = QCheckBox("Invert Y for Carraige 1")
-        self.chk_inv_y_c1.setChecked(False)
         self.btn_add_tps_c1 = QPushButton("Add C1 TPS Pair")
         self.btn_add_tps_c1.clicked.connect(lambda: self._add_tps_pair(1))
         self.btn_fit_tps_c1 = QPushButton("Fit C1 TPS")
@@ -115,8 +112,6 @@ class LocalizationInterface(QWidget):
         self.btn_fit_tps_c1.setEnabled(False)
         self.btn_cal_c2 = QPushButton("Calibrate Carraige 2")
         self.btn_cal_c2.clicked.connect(lambda: self._run_calibration(2))
-        self.chk_inv_y_c2 = QCheckBox("Invert Y for Carraige 2")
-        self.chk_inv_y_c2.setChecked(False)
         self.btn_add_tps_c2 = QPushButton("Add C2 TPS Pair")
         self.btn_add_tps_c2.clicked.connect(lambda: self._add_tps_pair(2))
         self.btn_fit_tps_c2 = QPushButton("Fit C2 TPS")
@@ -126,24 +121,42 @@ class LocalizationInterface(QWidget):
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
 
-        layout.addWidget(self.load_csv_btn)
-        layout.addWidget(self.spiral_search_btn)
-        layout.addWidget(self.btn_set_c1_p1)
-        layout.addWidget(self.lbl_c1_p1)
-        layout.addWidget(self.btn_set_c1_p2)
-        layout.addWidget(self.lbl_c1_p2)
-        layout.addWidget(self.btn_set_c2_p1)
-        layout.addWidget(self.lbl_c2_p1)
-        layout.addWidget(self.btn_set_c2_p2)
-        layout.addWidget(self.lbl_c2_p2)
-        layout.addWidget(self.btn_cal_c1)
-        layout.addWidget(self.chk_inv_y_c1)
-        layout.addWidget(self.btn_add_tps_c1)
-        layout.addWidget(self.btn_fit_tps_c1)
-        layout.addWidget(self.btn_cal_c2)
-        layout.addWidget(self.chk_inv_y_c2)
-        layout.addWidget(self.btn_add_tps_c2)
-        layout.addWidget(self.btn_fit_tps_c2)
+        global_box = QGroupBox("Global")
+        global_layout = QVBoxLayout(global_box)
+        global_layout.addWidget(self.load_csv_btn)
+        global_layout.addWidget(self.spiral_search_btn)
+
+        c1_points_box = QGroupBox("Carriage 1 Point Capture")
+        c1_points_layout = QVBoxLayout(c1_points_box)
+        c1_points_layout.addWidget(self.btn_set_c1_p1)
+        c1_points_layout.addWidget(self.lbl_c1_p1)
+        c1_points_layout.addWidget(self.btn_set_c1_p2)
+        c1_points_layout.addWidget(self.lbl_c1_p2)
+
+        c2_points_box = QGroupBox("Carriage 2 Point Capture")
+        c2_points_layout = QVBoxLayout(c2_points_box)
+        c2_points_layout.addWidget(self.btn_set_c2_p1)
+        c2_points_layout.addWidget(self.lbl_c2_p1)
+        c2_points_layout.addWidget(self.btn_set_c2_p2)
+        c2_points_layout.addWidget(self.lbl_c2_p2)
+
+        c1_cal_box = QGroupBox("Carriage 1 Calibration")
+        c1_cal_layout = QVBoxLayout(c1_cal_box)
+        c1_cal_layout.addWidget(self.btn_cal_c1)
+        c1_cal_layout.addWidget(self.btn_add_tps_c1)
+        c1_cal_layout.addWidget(self.btn_fit_tps_c1)
+
+        c2_cal_box = QGroupBox("Carriage 2 Calibration")
+        c2_cal_layout = QVBoxLayout(c2_cal_box)
+        c2_cal_layout.addWidget(self.btn_cal_c2)
+        c2_cal_layout.addWidget(self.btn_add_tps_c2)
+        c2_cal_layout.addWidget(self.btn_fit_tps_c2)
+
+        layout.addWidget(global_box)
+        layout.addWidget(c1_points_box)
+        layout.addWidget(c2_points_box)
+        layout.addWidget(c1_cal_box)
+        layout.addWidget(c2_cal_box)
         layout.addWidget(self.scan_status)
         layout.addStretch()
         return box
@@ -421,7 +434,6 @@ class LocalizationInterface(QWidget):
             c2 = pos_2_cable_xy,
             s1 = pos_1_stage_xy,
             s2 = pos_2_stage_xy,
-            invert_y = self.chk_inv_y_c1.isChecked() if carriage_index == 1 else self.chk_inv_y_c2.isChecked(),
         )
 
     def _run_calibration(self, carriage_index):

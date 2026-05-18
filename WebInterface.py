@@ -72,10 +72,12 @@ class WebInterface(QWidget):
 
         self.btn_autofocus = QPushButton("Autofocus")
         self.btn_autofocus.clicked.connect(self.handle_autofocus)
+        self.btn_autofocus.setEnabled(False)
         side_panel.addWidget(self.btn_autofocus)
 
         self.btn_thorough_autofocus = QPushButton("Thorough Autofocus")
         self.btn_thorough_autofocus.clicked.connect(self.handle_thorough_autofocus)
+        self.btn_thorough_autofocus.setEnabled(False)
         side_panel.addWidget(self.btn_thorough_autofocus)
 
         self.current_carriage_label = QLabel(f"Current Carriage: {self.tool_wrapper.selected_carriage}")
@@ -311,6 +313,7 @@ class WebInterface(QWidget):
 
             self.camera1.restart()
             self.camera2.restart()
+            self._refresh_autofocus_buttons_enabled()
 
             self.camera1_big_label.setText("Camera 1: Starting...")
             self.camera2_big_label.setText("Camera 2: Starting...")
@@ -320,9 +323,19 @@ class WebInterface(QWidget):
         except CameraControlError as exc:
             self.camera1_big_label.setText(f"Camera 1: {exc}")
             self.camera2_big_label.setText(f"Camera 2: {exc}")
+            self._refresh_autofocus_buttons_enabled()
         except Exception as exc:
             self.camera1_big_label.setText(f"Camera 1: {type(exc).__name__}: {exc}")
             self.camera2_big_label.setText(f"Camera 2: {type(exc).__name__}: {exc}")
+            self._refresh_autofocus_buttons_enabled()
+
+    def _refresh_autofocus_buttons_enabled(self):
+        cams_ready = (
+            self.camera1 is not None and self.camera1.is_running and
+            self.camera2 is not None and self.camera2.is_running
+        )
+        self.btn_autofocus.setEnabled(cams_ready)
+        self.btn_thorough_autofocus.setEnabled(cams_ready)
 
     def _update_camera_previews(self):
         self._update_camera_preview(self.camera1, self.camera1_big_label, "Camera 1")
