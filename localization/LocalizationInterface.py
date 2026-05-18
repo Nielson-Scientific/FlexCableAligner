@@ -107,11 +107,11 @@ class LocalizationInterface(QWidget):
         self.btn_cal_c1 = QPushButton("Calibrate Carraige 1")
         self.btn_cal_c1.clicked.connect(lambda: self._run_calibration(1))
         self.chk_inv_y_c1 = QCheckBox("Invert Y for Carraige 1")
-        self.chk_inv_y_c1.setChecked(True)
+        self.chk_inv_y_c1.setChecked(False)
         self.btn_cal_c2 = QPushButton("Calibrate Carraige 2")
         self.btn_cal_c2.clicked.connect(lambda: self._run_calibration(2))
         self.chk_inv_y_c2 = QCheckBox("Invert Y for Carraige 2")
-        self.chk_inv_y_c2.setChecked(True)
+        self.chk_inv_y_c2.setChecked(False)
 
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
