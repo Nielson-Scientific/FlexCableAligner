@@ -21,6 +21,7 @@ from Wrappers.ToolSingleton import ToolSingleton
 from img_processing.AprilTagDetector import AprilTagDetector
 from utils.FileUtils import FileUtils as FU
 from utils.SearchRoutines import SearchRoutines
+from schema.PositionSchema import Position
 
 
 TAG_CSV_PATH = Path("test_data/tag16h5_10x3_500mm_15m_offset_framed_centers.csv")
@@ -309,4 +310,37 @@ class LocalizationInterface(QWidget):
             f"{slot_key.upper()} saved | Tag ID={saved['tag_id']} | "
             f"Stage XY=({saved['position_stage_xy'][0]:.3f}, {saved['position_stage_xy'][1]:.3f}) | "
             f"Cable XY={cable_str}"
+        )
+
+    def _calibrate_carriage_1(self, carriage_index):
+        pos1 = self.slot_data[f"c{carriage_index}_p1"]
+        pos2 = self.slot_data[f"c{carriage_index}_p2"]
+
+        pos_1_cable_xy = pos1["position_cable_xy"]
+        pos_2_cable_xy = pos2["position_cable_xy"]
+
+        pos_1_stage_xy = pos1["position_stage_xy"]
+        pos_2_stage_xy = pos2["position_stage_xy"]
+
+
+        cable_1 = Position(x1 = pos_1_cable_xy[0], y1 = pos_1_cable_xy[1])
+        cable_2 = Position(x1 = pos_2_cable_xy[0], y1 = pos_2_cable_xy[1])
+        stage_1 = Position(x1 = pos_1_stage_xy[0], y1 = pos_1_stage_xy[1])
+        stage_2 = Position(x1 = pos_2_stage_xy[0], y1 = pos_2_stage_xy[1])
+
+        if (
+            cable_1 is None or
+            cable_2 is None or
+            stage_1 is None or
+            stage_2 is None
+        ):
+            raise AttributeError()
+
+        tool = ToolSingleton.tool_wrapper
+        tool.set_carriage_translator(
+            carriage_index= carriage_index,
+            c1 = cable_1,
+            c2 = cable_2,
+            s1 = stage_1,
+            s2 = stage_2,
         )
