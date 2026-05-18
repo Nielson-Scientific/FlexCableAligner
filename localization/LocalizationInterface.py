@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
+    QCheckBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -101,6 +102,15 @@ class LocalizationInterface(QWidget):
         self.lbl_c2_p2 = QLabel("")
         self.lbl_c2_p2.setWordWrap(True)
 
+        self.btn_cal_c1 = QPushButton("Calibrate Carraige 1")
+        self.btn_cal_c1.clicked.connect(lambda: self._run_calibration(1))
+        self.chk_inv_y_c1 = QCheckBox("Invert Y for Carraige 1")
+        self.chk_inv_y_c1.setChecked(True)
+        self.btn_cal_c2 = QPushButton("Calibrate Carraige 2")
+        self.btn_cal_c2.clicked.connect(lambda: self._run_calibration(2))
+        self.chk_inv_y_c2 = QCheckBox("Invert Y for Carraige 2")
+        self.chk_inv_y_c2.setChecked(True)
+
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
 
@@ -114,6 +124,10 @@ class LocalizationInterface(QWidget):
         layout.addWidget(self.lbl_c2_p1)
         layout.addWidget(self.btn_set_c2_p2)
         layout.addWidget(self.lbl_c2_p2)
+        layout.addWidget(self.btn_cal_c1)
+        layout.addWidget(self.chk_inv_y_c1)
+        layout.addWidget(self.btn_cal_c2)
+        layout.addWidget(self.chk_inv_y_c2)
         layout.addWidget(self.scan_status)
         layout.addStretch()
         return box
@@ -328,35 +342,45 @@ class LocalizationInterface(QWidget):
             f"Cable XY={cable_str}"
         )
 
-    def _calibrate_carriage_1(self, carriage_index):
+    def _calibrate_carriage(self, carriage_index):
         pos1 = self.slot_data[f"c{carriage_index}_p1"]
         pos2 = self.slot_data[f"c{carriage_index}_p2"]
 
-        pos_1_cable_xy = pos1["position_cable_xy"]
-        pos_2_cable_xy = pos2["position_cable_xy"]
+        if pos1 is None or pos2 is None:
+            raise ValueError(f"Missing calibration slots for carriage {carriage_index}. Set both P1 and P2 first.")
 
-        pos_1_stage_xy = pos1["position_stage_xy"]
-        pos_2_stage_xy = pos2["position_stage_xy"]
-
-
-        cable_1 = Position(x1 = pos_1_cable_xy[0], y1 = pos_1_cable_xy[1])
-        cable_2 = Position(x1 = pos_2_cable_xy[0], y1 = pos_2_cable_xy[1])
-        stage_1 = Position(x1 = pos_1_stage_xy[0], y1 = pos_1_stage_xy[1])
-        stage_2 = Position(x1 = pos_2_stage_xy[0], y1 = pos_2_stage_xy[1])
+        pos_1_cable_xy = pos1.get("position_cable_xy")
+        pos_2_cable_xy = pos2.get("position_cable_xy")
+        pos_1_stage_xy = pos1.get("position_stage_xy")
+        pos_2_stage_xy = pos2.get("position_stage_xy")
 
         if (
-            cable_1 is None or
-            cable_2 is None or
-            stage_1 is None or
-            stage_2 is None
+            pos_1_cable_xy is None or
+            pos_2_cable_xy is None or
+            pos_1_stage_xy is None or
+            pos_2_stage_xy is None
         ):
-            raise AttributeError()
+            raise ValueError(
+                f"Incomplete calibration data for carriage {carriage_index}. "
+                "Each slot needs Stage XY and Cable XY values."
+            )
 
         tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            raise RuntimeError("Tool handle unavailable.")
+
         tool.set_carriage_translator(
             carriage_index= carriage_index,
-            c1 = cable_1,
-            c2 = cable_2,
-            s1 = stage_1,
-            s2 = stage_2,
+            c1 = pos_1_cable_xy,
+            c2 = pos_2_cable_xy,
+            s1 = pos_1_stage_xy,
+            s2 = pos_2_stage_xy,
+            invert_y = self.chk_inv_y_c1.isChecked() if carriage_index == 1 else self.chk_inv_y_c2.isChecked(),
         )
+
+    def _run_calibration(self, carriage_index):
+        try:
+            self._calibrate_carriage(carriage_index)
+            self.scan_status.setText(f"Calibrated carriage {carriage_index} successfully.")
+        except Exception as exc:
+            self.scan_status.setText(f"Calibration failed for carriage {carriage_index}: {type(exc).__name__}: {exc}")

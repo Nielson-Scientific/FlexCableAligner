@@ -2,11 +2,32 @@ import numpy as np
 
 
 class Translator:
-    def __init__(self, c1, c2, s1, s2):
-        self.R = self.get_rotation_matrix(c1, c2, s1, s2)
+    def __init__(self, c1, c2, s1, s2, invert_x=False, invert_y=False):
+        self.invert_x = bool(invert_x)
+        self.invert_y = bool(invert_y)
+        c1n = self._normalize_cable_point(c1)
+        c2n = self._normalize_cable_point(c2)
+        self.R = self.get_rotation_matrix(c1n, c2n, s1, s2)
+
+    def _normalize_cable_point(self, cable_point):
+        x, y = float(cable_point[0]), float(cable_point[1])
+        if self.invert_x:
+            x = -x
+        if self.invert_y:
+            y = -y
+        return (x, y)
+
+    def _denormalize_cable_point(self, cable_point):
+        x, y = float(cable_point[0]), float(cable_point[1])
+        if self.invert_x:
+            x = -x
+        if self.invert_y:
+            y = -y
+        return (x, y)
     
     def get_stage_point_from_cable_point(self, cable_point):
-        c = np.array([cable_point[0], cable_point[1], 1], dtype = float)
+        cx, cy = self._normalize_cable_point(cable_point)
+        c = np.array([cx, cy, 1], dtype = float)
         c = c.reshape(-1,1) # reshape to column
         s = self.R @ c
         s_x, s_y, _ = s.ravel()
@@ -17,7 +38,7 @@ class Translator:
         s = s.reshape(-1,1) # reshape to column
         c = np.linalg.solve(self.R, s)
         c_x, c_y, _ = c.ravel()
-        return (c_x, c_y)
+        return self._denormalize_cable_point((c_x, c_y))
 
     def get_rotation_matrix(self, c1, c2, s1, s2):
         A = np.array([

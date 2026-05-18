@@ -152,8 +152,8 @@ class ToolWrapper(ToolController):
     def set_offsets_to_zero(self):
         self.offsets = Position(x1=0, y1=0, z1=0, x2=0, y2=0, z2=0)
 
-    def set_carriage_translator(self, carriage_index, c1, c2, s1, s2):
-        translator = Translator(c1, c2, s1, s2)
+    def set_carriage_translator(self, carriage_index, c1, c2, s1, s2, invert_x=False, invert_y=False):
+        translator = Translator(c1, c2, s1, s2, invert_x=invert_x, invert_y=invert_y)
         if carriage_index == 1:
             self.carriage_1_translator = translator
         elif carriage_index == 2:
