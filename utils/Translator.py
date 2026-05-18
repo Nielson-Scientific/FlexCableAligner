@@ -1,4 +1,5 @@
 import numpy as np
+from schema.PositionSchema import Position
 
 
 class Translator:
@@ -32,6 +33,7 @@ class Translator:
         s = self.R @ c
         s_x, s_y, _ = s.ravel()
         return (s_x, s_y)
+    
     
     def get_cable_point_from_stage_point(self, stage_point):
         s = np.array([stage_point[0], stage_point[1], 1], dtype = float)

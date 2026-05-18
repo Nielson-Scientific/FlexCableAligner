@@ -83,12 +83,16 @@ class ToolWrapper(ToolController):
             if self.carriage_1_translator is None:
                 print("Carriage 1 translator not set. Cannot get position in cable space.")
                 return None
-            return self.move(self.carriage_1_translator.get_stage_point_from_cable_point((move.x1, move.y1)), absolute=absolute, blocking=blocking)
+            stage_point = self.carriage_1_translator.get_stage_point_from_cable_point((move.x1, move.y1))
+            stage_position = Position(x1 = stage_point[0], y1 = stage_point[1])
+            return self.move(stage_position, absolute=absolute, blocking=blocking)
         elif carriage_index == 2:
             if self.carriage_2_translator is None:
                 print("Carriage 2 translator not set. Cannot get position in cable space.")
                 return None
-            return self.move(self.carriage_2_translator.get_stage_point_from_cable_point((move.x2, move.y2)), absolute=absolute, blocking=blocking)
+            stage_point = self.carriage_2_translator.get_stage_point_from_cable_point((move.x2, move.y2))
+            stage_position = Position(x2 = stage_point[0], y2 = stage_point[1])
+            return self.move(stage_position, absolute=absolute, blocking=blocking)
         else:
             print("Invalid carriage index. Must be 1 or 2.")
             return None
