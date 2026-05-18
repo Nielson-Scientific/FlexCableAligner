@@ -53,6 +53,9 @@ class SearchRoutines:
         x = start_x
         y = start_y
 
+        found_x = None
+        found_y = None
+
         def next_position(x,y):
             if carriage_index == 1:
                 return Position(x1 = x, y1 = y)
@@ -71,7 +74,9 @@ class SearchRoutines:
                 return False
             if save_scan:
                 SearchRoutines._save_scan(frame.image_bgr)
-            if len(detector.check_for_april_tag(frame.image_bgr)) > 0:
+            detections = detector.check_for_april_tag(frame.image_bgr)
+            if len(detections) >0:
+                found_x, found_y = detector.get_tag_offset_from_center_mm(detections[0])
                 return True
             return False
         
@@ -110,22 +115,22 @@ class SearchRoutines:
             segments = 2 * i + 1
             found, x, y = scan_row(x, y, segments)
             if found: 
-                tool_handle.move(next_position(x,y))
+                tool_handle.move(next_position(found_x,found_y))
                 return True
             found, x, y = scan_column(x, y, segments)
             if found: 
-                tool_handle.move(next_position(x,y))
+                tool_handle.move(next_position(found_x,found_y))
                 return True
             
             # SCAN DOWN AND LEFT: 2 * i + 2
             segments = 2 * i + 2
             found, x, y = scan_row(x, y, segments, scan_up=False)
             if found: 
-                tool_handle.move(next_position(x,y))
+                tool_handle.move(next_position(found_x,found_y))
                 return True
             found, x, y = scan_column(x, y, segments, scan_right=False)
             if found: 
-                tool_handle.move(next_position(x,y))
+                tool_handle.move(next_position(found_x,found_y))
                 return True
             
         # return to starting position
