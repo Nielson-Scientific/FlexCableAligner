@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import cv2
+import threading
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
@@ -203,11 +204,23 @@ class LocalizationInterface(QWidget):
             return
 
         carriage_index = self.camera_selector.currentIndex() + 1
-        try:
-            SearchRoutines.spiral_search(camera, tool, carriage_index)
-            self.scan_status.setText(f"Spiral search finished for carriage {carriage_index}")
-        except Exception as exc:
-            self.scan_status.setText(f"Spiral search failed: {type(exc).__name__}: {exc}")
+        self.spiral_search_btn.setEnabled(False)
+        self.scan_status.setText(f"Running spiral search for carriage {carriage_index}...")
+
+        def _job():
+            try:
+                found = SearchRoutines.spiral_search(camera, tool, carriage_index)
+                QTimer.singleShot(0, lambda: self.scan_status.setText(
+                    f"Spiral search finished for carriage {carriage_index} | found_tag={found}"
+                ))
+            except Exception as exc:
+                QTimer.singleShot(0, lambda: self.scan_status.setText(
+                    f"Spiral search failed: {type(exc).__name__}: {exc}"
+                ))
+            finally:
+                QTimer.singleShot(0, lambda: self.spiral_search_btn.setEnabled(True))
+
+        threading.Thread(target=_job, daemon=True).start()
 
     def _update_camera_preview(self):
         camera = self._selected_camera()

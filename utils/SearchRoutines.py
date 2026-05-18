@@ -21,6 +21,20 @@ class SearchRoutines:
         return str(out_path) if saved else None
 
     @staticmethod
+    def _wait_for_fresh_frame(cam_handle, min_timestamp_s, timeout_s=1.0, poll_s=0.01):
+        deadline = time.time() + timeout_s
+        latest = None
+        while time.time() < deadline:
+            frame = cam_handle.get_latest_frame()
+            if frame is not None:
+                latest = frame
+                ts = getattr(frame, "timestamp_s", None)
+                if ts is None or ts >= min_timestamp_s:
+                    return frame
+            time.sleep(poll_s)
+        return latest
+
+    @staticmethod
     def spiral_search(
         cam_handle,
         tool_handle,
@@ -46,10 +60,13 @@ class SearchRoutines:
                 return Position(x2 = x, y2 = y) 
             raise ValueError(f"Carriage index must be 1 or 2, carriage index was: {carriage_index}")
         
-        def scan_position(save_scan=False):
+        def scan_position(save_scan=False, min_timestamp_s=None):
             if pause_at_each_point > 0:
                 time.sleep(pause_at_each_point)
-            frame = cam_handle.get_latest_frame()
+            if min_timestamp_s is None:
+                frame = cam_handle.get_latest_frame()
+            else:
+                frame = SearchRoutines._wait_for_fresh_frame(cam_handle, min_timestamp_s=min_timestamp_s)
             if frame is None:
                 return False
             if save_scan:
@@ -66,7 +83,8 @@ class SearchRoutines:
                     y -= step
 
                 tool_handle.move(next_position(x, y))
-                if scan_position(save_scan=save_scans):return True, x, y
+                moved_at = time.time()
+                if scan_position(save_scan=save_scans, min_timestamp_s=moved_at):return True, x, y
             return False, x, y
 
         def scan_column(x, y, segments, scan_right = True):
@@ -76,7 +94,8 @@ class SearchRoutines:
                 else:
                     x -= step
                 tool_handle.move(next_position(x, y))
-                if scan_position(save_scan=save_scans):return True, x, y
+                moved_at = time.time()
+                if scan_position(save_scan=save_scans, min_timestamp_s=moved_at):return True, x, y
             return False, x, y
         
         

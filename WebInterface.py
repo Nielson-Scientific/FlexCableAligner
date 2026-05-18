@@ -1,5 +1,6 @@
 import sys
 import os
+import threading
 from PySide6.QtWidgets import (QApplication, QWidget, QHBoxLayout, QVBoxLayout, 
                                QPushButton, QLabel, QTabWidget, QLineEdit, QFormLayout, QSpacerItem, QSizePolicy)
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -188,22 +189,42 @@ class WebInterface(QWidget):
     def handle_autofocus(self):
         current_carriage = self.tool_wrapper.selected_carriage
         af_cam = self.camera1 if current_carriage == 1 else self.camera2
+        if af_cam is None or not af_cam.is_running:
+            return
         z_pos = self.tool_wrapper.get_absolute_position().z1 if current_carriage == 1 else self.tool_wrapper.refresh_absolute_position().z2
-        Autofocus.quick_autofocus_routine(
-            af_cam, 
-            self.tool_wrapper, 
-            current_carriage,
-            current_height=z_pos
-        )
+        self.btn_autofocus.setEnabled(False)
+
+        def _job():
+            try:
+                Autofocus.quick_autofocus_routine(
+                    af_cam,
+                    self.tool_wrapper,
+                    current_carriage,
+                    current_height=z_pos,
+                )
+            finally:
+                QTimer.singleShot(0, lambda: self.btn_autofocus.setEnabled(True))
+
+        threading.Thread(target=_job, daemon=True).start()
 
     def handle_thorough_autofocus(self):
         current_carriage = self.tool_wrapper.selected_carriage
         af_cam = self.camera1 if current_carriage == 1 else self.camera2
-        Autofocus.thorough_autofocus_routine(
-            af_cam, 
-            self.tool_wrapper, 
-            current_carriage, 
-        )
+        if af_cam is None or not af_cam.is_running:
+            return
+        self.btn_thorough_autofocus.setEnabled(False)
+
+        def _job():
+            try:
+                Autofocus.thorough_autofocus_routine(
+                    af_cam,
+                    self.tool_wrapper,
+                    current_carriage,
+                )
+            finally:
+                QTimer.singleShot(0, lambda: self.btn_thorough_autofocus.setEnabled(True))
+
+        threading.Thread(target=_job, daemon=True).start()
 
     def handle_run_process(self):
         project_name = self.input_project_name.text()
