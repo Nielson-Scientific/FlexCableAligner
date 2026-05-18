@@ -234,13 +234,29 @@ class LocalizationInterface(QWidget):
         if frame is None:
             return
 
-        rgb = cv2.cvtColor(frame.image_bgr, cv2.COLOR_BGR2RGB)
-        h, w, c = rgb.shape
-        qimg = QImage(rgb.data, w, h, c * w, QImage.Format.Format_RGB888)
-        pix = QPixmap.fromImage(qimg)
-        self.camera_label.setPixmap(
-            pix.scaled(self.camera_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-        )
+        img = frame.image_bgr
+        try:
+            # Rotate 90 degrees clockwise for vertical cameras (same model as WebInterface preview).
+            import numpy as np
+
+            img = np.rot90(img, k=-1).copy()
+            height, width, channels = img.shape
+            if channels != 3:
+                return
+
+            bytes_per_line = int(img.strides[0])
+            qimg = QImage(img.data, width, height, bytes_per_line, QImage.Format_BGR888).copy()
+            pix = QPixmap.fromImage(qimg)
+            self.camera_label.setPixmap(
+                pix.scaled(
+                    self.camera_label.size(),
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+        except Exception:
+            # Keep UI alive if frames arrive in an unexpected shape/dtype.
+            return
 
     def _capture_tag_observation(self):
         camera = self._selected_camera()

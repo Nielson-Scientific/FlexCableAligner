@@ -4,7 +4,7 @@ import threading
 from PySide6.QtWidgets import (QApplication, QWidget, QHBoxLayout, QVBoxLayout, 
                                QPushButton, QLabel, QTabWidget, QLineEdit, QFormLayout, QSpacerItem, QSizePolicy)
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl, QTimer, Qt
+from PySide6.QtCore import QUrl, QTimer, Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
 from Wrappers.ToolWrapper import ToolWrapper
 from Wrappers.ToolSingleton import ToolSingleton
@@ -28,6 +28,9 @@ CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
 
 class WebInterface(QWidget):
+    autofocus_finished = Signal()
+    thorough_autofocus_finished = Signal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Tool Control")
@@ -141,13 +144,18 @@ class WebInterface(QWidget):
 
         self.camera1_big_label = QLabel("Camera 1: Feed stopped")
         self.camera1_big_label.setAlignment(Qt.AlignCenter)
-        self.camera1_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        camera_panel_layout.addWidget(self.camera1_big_label)
+        # Important: QLabel's size hints can be dominated by the last pixmap size,
+        # which can accidentally force the *window* minimum size and cause repeated
+        # geometry warnings on smaller screens.
+        self.camera1_big_label.setMinimumSize(1, 1)
+        self.camera1_big_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        camera_panel_layout.addWidget(self.camera1_big_label, 1)
 
         self.camera2_big_label = QLabel("Camera 2: Feed stopped")
         self.camera2_big_label.setAlignment(Qt.AlignCenter)
-        self.camera2_big_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        camera_panel_layout.addWidget(self.camera2_big_label)
+        self.camera2_big_label.setMinimumSize(1, 1)
+        self.camera2_big_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        camera_panel_layout.addWidget(self.camera2_big_label, 1)
 
         web_layout.addWidget(browser, 4)
         web_layout.addWidget(camera_panel, 2)
@@ -168,6 +176,39 @@ class WebInterface(QWidget):
         # --- Tab 3: Localization Interface ---
         tab_localization = LocalizationInterface(self)
         tabs.addTab(tab_localization, "Localization")
+
+        # Thread-safe UI updates: worker threads emit, UI thread handles.
+        self.autofocus_finished.connect(lambda: self.btn_autofocus.setEnabled(True))
+        self.thorough_autofocus_finished.connect(lambda: self.btn_thorough_autofocus.setEnabled(True))
+
+    def _clamp_to_screen(self):
+        screen = self.screen() or QApplication.primaryScreen()
+        if screen is None:
+            return
+
+        avail = screen.availableGeometry()
+        if avail.isNull():
+            return
+
+        # Cap the maximum size so layout changes can't force an off-screen geometry.
+        self.setMaximumSize(avail.width(), avail.height())
+
+        geo = self.geometry()
+        new_w = min(geo.width(), avail.width())
+        new_h = min(geo.height(), avail.height())
+        if new_w != geo.width() or new_h != geo.height():
+            self.resize(new_w, new_h)
+
+        # Ensure the window's top-left stays within available bounds.
+        x = max(avail.left(), min(geo.x(), avail.right() - new_w + 1))
+        y = max(avail.top(), min(geo.y(), avail.bottom() - new_h + 1))
+        if x != geo.x() or y != geo.y():
+            self.move(x, y)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Run after the first layout pass.
+        QTimer.singleShot(0, self._clamp_to_screen)
 
     def handle_jog_mode(self):
         dlg = JogModeDialog(self.tool_wrapper, parent=self)
@@ -203,7 +244,7 @@ class WebInterface(QWidget):
                     current_height=z_pos,
                 )
             finally:
-                QTimer.singleShot(0, lambda: self.btn_autofocus.setEnabled(True))
+                self.autofocus_finished.emit()
 
         threading.Thread(target=_job, daemon=True).start()
 
@@ -222,7 +263,7 @@ class WebInterface(QWidget):
                     current_carriage,
                 )
             finally:
-                QTimer.singleShot(0, lambda: self.btn_thorough_autofocus.setEnabled(True))
+                self.thorough_autofocus_finished.emit()
 
         threading.Thread(target=_job, daemon=True).start()
 

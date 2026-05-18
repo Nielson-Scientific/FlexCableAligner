@@ -42,19 +42,25 @@ class SearchRoutines:
         depth=8,
         step_size_mm=STEP_SIZE_MM,
         pause_at_each_point=0,
-        save_scans=True,
+        save_scans=False,
     ):
         detector = AprilTagDetector()
         step = float(step_size_mm)
-        start_pos = tool_handle.get_position()
+        # IMPORTANT: get_position() can be stale if other code used non-blocking moves.
+        # Refresh once at the start so the spiral begins from the tool's true location.
+        try:
+            start_pos = tool_handle.refresh_position()
+        except Exception:
+            start_pos = tool_handle.get_position()
         start_x = start_pos.x1 if carriage_index == 1 else start_pos.x2
         start_y = start_pos.y1 if carriage_index == 1 else start_pos.y2
+
+        if start_x is None or start_y is None:
+            raise ValueError(f"Start position is missing X/Y for carriage {carriage_index}: {start_pos}")
 
         x = start_x
         y = start_y
 
-        found_x = None
-        found_y = None
 
         def next_position(x,y):
             if carriage_index == 1:
@@ -76,7 +82,6 @@ class SearchRoutines:
                 SearchRoutines._save_scan(frame.image_bgr)
             detections = detector.check_for_april_tag(frame.image_bgr)
             if len(detections) >0:
-                found_x, found_y = detector.get_tag_offset_from_center_mm(detections[0])
                 return True
             return False
         
@@ -115,22 +120,18 @@ class SearchRoutines:
             segments = 2 * i + 1
             found, x, y = scan_row(x, y, segments)
             if found: 
-                tool_handle.move(next_position(found_x,found_y))
                 return True
             found, x, y = scan_column(x, y, segments)
             if found: 
-                tool_handle.move(next_position(found_x,found_y))
                 return True
             
             # SCAN DOWN AND LEFT: 2 * i + 2
             segments = 2 * i + 2
             found, x, y = scan_row(x, y, segments, scan_up=False)
             if found: 
-                tool_handle.move(next_position(found_x,found_y))
                 return True
             found, x, y = scan_column(x, y, segments, scan_right=False)
             if found: 
-                tool_handle.move(next_position(found_x,found_y))
                 return True
             
         # return to starting position
