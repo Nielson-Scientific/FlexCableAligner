@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -42,6 +43,7 @@ class LocalizationInterface(QWidget):
             "c2_p1": None,
             "c2_p2": None,
         }
+        self.row_send_buttons = []
 
         outer = QHBoxLayout(self)
 
@@ -196,11 +198,32 @@ class LocalizationInterface(QWidget):
             points.append((tag_id_int, f"{x_mm:.6f}", f"{y_mm:.6f}", test))
 
         self.points_table.setRowCount(len(points))
+        self.row_send_buttons.clear()
         for r, (tag_id, x_m, y_m, test) in enumerate(points):
             self.points_table.setItem(r, 0, QTableWidgetItem(str(tag_id)))
             self.points_table.setItem(r, 1, QTableWidgetItem(x_m))
             self.points_table.setItem(r, 2, QTableWidgetItem(y_m))
-            self.points_table.setItem(r, 3, QTableWidgetItem(str(test)))
+            x_val = float(x_m)
+            y_val = float(y_m)
+
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setContentsMargins(2, 2, 2, 2)
+            row_layout.setSpacing(4)
+
+            btn_c1 = QPushButton("Send Carriage 1")
+            btn_c2 = QPushButton("Send Carriage 2")
+            btn_c1.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            btn_c2.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            btn_c1.clicked.connect(lambda _, x=x_val, y=y_val: self._send_carriage_to_cable_point(1, x, y))
+            btn_c2.clicked.connect(lambda _, x=x_val, y=y_val: self._send_carriage_to_cable_point(2, x, y))
+
+            row_layout.addWidget(btn_c1)
+            row_layout.addWidget(btn_c2)
+            self.points_table.setCellWidget(r, 3, row_widget)
+            self.row_send_buttons.append((btn_c1, btn_c2))
+
+        self._refresh_send_buttons_enabled_state()
         self.scan_status.setText(f"Loaded {len(points)} tag points from {csv_path.name}")
 
     def _selected_camera(self):
@@ -381,6 +404,40 @@ class LocalizationInterface(QWidget):
     def _run_calibration(self, carriage_index):
         try:
             self._calibrate_carriage(carriage_index)
+            self._refresh_send_buttons_enabled_state()
             self.scan_status.setText(f"Calibrated carriage {carriage_index} successfully.")
         except Exception as exc:
             self.scan_status.setText(f"Calibration failed for carriage {carriage_index}: {type(exc).__name__}: {exc}")
+
+    def _is_carriage_calibrated(self, carriage_index):
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            return False
+        if carriage_index == 1:
+            return getattr(tool, "carriage_1_translator", None) is not None
+        if carriage_index == 2:
+            return getattr(tool, "carriage_2_translator", None) is not None
+        return False
+
+    def _refresh_send_buttons_enabled_state(self):
+        c1_ok = self._is_carriage_calibrated(1)
+        c2_ok = self._is_carriage_calibrated(2)
+        for btn_c1, btn_c2 in self.row_send_buttons:
+            btn_c1.setEnabled(c1_ok)
+            btn_c2.setEnabled(c2_ok)
+
+    def _send_carriage_to_cable_point(self, carriage_index, x, y):
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            self.scan_status.setText("Tool handle unavailable")
+            return
+        if not self._is_carriage_calibrated(carriage_index):
+            self.scan_status.setText(f"Carriage {carriage_index} is not calibrated yet.")
+            return
+
+        move = Position(x1=x, y1=y) if carriage_index == 1 else Position(x2=x, y2=y)
+        ok = tool.move_cable_space(move, carriage_index=carriage_index)
+        if ok is False:
+            self.scan_status.setText(f"Move failed for carriage {carriage_index}.")
+            return
+        self.scan_status.setText(f"Sent carriage {carriage_index} to cable point ({x:.6f}, {y:.6f}).")
