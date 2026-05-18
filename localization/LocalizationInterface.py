@@ -108,10 +108,20 @@ class LocalizationInterface(QWidget):
         self.btn_cal_c1.clicked.connect(lambda: self._run_calibration(1))
         self.chk_inv_y_c1 = QCheckBox("Invert Y for Carraige 1")
         self.chk_inv_y_c1.setChecked(False)
+        self.btn_add_tps_c1 = QPushButton("Add C1 TPS Pair")
+        self.btn_add_tps_c1.clicked.connect(lambda: self._add_tps_pair(1))
+        self.btn_fit_tps_c1 = QPushButton("Fit C1 TPS")
+        self.btn_fit_tps_c1.clicked.connect(lambda: self._fit_tps(1))
+        self.btn_fit_tps_c1.setEnabled(False)
         self.btn_cal_c2 = QPushButton("Calibrate Carraige 2")
         self.btn_cal_c2.clicked.connect(lambda: self._run_calibration(2))
         self.chk_inv_y_c2 = QCheckBox("Invert Y for Carraige 2")
         self.chk_inv_y_c2.setChecked(False)
+        self.btn_add_tps_c2 = QPushButton("Add C2 TPS Pair")
+        self.btn_add_tps_c2.clicked.connect(lambda: self._add_tps_pair(2))
+        self.btn_fit_tps_c2 = QPushButton("Fit C2 TPS")
+        self.btn_fit_tps_c2.clicked.connect(lambda: self._fit_tps(2))
+        self.btn_fit_tps_c2.setEnabled(False)
 
         self.scan_status = QLabel("No scans yet")
         self.scan_status.setWordWrap(True)
@@ -128,8 +138,12 @@ class LocalizationInterface(QWidget):
         layout.addWidget(self.lbl_c2_p2)
         layout.addWidget(self.btn_cal_c1)
         layout.addWidget(self.chk_inv_y_c1)
+        layout.addWidget(self.btn_add_tps_c1)
+        layout.addWidget(self.btn_fit_tps_c1)
         layout.addWidget(self.btn_cal_c2)
         layout.addWidget(self.chk_inv_y_c2)
+        layout.addWidget(self.btn_add_tps_c2)
+        layout.addWidget(self.btn_fit_tps_c2)
         layout.addWidget(self.scan_status)
         layout.addStretch()
         return box
@@ -224,6 +238,7 @@ class LocalizationInterface(QWidget):
             self.row_send_buttons.append((btn_c1, btn_c2))
 
         self._refresh_send_buttons_enabled_state()
+        self._refresh_tps_fit_buttons_enabled_state()
         self.scan_status.setText(f"Loaded {len(points)} tag points from {csv_path.name}")
 
     def _selected_camera(self):
@@ -297,6 +312,14 @@ class LocalizationInterface(QWidget):
 
     def _capture_tag_observation(self):
         camera = self._selected_camera()
+        return self._capture_tag_observation_from_camera(camera, self.camera_selector.currentIndex())
+
+    def _capture_tag_observation_for_carriage(self, carriage_index):
+        cam_idx = 0 if carriage_index == 1 else 1
+        camera = self.parent_ui.camera1 if cam_idx == 0 else self.parent_ui.camera2
+        return self._capture_tag_observation_from_camera(camera, cam_idx)
+
+    def _capture_tag_observation_from_camera(self, camera, camera_index):
         if camera is None or not camera.is_running:
             self.scan_status.setText("Selected camera is not running")
             return None
@@ -321,7 +344,7 @@ class LocalizationInterface(QWidget):
             return None
 
         dx, dy = tag_offsets_from_center_xy
-        if self.camera_selector.currentIndex() == 0:
+        if camera_index == 0:
             tag_position_xy = (pos.x1 + dx, pos.y1 + dy)
         else:
             tag_position_xy = (pos.x2 + dx, pos.y2 + dy)
@@ -404,10 +427,54 @@ class LocalizationInterface(QWidget):
     def _run_calibration(self, carriage_index):
         try:
             self._calibrate_carriage(carriage_index)
+            tool = ToolSingleton.tool_wrapper
+            if tool is not None:
+                tool.set_carriage_use_tps(carriage_index, False)
             self._refresh_send_buttons_enabled_state()
-            self.scan_status.setText(f"Calibrated carriage {carriage_index} successfully.")
+            self._refresh_tps_fit_buttons_enabled_state()
+            self.scan_status.setText(f"Calibrated carriage {carriage_index} successfully (Affine mode active).")
         except Exception as exc:
             self.scan_status.setText(f"Calibration failed for carriage {carriage_index}: {type(exc).__name__}: {exc}")
+
+    def _add_tps_pair(self, carriage_index):
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            self.scan_status.setText("Tool handle unavailable")
+            return
+        if not self._is_carriage_calibrated(carriage_index):
+            self.scan_status.setText(f"Calibrate carriage {carriage_index} before adding TPS pairs.")
+            return
+
+        obs = self._capture_tag_observation_for_carriage(carriage_index)
+        if obs is None:
+            return
+        cable_xy = obs.get("position_cable_xy")
+        stage_xy = obs.get("position_stage_xy")
+        if cable_xy is None or stage_xy is None:
+            self.scan_status.setText("Could not add TPS pair: missing cable/stage XY in observation.")
+            return
+
+        tool.add_carriage_tps_pair(carriage_index, cable_xy, stage_xy)
+        pair_count = tool.get_carriage_tps_pair_count(carriage_index)
+        self._refresh_tps_fit_buttons_enabled_state()
+        self.scan_status.setText(
+            f"Added TPS pair for carriage {carriage_index}. Count={pair_count} | "
+            f"Tag ID={obs['tag_id']} CableXY=({cable_xy[0]:.6f}, {cable_xy[1]:.6f})"
+        )
+
+    def _fit_tps(self, carriage_index):
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            self.scan_status.setText("Tool handle unavailable")
+            return
+        try:
+            tool.fit_carriage_tps(carriage_index)
+            tool.set_carriage_use_tps(carriage_index, True)
+            pair_count = tool.get_carriage_tps_pair_count(carriage_index)
+            self._refresh_tps_fit_buttons_enabled_state()
+            self.scan_status.setText(f"Fitted TPS for carriage {carriage_index} with {pair_count} point pairs (TPS mode active).")
+        except Exception as exc:
+            self.scan_status.setText(f"TPS fit failed for carriage {carriage_index}: {type(exc).__name__}: {exc}")
 
     def _is_carriage_calibrated(self, carriage_index):
         tool = ToolSingleton.tool_wrapper
@@ -425,6 +492,17 @@ class LocalizationInterface(QWidget):
         for btn_c1, btn_c2 in self.row_send_buttons:
             btn_c1.setEnabled(c1_ok)
             btn_c2.setEnabled(c2_ok)
+
+    def _refresh_tps_fit_buttons_enabled_state(self):
+        tool = ToolSingleton.tool_wrapper
+        if tool is None:
+            self.btn_fit_tps_c1.setEnabled(False)
+            self.btn_fit_tps_c2.setEnabled(False)
+            return
+        c1_ready = self._is_carriage_calibrated(1) and tool.get_carriage_tps_pair_count(1) >= 3
+        c2_ready = self._is_carriage_calibrated(2) and tool.get_carriage_tps_pair_count(2) >= 3
+        self.btn_fit_tps_c1.setEnabled(c1_ready)
+        self.btn_fit_tps_c2.setEnabled(c2_ready)
 
     def _send_carriage_to_cable_point(self, carriage_index, x, y):
         tool = ToolSingleton.tool_wrapper

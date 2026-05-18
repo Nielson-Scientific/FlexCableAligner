@@ -17,6 +17,8 @@ class ToolWrapper(ToolController):
         self.park_positions = ParkPosition(CONFIG_PATH)
         self.carriage_1_translator = None
         self.carriage_2_translator = None
+        self.carriage_1_tps_pairs = []
+        self.carriage_2_tps_pairs = []
 
     @staticmethod
     def _sub_optional(value, offset):
@@ -160,10 +162,67 @@ class ToolWrapper(ToolController):
         translator = Translator(c1, c2, s1, s2, invert_x=invert_x, invert_y=invert_y)
         if carriage_index == 1:
             self.carriage_1_translator = translator
+            self.carriage_1_tps_pairs = []
+            self.carriage_1_translator.set_use_tps(False)
         elif carriage_index == 2:
             self.carriage_2_translator = translator
+            self.carriage_2_tps_pairs = []
+            self.carriage_2_translator.set_use_tps(False)
         else:
             print("Invalid carriage index. Must be 1 or 2.")
+
+    def add_carriage_tps_pair(self, carriage_index, cable_xy, stage_xy):
+        pair = (
+            (float(cable_xy[0]), float(cable_xy[1])),
+            (float(stage_xy[0]), float(stage_xy[1])),
+        )
+        if carriage_index == 1:
+            self.carriage_1_tps_pairs.append(pair)
+        elif carriage_index == 2:
+            self.carriage_2_tps_pairs.append(pair)
+        else:
+            raise ValueError("Invalid carriage index. Must be 1 or 2.")
+
+    def fit_carriage_tps(self, carriage_index):
+        if carriage_index == 1:
+            translator = self.carriage_1_translator
+            pairs = self.carriage_1_tps_pairs
+        elif carriage_index == 2:
+            translator = self.carriage_2_translator
+            pairs = self.carriage_2_tps_pairs
+        else:
+            raise ValueError("Invalid carriage index. Must be 1 or 2.")
+
+        if translator is None:
+            raise RuntimeError(f"Carriage {carriage_index} translator not set. Run base calibration first.")
+        if len(pairs) < 3:
+            raise RuntimeError(
+                f"Carriage {carriage_index} needs at least 3 TPS point pairs; currently {len(pairs)}."
+            )
+
+        cable_points = [p[0] for p in pairs]
+        stage_points = [p[1] for p in pairs]
+        translator.fit_tps(cable_points, stage_points)
+        translator.set_use_tps(True)
+
+    def set_carriage_use_tps(self, carriage_index, enabled: bool):
+        if carriage_index == 1:
+            if self.carriage_1_translator is None:
+                raise RuntimeError("Carriage 1 translator not set.")
+            self.carriage_1_translator.set_use_tps(enabled)
+        elif carriage_index == 2:
+            if self.carriage_2_translator is None:
+                raise RuntimeError("Carriage 2 translator not set.")
+            self.carriage_2_translator.set_use_tps(enabled)
+        else:
+            raise ValueError("Invalid carriage index. Must be 1 or 2.")
+
+    def get_carriage_tps_pair_count(self, carriage_index):
+        if carriage_index == 1:
+            return len(self.carriage_1_tps_pairs)
+        if carriage_index == 2:
+            return len(self.carriage_2_tps_pairs)
+        raise ValueError("Invalid carriage index. Must be 1 or 2.")
 
 
 if __name__ == "__main__":
