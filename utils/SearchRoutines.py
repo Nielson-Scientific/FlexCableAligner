@@ -28,9 +28,10 @@ class SearchRoutines:
         depth=8,
         step_size_mm=STEP_SIZE_MM,
         pause_at_each_point=0,
-        save_scans=False,
+        save_scans=True,
     ):
         detector = AprilTagDetector()
+        step = float(step_size_mm)
         start_pos = tool_handle.get_position()
         start_x = start_pos.x1 if carriage_index == 1 else start_pos.x2
         start_y = start_pos.y1 if carriage_index == 1 else start_pos.y2
@@ -43,9 +44,9 @@ class SearchRoutines:
                 return Position(x1 = x, y1 = y)
             if carriage_index == 2:
                 return Position(x2 = x, y2 = y) 
-            raise ValueError(f"Carriage index must be 1 or 2, carraige index was :{carriage_index}")
+            raise ValueError(f"Carriage index must be 1 or 2, carriage index was: {carriage_index}")
         
-        def scan_position(save_scan=True):
+        def scan_position(save_scan=False):
             if pause_at_each_point > 0:
                 time.sleep(pause_at_each_point)
             frame = cam_handle.get_latest_frame()
@@ -58,41 +59,46 @@ class SearchRoutines:
             return False
         
         def scan_row(x, y, segments, scan_up = True):
-            for i in segments:
+            for _ in range(int(segments)):
                 if scan_up:
-                    x += STEP_SIZE_MM 
+                    y += step
                 else:
-                    x -= STEP_SIZE_MM
+                    y -= step
 
                 tool_handle.move(next_position(x, y))
                 if scan_position(save_scan=save_scans):return True, x, y
             return False, x, y
 
         def scan_column(x, y, segments, scan_right = True):
-            for i in segments:
+            for _ in range(int(segments)):
                 if scan_right:
-                    y += STEP_SIZE_MM 
+                    x += step
                 else:
-                    y -= STEP_SIZE_MM
+                    x -= step
                 tool_handle.move(next_position(x, y))
                 if scan_position(save_scan=save_scans):return True, x, y
             return False, x, y
         
         
 
+
+        # Optionally scan at the starting point before moving.
+        if scan_position(save_scan=save_scans):
+            return True
+
         for i in range(depth):
             # SCAN UP AND RIGHT: 2 * i + 1
             segments = 2 * i + 1
-            found, x, y = scan_row(segments, x, y)
+            found, x, y = scan_row(x, y, segments)
             if found: return True
-            found, x, y = scan_column(segments, x, y)
+            found, x, y = scan_column(x, y, segments)
             if found: return True
             
             # SCAN DOWN AND LEFT: 2 * i + 2
             segments = 2 * i + 2
-            found, x, y = scan_row(segments, x, y, scan_up=False)
+            found, x, y = scan_row(x, y, segments, scan_up=False)
             if found: return True
-            found, x, y = scan_column(segments, x, y, sacn_right=False)
+            found, x, y = scan_column(x, y, segments, scan_right=False)
             if found: return True
             
         # return to starting position
