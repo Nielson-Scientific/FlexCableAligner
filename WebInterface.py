@@ -1,8 +1,9 @@
 import sys
 import os
 import threading
+from datetime import datetime
 from PySide6.QtWidgets import (QApplication, QWidget, QHBoxLayout, QVBoxLayout, 
-                               QPushButton, QLabel, QTabWidget, QLineEdit, QFormLayout, QSpacerItem, QSizePolicy)
+                               QPushButton, QLabel, QTabWidget, QLineEdit, QFormLayout, QSpacerItem, QSizePolicy, QFileDialog)
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl, QTimer, Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
@@ -26,6 +27,7 @@ CAMERA_2_ID = "DEV_1AB22C089E02"
 CAMERA_PREVIEW_HEIGHT_PX = 180
 CAMERA_BIG_PREVIEW_MIN_WIDTH_PX = 420
 CAMERA_UI_REFRESH_MS = 75
+DEFAULT_CAPTURE_DIR = "test_images/via_captures"
 
 class WebInterface(QWidget):
     autofocus_finished = Signal()
@@ -46,6 +48,9 @@ class WebInterface(QWidget):
 
         self.camera1 = None
         self.camera2 = None
+        self.latest_camera1_image = None
+        self.latest_camera2_image = None
+        self.capture_save_dir = os.path.abspath(DEFAULT_CAPTURE_DIR)
 
         # ==========================================
         # 1. Left Panel (Sidebar)
@@ -178,6 +183,42 @@ class WebInterface(QWidget):
         # --- Tab 3: Localization Interface ---
         tab_localization = LocalizationInterface(self)
         tabs.addTab(tab_localization, "Localization")
+
+        # --- Tab 4: Image Capture Interface ---
+        tab_capture = QWidget()
+        capture_layout = QVBoxLayout(tab_capture)
+        capture_layout.setContentsMargins(10, 10, 10, 10)
+        capture_layout.setSpacing(8)
+
+        self.capture_dir_label = QLabel(f"Save Directory: {self.capture_save_dir}")
+        self.capture_dir_label.setWordWrap(True)
+        capture_layout.addWidget(self.capture_dir_label)
+
+        self.btn_choose_capture_dir = QPushButton("Choose Save Directory")
+        self.btn_choose_capture_dir.clicked.connect(self.handle_choose_capture_dir)
+        capture_layout.addWidget(self.btn_choose_capture_dir)
+
+        self.capture_camera1_label = QLabel("Camera 1: Feed stopped")
+        self.capture_camera1_label.setAlignment(Qt.AlignCenter)
+        self.capture_camera1_label.setMinimumSize(1, 1)
+        self.capture_camera1_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        capture_layout.addWidget(self.capture_camera1_label, 1)
+
+        self.btn_save_camera1 = QPushButton("Save Camera 1 Photo")
+        self.btn_save_camera1.clicked.connect(lambda: self.handle_save_camera_photo(1))
+        capture_layout.addWidget(self.btn_save_camera1)
+
+        self.capture_camera2_label = QLabel("Camera 2: Feed stopped")
+        self.capture_camera2_label.setAlignment(Qt.AlignCenter)
+        self.capture_camera2_label.setMinimumSize(1, 1)
+        self.capture_camera2_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        capture_layout.addWidget(self.capture_camera2_label, 1)
+
+        self.btn_save_camera2 = QPushButton("Save Camera 2 Photo")
+        self.btn_save_camera2.clicked.connect(lambda: self.handle_save_camera_photo(2))
+        capture_layout.addWidget(self.btn_save_camera2)
+
+        tabs.addTab(tab_capture, "Image Capture")
 
         # Thread-safe UI updates: worker threads emit, UI thread handles.
         self.autofocus_finished.connect(lambda: self.btn_autofocus.setEnabled(True))
@@ -317,6 +358,8 @@ class WebInterface(QWidget):
 
             self.camera1_big_label.setText("Camera 1: Starting...")
             self.camera2_big_label.setText("Camera 2: Starting...")
+            self.capture_camera1_label.setText("Camera 1: Starting...")
+            self.capture_camera2_label.setText("Camera 2: Starting...")
 
             if not self._camera_timer.isActive():
                 self._camera_timer.start()
@@ -338,17 +381,28 @@ class WebInterface(QWidget):
         self.btn_thorough_autofocus.setEnabled(cams_ready)
 
     def _update_camera_previews(self):
-        self._update_camera_preview(self.camera1, self.camera1_big_label, "Camera 1")
-        self._update_camera_preview(self.camera2, self.camera2_big_label, "Camera 2")
+        frame1 = self._fetch_latest_frame(self.camera1)
+        frame2 = self._fetch_latest_frame(self.camera2)
+        self.latest_camera1_image = frame1.image_bgr.copy() if frame1 is not None else self.latest_camera1_image
+        self.latest_camera2_image = frame2.image_bgr.copy() if frame2 is not None else self.latest_camera2_image
 
-    def _update_camera_preview(self, camera: CameraControl, label: QLabel, title: str):
+        self._update_camera_preview_from_image(self.camera1, frame1, self.camera1_big_label, "Camera 1")
+        self._update_camera_preview_from_image(self.camera1, frame1, self.capture_camera1_label, "Camera 1")
+        self._update_camera_preview_from_image(self.camera2, frame2, self.camera2_big_label, "Camera 2")
+        self._update_camera_preview_from_image(self.camera2, frame2, self.capture_camera2_label, "Camera 2")
+
+    def _fetch_latest_frame(self, camera: CameraControl):
+        if camera is None or not camera.is_running:
+            return None
+        return camera.get_latest_frame()
+
+    def _update_camera_preview_from_image(self, camera: CameraControl, frame, label: QLabel, title: str):
         if camera is None or not camera.is_running:
             # Keep last pixmap if present; just update text if nothing is shown.
             if label.pixmap() is None:
                 label.setText(f"{title}: Feed stopped")
             return
 
-        frame = camera.get_latest_frame()
         if frame is None:
             if label.pixmap() is None:
                 label.setText(f"{title}: No frames yet")
@@ -373,6 +427,39 @@ class WebInterface(QWidget):
         except Exception:
             # If something goes wrong (unexpected dtype/shape), keep UI alive.
             label.setText(f"{title}: Frame error")
+
+    def handle_choose_capture_dir(self):
+        selected = QFileDialog.getExistingDirectory(self, "Select Save Directory", self.capture_save_dir)
+        if selected:
+            self.capture_save_dir = selected
+            self.capture_dir_label.setText(f"Save Directory: {self.capture_save_dir}")
+
+    def handle_save_camera_photo(self, camera_index: int):
+        if camera_index == 1:
+            image = self.latest_camera1_image
+            label = self.capture_camera1_label
+            prefix = "cam1"
+        else:
+            image = self.latest_camera2_image
+            label = self.capture_camera2_label
+            prefix = "cam2"
+
+        if image is None:
+            label.setText(f"Camera {camera_index}: No frame available to save")
+            return
+
+        try:
+            import cv2
+
+            os.makedirs(self.capture_save_dir, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            out_path = os.path.join(self.capture_save_dir, f"{prefix}_{timestamp}.png")
+            if cv2.imwrite(out_path, image):
+                label.setText(f"Camera {camera_index}: Saved {os.path.basename(out_path)}")
+            else:
+                label.setText(f"Camera {camera_index}: Save failed")
+        except Exception as exc:
+            label.setText(f"Camera {camera_index}: Save error: {type(exc).__name__}")
 
     def closeEvent(self, event):
         try:
