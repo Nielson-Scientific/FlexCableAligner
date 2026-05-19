@@ -1,13 +1,12 @@
 from pathlib import Path
 import os
-
 import cv2
 import numpy as np
 from pupil_apriltags import Detector
 if __name__ == "__main__": import matplotlib.pyplot as plt
 
 
-APRIL_TEST_IMG_DIR = Path("test_images/tag_imgs")
+APRIL_TEST_IMG_DIR = "test_images/tag_imgs"
 
 TAG_LENGTH_MM = 0.5000  # physical size of the AprilTag in millimeters (for real-world measurements)
 TAG_LENGTH_PXL = 931.582715
@@ -121,44 +120,11 @@ class AprilTagDetector:
 
 
 
-# TEST FUNCTIONS #
-
-    @staticmethod
-    def load_test_images(img_dir=APRIL_TEST_IMG_DIR):
-        """Load all images in img_dir as OpenCV image objects."""
-        img_dir = Path(img_dir)
-        if not img_dir.exists() or not img_dir.is_dir():
-            return []
-
-        valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
-        images = []
-
-        for img_path in sorted(p for p in img_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_exts):
-            image = cv2.imread(str(img_path))
-            if image is not None:
-                images.append(image)
-
-        return images
-
-    @staticmethod
-    def load_test_images_with_titles(img_dir=APRIL_TEST_IMG_DIR):
-        """Load all images and return (title, image) where title is filename without extension."""
-        img_dir = Path(img_dir)
-        if not img_dir.exists() or not img_dir.is_dir():
-            return []
-
-        valid_exts = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
-        titled_images = []
-
-        for img_path in sorted(p for p in img_dir.iterdir() if p.is_file() and p.suffix.lower() in valid_exts):
-            image = cv2.imread(str(img_path))
-            if image is not None:
-                titled_images.append((img_path.stem, image))
-
-        return titled_images
     
 if __name__ == "__main__":
-    images = AprilTagDetector.load_test_images_with_titles()
+    from utils.FileUtils import FileUtils
+
+    images =FileUtils.load_test_images_with_titles(APRIL_TEST_IMG_DIR)
     if not images:
         raise RuntimeError(f"No images found in {APRIL_TEST_IMG_DIR}")
 
